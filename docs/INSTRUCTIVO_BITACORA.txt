@@ -1,0 +1,332 @@
+================================================================================
+           INSTRUCTIVO Y BITACORA DE TRABAJO - XUPERSTREAM v1.0.0
+================================================================================
+ Proyecto: XuperStream — Plataforma de Streaming Legal
+ Repositorio: https://github.com/yecos/Hele
+ Deploy: Vercel / Render (pendiente configuracion)
+ Framework: Next.js 16 + React 19 + TypeScript + Tailwind CSS 4
+ Base de datos: Prisma + SQLite (desarrollo) / PostgreSQL (produccion)
+ Autenticacion: JWT custom (SHA-256 salted, httpOnly cookies, 7 dias)
+ Estado: Zustand (gestion de estado del cliente)
+ UI: shadcn/ui + Framer Motion + Lucide Icons
+ Video: URLs externas (Mux/Vimeo/Cloudflare R2 futuro)
+ Estado: Funcional en desarrollo, pendiente deploy a produccion
+ Fecha de creacion del instructivo: 2026-04-27
+================================================================================
+
+
+================================================================================
+REGLA FUNDAMENTAL
+================================================================================
+
+ TODO cambio que se haga en el proyecto DEBE quedar registrado en la BITACORA
+ (seccion PARTE 4 de este archivo). Esto aplica tanto para actualizaciones
+ grandes como para arreglos de bugs. Si no esta en la bitacora, no existe.
+
+ Pasos obligatorios al iniciar CUALQUIER sesion de trabajo:
+   1. Leer este instructivo completo
+   2. Hacer git pull para tener el codigo mas reciente
+   3. Revisar la bitacora para entender el estado actual del proyecto
+   4. Registrar el inicio de la sesion en la bitacora
+
+
+================================================================================
+PARTE 1: ACTUALIZACIONES DE GRAN EMBARGADURA (FEATURES / REFACTORES)
+================================================================================
+
+Procedimiento para cambios grandes como nuevas funcionalidades completas,
+refactores de arquitectura, cambios de diseno significativos, etc.
+
+--------------------------------------------------------------------------------
+1.1 PASOS
+--------------------------------------------------------------------------------
+
+  PASO 1 - ANALISIS Y PLANIFICACION
+  ├── Leer la BITACORA (PARTE 4) para entender el estado actual
+  ├── Analizar el codigo existente relacionado al cambio
+  ├── Identificar todos los archivos que seran afectados
+  ├── Documentar el plan en la bitacora antes de tocar codigo
+  └── Estimar alcance: [PEQUENO] / [MEDIANO] / [GRANDE]
+
+  PASO 2 - RESPALDO (OBLIGATORIO)
+  ├── Crear tag de respaldo ANTES de cualquier cambio:
+  │     git tag -a "backup-pre-[DESCRIPCION]-[YYYYMMDD-HHMM]" -m "Respaldo antes de [descripcion]"
+  │     git push origin --tags
+  └── Registrar el tag en la bitacora
+
+  PASO 3 - DESARROLLO INCREMENTAL
+  ├── Hacer cambios de forma gradual (archivo por archivo o modulo por modulo)
+  ├── Commits atomicos y descriptivos despues de cada cambio significativo:
+  │     git add [archivo(s)]
+  │     git commit -m "[tipo]: [descripcion clara]"
+  │
+  │   Convencion de commits:
+  │     feat:     nueva funcionalidad
+  │     fix:      correccion de bug
+  │     refactor: reestructuracion sin cambio funcional
+  │     style:    cambios de formato/estilo
+  │     docs:     cambios en documentacion
+  │     chore:    mantenimiento
+  │     perf:     optimizacion de rendimiento
+  │
+  ├── Push frecuente para no perder trabajo:
+  │     git push origin main
+  ├── Actualizar la bitacora con cada cambio importante
+  └── NUNCA acumular muchos cambios sin commit ni push
+
+  PASO 4 - VERIFICACION
+  ├── Ejecutar lint para verificar que no hay errores:
+  │     bun run lint
+  ├── Verificar compilacion:
+  │     bun run build
+  ├── Revisar diff de cambios:
+  │     git diff HEAD~N (donde N = commits desde el inicio del cambio)
+  └── Documentar incidencias en la bitacora si las hay
+
+  PASO 5 - CONFIRMACION Y CIERRE
+  ├── Si hay deploy configurado, verificar que funciona en produccion
+  ├── Si es local, verificar que la app funciona en el navegador
+  ├── Cerrar la entrada en la bitacora con resultado final
+  └── Listar todos los archivos modificados/creados
+
+
+================================================================================
+PARTE 2: ARREGLO DE BUGS (UN BUG A LA VEZ)
+================================================================================
+
+REGLA: Un bug a la vez. No mezclar correcciones de multiples bugs en un
+mismo cambio. Esto permite revision en tiempo real.
+
+--------------------------------------------------------------------------------
+2.1 PASOS
+--------------------------------------------------------------------------------
+
+  PASO 1 - IDENTIFICACION DEL BUG
+  ├── Registrar el bug en la bitacora con:
+  │   - Descripcion del problema
+  │   - Pasos para reproducirlo
+  │   - Severidad: [CRITICA] / [ALTA] / [MEDIA] / [BAJA]
+  │   - Archivos potencialmente afectados
+  └── Asignar ID: BUG-[YYYYMMDD]-[NNN]
+      Ejemplo: BUG-20260427-001
+
+  PASO 2 - RESPALDO (OBLIGATORIO)
+  ├── Tag de respaldo:
+  │     git tag -a "backup-pre-bug-[ID]-[YYYYMMDD-HHMM]" -m "Respaldo antes de fix [ID]"
+  │     git push origin --tags
+  └── Registrar en bitacora
+
+  PASO 3 - CORRECCION
+  ├── Modificar UNICAMENTE lo necesario para corregir ESTE bug
+  ├── No mezclar con otros bugs ni agregar funcionalidades extras
+  ├── Commit descriptivo:
+  │     git add [archivo(s)]
+  │     git commit -m "fix([ID]): [descripcion de la correccion]"
+  │     Ejemplo: fix(BUG-20260427-001): corregir autenticacion en login
+  └── Push inmediato:
+        git push origin main
+
+  PASO 4 - VERIFICACION
+  ├── Verificar que el bug esta corregido (probar en navegador)
+  ├── Verificar que NO se rompio nada existente (regresion)
+  ├── Si hay problemas:
+  │   - Revertir si es necesario: git revert HEAD
+  │   - Corregir y hacer nuevo commit + push
+  │   - Verificar de nuevo
+  └── Documentar resultado en bitacora
+
+  PASO 5 - CIERRE
+  ├── Marcar bug como [RESUELTO] / [PARCIALMENTE RESUELTO] / [NO RESUELTO]
+  ├── Si no se resuelve, documentar por que y que se intento
+  └── Pasar al siguiente bug (repetir desde PASO 1)
+
+
+================================================================================
+PARTE 3: PROCEDIMIENTOS DE PROTECCION DE DATOS
+================================================================================
+
+OBLIGATORIOS. Aplican a ambos flujos de trabajo (actualizaciones y bugs).
+
+--------------------------------------------------------------------------------
+3.1 ANTI-SOBREESCRITURA
+--------------------------------------------------------------------------------
+
+  [A] PULL ANTES DE PUSH - SIEMPRE
+  ├── git pull origin main ANTES de cualquier push
+  ├── Resolver conflictos manualmente si los hay
+  └── Nunca usar git push --force a menos que sea absolutamente necesario
+
+  [B] REVISION ANTES DE COMMIT
+  ├── git status - revisar archivos que se van a incluir
+  ├── git diff - revisar cambios exactos
+  ├── Usar git add selectivo (archivo por archivo)
+  ├── NUNCA usar git add . ni git add -A sin revisar primero
+  └── Confirmar que no se incluyen archivos incorrectos o temporales
+
+  [C] ARCHIVOS SENSIBLES - NUNCA COMMITEAR
+  ├── Contraseñas, tokens, JWT_SECRET en texto plano
+  ├── Datos personales de usuarios
+  ├── Archivos .env con valores reales (solo .env.example sin valores)
+  ├── Verificar .gitignore antes de cada commit
+  └── Si un archivo sensible fue commiteado: eliminar del historial y rotar credencial
+
+  [D] BITACORA - FUENTE DE VERDAD
+  ├── Este archivo es el registro oficial del proyecto
+  ├── Cada sesion DEBE leer la bitacora primero
+  ├── Cada cambio DEBE registrarse
+  ├── Las entradas antiguas NUNCA se modifican ni eliminan
+  ├── Solo se AGREGAN nuevas entradas al final
+  └── Si se necesita corregir, agregar nota aclaratoria debajo
+
+--------------------------------------------------------------------------------
+3.2 ANTI-PERDIDA DE DATOS
+--------------------------------------------------------------------------------
+
+  [E] COMMITS FRECUENTES
+  ├── Commitear cada cambio significativo (no acumular)
+  ├── Si un cambio toma mas de 15 minutos, ya deberia haber un commit
+  ├── Push al remoto al menos cada 30 minutos de trabajo activo
+  └── Al terminar sesion: commit + push OBLIGATORIO (sin excepciones)
+
+  [F] TAGS DE RESPALDO
+  ├── Crear tag ANTES de cada actualizacion grande o bugfix
+  ├── Formato: backup-pre-[tipo]-[identificador]-[YYYYMMDD-HHMM]
+  ├── Ejemplos:
+  │     backup-pre-feature-nuevo-player-20260427-1430
+  │     backup-pre-bug-BUG-20260427-001-20260427-1500
+  ├── Siempre push de tags: git push origin --tags
+  └── Para restaurar: git checkout [tag]
+
+  [G] PROTEGER BASE DE DATOS
+  ├── NUNCA ejecutar bun run db:push sin revisar schema.prisma
+  ├── NUNCA eliminar datos de produccion sin backup de la BD
+  ├── Los archivos .db en /db son SQLite local — NO commitear
+  ├── Si se cambia el schema, actualizar tambien seed-data.ts
+  └── Si se migro a PostgreSQL, mantener compatibilidad del schema
+
+  [H] PROTEGER EL INSTRUCTIVO
+  ├── Este archivo (INSTRUCTIVO_BITACORA.txt) NUNCA se elimina
+  ├── Siempre mantener copia actualizada en el repositorio
+  ├── En nueva sesion: LO PRIMERO es leer este archivo
+  └── Los registros van al final, NUNCA se eliminan
+
+
+================================================================================
+PARTE 4: BITACORA - REGISTRO DE CAMBIOS
+================================================================================
+
+IMPORTANTE: Cada nueva entrada se agrega AL FINAL.
+NUNCA se modifican ni eliminan entradas anteriores.
+Si se necesita corregir algo, agregar nota aclaratoria.
+
+--- INICIO DE BITACORA ---------------------------------------------------
+
+2026-04-27 | SESION — Creacion de XuperStream v1.0.0 (Opcion 2: Plataforma Legal Streaming)
+  Estado: COMPLETADO
+  Commit: addbd30 (ultimo)
+
+  Contexto: Sesion inicial donde se creo la plataforma completa de streaming
+    tipo Netflix/Disney+ desde cero, basada en el analisis de Xuper TV. Se
+    implemento la Opcion 2 del plan estrategico: Plataforma de Streaming
+    Legal con Next.js, autenticacion, panel de admin, planes de suscripcion
+    y reproductor de video.
+
+  Tarea 1 — Base del proyecto:
+    * Next.js 16 con App Router, TypeScript 5, Tailwind CSS 4
+    * Prisma ORM con SQLite, schema con 7 modelos
+    * Zustand para estado del cliente (SPA navigation)
+    * shadcn/ui como libreria de componentes
+    * Framer Motion para animaciones
+
+  Tarea 2 — Autenticacion:
+    * Sistema JWT custom con SHA-256 salted passwords
+    * httpOnly cookies con expiracion de 7 dias
+    * Registro, login, logout, verificacion de sesion
+    * Roles: user y admin
+    * Demo: demo@xuperstream.com/demo123
+    * Admin: admin@xuperstream.com/admin123
+
+  Tarea 3 — Base de datos (Prisma):
+    * User (id, email, name, passwordHash, avatar, role, plan)
+    * Movie (id, title, description, posterUrl, backdropUrl, videoUrl, year,
+      duration, rating, genre, category, isLive, featured, trending)
+    * Favorite (userId, movieId) con constraint unico
+    * WatchHistory (userId, movieId, progress, duration, watchedAt)
+    * Playlist (name, description, isPublic, userId)
+    * PlaylistItem (playlistId, movieId, order)
+    * Episode (seasonNumber, episodeNumber, title, description, duration,
+      videoUrl, movieId)
+
+  Tarea 4 — API Routes (14 endpoints):
+    * /api/auth/login (POST) — login con JWT
+    * /api/auth/register (POST) — registro de usuario
+    * /api/auth/logout (POST) — logout (limpiar cookie)
+    * /api/auth/me (GET) — verificar sesion actual
+    * /api/movies (GET) — listar con filtros (category, genre, featured,
+      trending, search, paginacion)
+    * /api/movies/[id] (GET) — detalle de pelicula
+    * /api/favorites (GET/POST) — listar/agregar favoritos
+    * /api/favorites/[id] (DELETE) — eliminar favorito
+    * /api/history (GET/DELETE) — historial de reproduccion
+    * /api/search (GET) — busqueda con query string
+    * /api/categories (GET) — categorias disponibles
+    * /api/seed (POST) — seed de datos demo (24 peliculas)
+    * /api/admin/movies (GET/POST/DELETE) — CRUD admin de peliculas
+    * /api/admin/stats (GET) — estadisticas del dashboard
+
+  Tarea 5 — Componentes UI (15 componentes):
+    * AuthView — login/registro con glassmorphism, tabs, social login UI
+    * Navbar — scroll transparent->solid, desktop nav, mobile hamburger,
+      user dropdown con rol admin
+    * Sidebar — slide-in mobile, navegacion completa, info de usuario
+    * HeroBanner — auto-rotacion cada 8s, 5 featured, transiciones cinematicas
+    * MovieCard — hover effects, favorite animado, live badge, rating
+    * MovieRow — horizontal scroll con flechas, responsive sizing
+    * MovieDetailModal — full-screen overlay, backdrop, contenido relacionado
+    * VideoPlayer — custom controls (play/pause, seek, volume, fullscreen,
+      skip +/-10s, buffering)
+    * SearchView — busqueda con debounce, trending suggestions, grid
+    * CategoryView — filtro por generos, grid responsive, conteo
+    * FavoritesView — lista de favoritos, empty state con CTA
+    * WatchHistoryView — continue watching, progress bars, clear history
+    * ProfileView — editar perfil, cambiar password, info de suscripcion
+    * PricingView — 3 planes (Gratis/Premium/VIP), tabla comparativa
+    * AdminView — stats dashboard, graficos, CRUD peliculas, usuarios recientes
+
+  Tarea 6 — Seed data:
+    * 24 titulos: peliculas (10), series (7), deportes (4), TV (3)
+    * Todo en espanol, orientado a audiencia latinoamericana
+    * 2 usuarios: demo (VIP) y admin (admin)
+    * 5 favoritos demo, 8 entradas de historial
+
+  Tarea 7 — Estilo y UX:
+    * Tema oscuro premium tipo Netflix (bg-black, acento red-600)
+    * Animaciones Framer Motion en toda la app
+    * Diseño responsive mobile-first
+    * Scrollbar custom, glassmorphism en auth
+    * Texto en espanol completo
+
+  Estado actual del proyecto:
+    * App funcional en desarrollo (port 3000)
+    * Base de datos SQLite con 24 peliculas seedeadas
+    * Autenticacion JWT funcional con cookies httpOnly
+    * ESLint: 0 errores
+    * Pendiente: Deploy a produccion (Vercel/Render)
+    * Pendiente: Migracion SQLite -> PostgreSQL
+    Pendiente: Integracion con proveedor de video real
+
+  Archivos principales creados (89):
+    prisma/schema.prisma
+    src/lib/db.ts, src/lib/auth.ts, src/lib/store.ts, src/lib/seed-data.ts
+    src/app/layout.tsx, src/app/page.tsx, src/app/globals.css
+    src/app/api/auth/* (4 archivos)
+    src/app/api/movies/* (2 archivos)
+    src/app/api/favorites/* (2 archivos)
+    src/app/api/history/route.ts
+    src/app/api/search/route.ts
+    src/app/api/categories/route.ts
+    src/app/api/seed/route.ts
+    src/app/api/admin/* (2 archivos)
+    src/components/streaming/* (15 archivos)
+
+--- FIN DE SESION 2026-04-27 -------------------------------------------

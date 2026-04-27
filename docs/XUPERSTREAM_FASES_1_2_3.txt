@@ -1,0 +1,235 @@
+XUPERSTREAM - FASES 1, 2 Y 3: INSTRUCTIVO PARA AGENTES AUTONOMOS
+=============================================================
+REPOSITORIO: https://github.com/yecos/Hele
+STACK: Next.js 16 + React 19 + TypeScript + Tailwind CSS 4 + Prisma + Zustand
+PROTOCOLO OBLIGATORIO: LEE_PRIMERO.txt, INSTRUCTIVO_BITACORA.txt, worklog.md
+EJECUCION: SECUENCIAL (FASE 1 -> FASE 2 -> FASE 3). NO PARALELIZAR.
+=============================================================
+
+[REGLA DE ORO TRANSVERSAL]
+Antes de iniciar cualquier fase:
+1. git pull origin main
+2. Verificar locks en worklog.md
+3. git tag -a "backup-pre-faseX-$(date +%Y%m%d%H%M)" -m "Respaldo"
+4. Leer LEE_PRIMERO.txt + INSTRUCTIVO_BITACORA.txt
+5. NUNCA tocar archivos criticos sin coordinacion
+6. SIEMPRE ejecutar: bun run lint && bun run build antes de push
+=============================================================
+
+FASE 1: FUNDAMENTOS DE PRODUCCION (2-4 SEMANAS)
+--------------------------------
+OBJETIVO: Deploy a produccion, PostgreSQL, proveedor de video real,
+CDN de imagenes, PWA basica, CI/CD.
+
+PASO 1.1: MIGRAR A POSTGRESQL
+- Crear base de datos gratuita en Neon.tech o Supabase
+- Instalar: bun add @prisma/adapter-pg
+- Configurar DATABASE_URL con conexion PostgreSQL en .env
+- Actualizar schema.prisma: provider = "postgresql"
+- Ejecutar: bun run db:push (aplicar schema a PostgreSQL)
+- Verificar: bun run seed funciona con la nueva BD
+- Validacion: Datos se persisten correctamente, queries responden rapido
+
+PASO 1.2: CONFIGURAR DEPLOY (VERCEL)
+- Conectar repositorio a Vercel via GitHub
+- Configurar variables de entorno:
+  - DATABASE_URL (PostgreSQL connection string)
+  - JWT_SECRET (clave para firmar tokens, min 32 chars)
+  - NEXT_PUBLIC_APP_URL (URL de la app)
+- Build settings: bun run build
+- Dominio personalizado (opcional)
+- Validacion: Deploy exitoso, app funcional en produccion
+
+PASO 1.3: INTEGRACION CON PROVEEDOR DE VIDEO REAL
+- Opcion A: Mux (bun add @mux/mux-node) — el mejor para streaming
+- Opcion B: Cloudflare Stream
+- Opcion C: Vimeo Embed (mas simple, menos control)
+- Crear src/lib/video-service.ts con helpers de upload/stream
+- API route para generar signed URLs de video
+- Validacion: Video reproduce sin buffering en produccion
+
+PASO 1.4: CDN DE IMAGENES
+- Opcion A: Cloudflare R2 (S3 compatible, gratuito tier)
+- Opcion B: Uploadthing (servicio de archivos)
+- Crear src/lib/upload-service.ts para subir/backdrop/poster
+- API routes: POST /api/upload, GET /api/media/[id]
+- Migrar URLs de picsum.photos a URLs propias
+- Validacion: Imagenes cargan rapido, optimizadas con sharp
+
+PASO 1.5: PWA BASICA (OFFLINE INDICATOR)
+- Crear public/manifest.json con nombre, iconos, theme
+- Crear public/sw.js service worker basico (cache-first)
+- Agregar meta tags PWA en layout.tsx
+- Validacion: App se puede "instalar" en navegador mobile
+
+PASO 1.6: CI/CD CON GITHUB ACTIONS
+- Crear .github/workflows/ci.yml
+- Triggers: push a main, pull_request
+- Jobs: bun install, bun run lint, bun run build, bun run test
+- Si pasa: auto-deploy a Vercel
+- Validacion: PR abre -> CI corre -> falla en lint/build bloquea merge
+
+PASO 1.7: RATE LIMITING EN API
+- Crear src/lib/rate-limit.ts (simple in-memory por IP)
+- Aplicar en endpoints publicos: /api/auth/login, /api/auth/register
+- Max 5 intentos por minuto para login, 10 para registro
+- Validacion: Request rapido despues de 5 intentos fallidos (429)
+
+ACTUALIZACION WORKLOG.MD (FASE 1):
+---
+Task ID: [correlativo]
+Agent: [nombre]
+Task: Fase 1 - Fundamentos de Produccion: deploy, PostgreSQL, video, CDN, PWA, CI/CD
+Work Log:
+- [pasos ejecutados]
+Stage Summary:
+- App desplegada en Vercel con PostgreSQL
+- Videos reproduciendo con proveedor real
+- Imagenes servidas desde CDN
+- PWA instalable en movil
+- CI/CD bloqueando merges con build fallido
+- Rate limiting en endpoints publicos
+---
+
+=============================================================
+FASE 2: EXPERIENCIA DE USUARIO AVANZADA (1-2 MESES)
+-----------------------------------------
+OBJETIVO: Notificaciones, perfiles multiples, listas colaborativas,
+busqueda avanzada, recomendaciones IA, descargas offline.
+
+PASO 2.1: PERFILES MULTIPLES
+- Agregar modelo Profile en Prisma (avatar, preferencias, idioma, tema)
+- Switcher de perfiles en Navbar y sidebar
+- Cada perfil tiene favoritos, historial y preferencias independientes
+- Validacion: Cambiar perfil -> favoritos/historial cambian correctamente
+
+PASO 2.2: SISTEMA DE NOTIFICACIONES
+- Crear modelo Notification en Prisma (tipo, titulo, mensaje, leida, userId, movieId)
+- Notificacion automatica: nuevo estreno, serie actualizada, friend activity
+- API routes: GET/POST /api/notifications, PUT /api/notifications/read-all
+- Badge de notificaciones no leidas en Navbar
+- Validacion: Notificacion aparece al ocurrir el evento
+
+PASO 2.3: LISTAS COLABORATIVAS
+- Crear modelo SharedList en Prisma (nombre, descripcion, miembros[], peliculas[])
+- Agregar/quitar miembros, compartir lista publica/privada
+- Vista de listas compartidas con editores
+- Validacion: Compartir lista -> otro usuario la ve en su sidebar
+
+PASO 2.4: BUSQUEDA AVANZADA CON FILTROS
+- Filtros: rango de anos, rango de ratings, categoria, genero, en vivo
+- Ordenamiento: relevancia, rating, fecha, nombre A-Z
+- Filtros por tipo de contenido (pelicula, serie, canal en vivo)
+- Paginacion infinita con scroll (lazy loading)
+- Validacion: Filtros combinados funcionan, paginacion sin lag
+
+PASO 2.5: RECOMENDACIONES CON IA
+- Integrar z-ai-web-dev-sdk en backend
+- Endpoint /api/recommendations: basado en historial del usuario
+- "Te puede gustar" en MovieDetailModal
+- Seccion "Para Ti" en pagina principal
+- Validacion: Recomendaciones relevantes basadas en gusto demo
+
+PASO 2.6: DESCARGAS OFFLINE (PLANS PAGOS)
+- Crear API route /api/download/[id] con signed URL
+- Solo disponible para planes Premium y VIP
+- Indicador de descarga en MovieCard y MovieDetailModal
+- Validacion: Archivo .mp4 se descarga en planes Premium/VIP, bloqueado en Free
+
+ACTUALIZACION WORKLOG.MD (FASE 2):
+---
+Task ID: [correlativo]
+Agent: [nombre]
+Task: Fase 2 - Experiencia Avanzada: perfiles, notificaciones, listas, IA, descargas
+Work Log:
+- [pasos ejecutados]
+Stage Summary:
+- Perfiles multiples funcionando con datos independientes
+- Notificaciones push para eventos relevantes
+- Listas colaborativas compartidas entre usuarios
+- Busqueda avanzada con 6+ filtros combinables
+- Recomendaciones IA basadas en historial
+- Descargas offline para planes pagos
+---
+
+=============================================================
+FASE 3: PLATAFORMA ENTERPRISE (3-6 MESES)
+-----------------------------------------
+OBJETIVO: Multi-idioma, analytics, API publica, integraciones,
+administracion avanzada, compliance, monetizacion.
+
+PASO 3.1: MULTI-IDIOMA (i18n)
+- Instalar: bun add next-intl
+- Crear src/lib/i18n.ts con 3 idiomas: espanol, ingles, portugues
+- ~300 claves de traduccion organizadas por seccion
+- Selector de idioma en ProfileView y Navbar
+- Deteccion automatica del idioma del navegador
+- Validacion: Cambiar idioma -> toda la UI se traduce
+
+PASO 3.2: ANALYTICS Y DASHBOARD DE NEGOCIO
+- Crear modelo AnalyticsEvent (userId, eventType, movieId, timestamp, metadata)
+- Endpoint /api/analytics para registrar eventos
+- Dashboard extendido en AdminView: vistas unicas, tiempo de sesion,
+  contenido mas visto, tasa de retencion, conversiones por plan
+- Graficos con Recharts (ya incluido en dependencias)
+- Validacion: Eventos se registran, dashboard muestra metricas reales
+
+PASO 3.3: API PUBLICA PARA DESARROLLADORES
+- Rutas /api/v1/movies, /api/v1/categories, /api/v1/search
+- Autenticacion: API Key por usuario (rate limit separado)
+- Documentacion OpenAPI (swagger.json auto-generado con zod)
+- Rate limit global: 100 req/min para API keys, 30 req/min publicos
+- Validacion: curl con API key -> 200, sin key -> 403, exceso -> 429
+
+PASO 3.4: MONETIZACION COMPLETA
+- Pasarela de pago Stripe (suscripciones mensuales)
+- Checkout flow: seleccionar plan -> Stripe Checkout -> webhook -> activar plan
+- Endpoint /api/billing/webhook (Stripe webhooks)
+- Gestion de suscripciones en ProfileView (cancelar, cambiar plan)
+- Historial de pagos en AdminView
+- Validacion: Flujo completo de compra -> plan se activa -> webhook procesa
+
+PASO 3.5: COMPLIANCE Y SEGURIDAD AVANZADA
+- GDPR: endpoint /api/privacy/export (exportar datos del usuario)
+- GDPR: endpoint /api/privacy/delete (eliminar cuenta y datos)
+- Campo-level encryption para datos sensibles
+- CSRF protection mejorada en endpoints de escritura
+- Auditoria de acciones administrativas
+- Validacion: Exporta datos -> archivo JSON completo. Elimina -> todo se borra.
+
+PASO 3.6: INTEGRACIONES CON TERCEROS
+- OAuth2 social: Google, Facebook (NextAuth providers)
+- Webhooks salientes: notificar a Slack/Discord en eventos
+- SDK publica: npm publish xuperstream-sdk para embeber el player
+- Plugin para WordPress: shortcode [xuperstream movie="id"]
+- Validacion: Login con Google funciona. Webhook recibe eventos.
+
+ACTUALIZACION WORKLOG.MD (FASE 3):
+---
+Task ID: [correlativo]
+Agent: [nombre]
+Task: Fase 3 - Plataforma Enterprise: i18n, analytics, API publica, monetizacion, compliance
+Work Log:
+- [pasos ejecutados]
+Stage Summary:
+- App disponible en 3 idiomas
+- Dashboard de negocio con metricas reales
+- API publica documentada y rate-limited
+- Monetizacion con Stripe funcionando
+- Compliance GDPR implementado
+- Integraciones con Google y terceros activas
+---
+
+=============================================================
+REGLAS DE SEGURIDAD Y PROTOCOLO (APLICAR EN TODAS LAS FASES)
+-------------------------------------------------------------
+1. NUNCA modificar sin git pull: store.ts, db.ts, auth.ts, schema.prisma, page.tsx
+2. NUNCA hardcodear JWT_SECRET, DATABASE_URL o credenciales
+3. NUNCA sobreescribir INSTRUCTIVO_BITACORA.txt o worklog.md sin respetar formato
+4. NUNCA push a main si bun run lint || bun run build falla
+5. SIEMPRE validar userId y token en reads/writes a la BD
+6. SIEMPRE registrar cada paso en worklog.md y bitacora
+7. SIEMPRE crear backup tag antes de cambios estructurales
+8. SI detectar conflictos, errores o bugs -> DETENER y reportar
+9. SIEMPRE verificar que los datos sensibles NO se exponen en el diff
+10. SIEMPRE proteger endpoints de admin con verificacion de rol
