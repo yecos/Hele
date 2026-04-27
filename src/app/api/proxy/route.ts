@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Allowed streaming domains for the proxy
 const ALLOWED_DOMAINS = [
+  // Primary working servers
+  'vidsrc.pm', 'moviesapi.to', 'vidsrc.me',
+  'vidsrcme.ru', 'vidsrc.io', 'vidsrc.dev',
+  // Legacy/backup servers
   'vidsrc.to', 'vidsrc.cc', 'vidsrc.xyz', 'vidsrc.rip',
-  'vidsrc.pm', 'vidsrc.dev', 'vidsrc.icu',
-  'vidsrc.pl', 'vidsrc.net',
+  'vidsrc.icu', 'vidsrc.pl', 'vidsrc.net', 'vidsrc.in',
   'embed.su', '2embed.cc', 'multiembed.mov',
-  'moviesapi.club', 'moviesapi.to',
+  'moviesapi.club',
   'smashystream.com', 'autoembed.cc', 'playtube.ws',
   'vsembed.ru',
 ];

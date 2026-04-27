@@ -89,10 +89,10 @@ export default function VideoPlayer() {
     };
   }, [currentView]);
 
-  // Reset iframe error when source changes
+  // Reset iframe error when source changes - try direct first
   useEffect(() => {
     setIframeError(false);
-    setUseProxy(true);
+    setUseProxy(false);
   }, [currentSource?.url]);
 
   // Load episodes for TV shows

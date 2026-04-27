@@ -36,29 +36,9 @@ export interface EpisodeInfo {
 
 const STREAM_SERVERS = [
   {
-    id: 'vidsrc-io',
-    name: 'Servidor 1 (vidsrc)',
-    // No X-Frame-Options restrictions, works in direct iframe
-    getMovieUrl: (tmdbId: number, _title?: string) =>
-      `https://vidsrc.io/embed/movie/${tmdbId}`,
-    getTVUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://vidsrc.io/embed/tv/${tmdbId}/${season}/${episode}`,
-    type: 'embed' as const,
-  },
-  {
-    id: 'moviesapi',
-    name: 'Servidor 2 (moviesapi)',
-    // No X-Frame-Options restrictions
-    getMovieUrl: (tmdbId: number, _title?: string) =>
-      `https://moviesapi.to/movie/${tmdbId}`,
-    getTVUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://moviesapi.to/tv/${tmdbId}-${season}-${episode}`,
-    type: 'embed' as const,
-  },
-  {
     id: 'vidsrc-pm',
-    name: 'Servidor 3 (vidsrc)',
-    // Has anti-iframe JS check but forwards to actual player
+    name: 'Servidor 1 (vidsrc.pm)',
+    // Works in direct iframe, no X-Frame-Options restrictions
     getMovieUrl: (tmdbId: number, _title?: string) =>
       `https://vidsrc.pm/embed/movie/${tmdbId}`,
     getTVUrl: (tmdbId: number, season: number, episode: number) =>
@@ -66,22 +46,43 @@ const STREAM_SERVERS = [
     type: 'embed' as const,
   },
   {
-    id: 'vidsrc-rip',
-    name: 'Servidor 4 (vidsrc)',
+    id: 'moviesapi',
+    name: 'Servidor 2 (moviesapi)',
+    // Clean embed, no restrictive framing headers
     getMovieUrl: (tmdbId: number, _title?: string) =>
-      `https://vidsrc.rip/embed/movie/${tmdbId}`,
+      `https://moviesapi.to/movie/${tmdbId}`,
     getTVUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://vidsrc.rip/embed/tv/${tmdbId}/${season}/${episode}`,
+      `https://moviesapi.to/tv/${tmdbId}-${season}-${episode}`,
     type: 'embed' as const,
   },
   {
-    id: 'vidsrc-in',
-    name: 'Servidor 5 (vidsrc)',
-    // Redirects to vsembed.ru
+    id: 'vidsrc-me',
+    name: 'Servidor 3 (vidsrc.me)',
+    // Redirects to vidsrcme.ru which has Access-Control-Allow-Origin: *
     getMovieUrl: (tmdbId: number, _title?: string) =>
-      `https://vidsrc.in/embed/movie/${tmdbId}`,
+      `https://vidsrc.me/embed/movie/${tmdbId}`,
     getTVUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://vidsrc.in/embed/tv/${tmdbId}/${season}/${episode}`,
+      `https://vidsrc.me/embed/tv/${tmdbId}/${season}/${episode}`,
+    type: 'embed' as const,
+  },
+  {
+    id: 'vidsrc-io',
+    name: 'Servidor 4 (vidsrc.io)',
+    // Fallback server
+    getMovieUrl: (tmdbId: number, _title?: string) =>
+      `https://vidsrc.io/embed/movie/${tmdbId}`,
+    getTVUrl: (tmdbId: number, season: number, episode: number) =>
+      `https://vidsrc.io/embed/tv/${tmdbId}/${season}/${episode}`,
+    type: 'embed' as const,
+  },
+  {
+    id: 'vidsrc-dev',
+    name: 'Servidor 5 (vidsrc.dev)',
+    // May require JS-enabled webview, works as fallback
+    getMovieUrl: (tmdbId: number, _title?: string) =>
+      `https://vidsrc.dev/embed/movie/${tmdbId}`,
+    getTVUrl: (tmdbId: number, season: number, episode: number) =>
+      `https://vidsrc.dev/embed/tv/${tmdbId}/${season}/${episode}`,
     type: 'embed' as const,
   },
 ];
@@ -179,9 +180,8 @@ export function getDefaultSource(
   };
 }
 
-// ─── Proxy URL for embed sources (to avoid CORS issues) ──────────────────
+// ─── Proxy URL for embed sources (to avoid CORS/referrer issues) ──────────
 
 export function getEmbedProxyUrl(embedUrl: string): string {
-  // Use our API route to proxy embed sources
-  return `/api/proxy-embed?url=${encodeURIComponent(embedUrl)}`;
+  return `/api/proxy?url=${encodeURIComponent(embedUrl)}`;
 }
