@@ -83,42 +83,86 @@ export default function Home() {
     checkAuth();
   }, []);
 
-  // Fetch all movies for home view
+  // Helper to parse seed data responses from local API
+  const parseMovies = (data: Record<string, unknown>): Movie[] =>
+    Array.isArray(data) ? data : (data.movies as Movie[]) || [];
+
+  // Fetch all movies for home view (TMDB first, seed data fallback)
   useEffect(() => {
     if (currentView !== 'home' || !isAuthenticated) return;
 
     const fetchMovies = async () => {
       setIsLoading(true);
       try {
-        const [featuredRes, trendingRes, liveRes, peliculasRes, seriesRes, allRes] =
+        // Try TMDB API routes first
+        const [trendingRes, popularMoviesRes, popularTVRes, topRatedRes, nowPlayingRes, liveRes] =
           await Promise.all([
-            fetch('/api/movies?featured=true&limit=10'),
-            fetch('/api/movies?trending=true&limit=15'),
+            fetch('/api/tmdb/trending?type=all&time=week'),
+            fetch('/api/tmdb/popular?type=movie&page=1'),
+            fetch('/api/tmdb/popular?type=tv&page=1'),
+            fetch('/api/tmdb/top-rated?type=movie&page=1'),
+            fetch('/api/tmdb/now-playing?page=1'),
             fetch('/api/movies?category=deportes&limit=10'),
-            fetch('/api/movies?category=peliculas&limit=15'),
-            fetch('/api/movies?category=series&limit=15'),
-            fetch('/api/movies?limit=50'),
           ]);
 
-        const [featuredData, trendingData, liveData, peliculasData, seriesData, allData] =
-          await Promise.all([
-            featuredRes.json(),
-            trendingRes.json(),
-            liveRes.json(),
-            peliculasRes.json(),
-            seriesRes.json(),
-            allRes.json(),
-          ]);
+        if (trendingRes.ok && popularMoviesRes.ok) {
+          // TMDB is configured — use real data
+          const [trendingData, popularMoviesData, popularTVData, topRatedData, nowPlayingData, liveData] =
+            await Promise.all([
+              trendingRes.json(),
+              popularMoviesRes.json(),
+              popularTVRes.json(),
+              topRatedRes.ok ? topRatedRes.json() : { results: [] },
+              nowPlayingRes.ok ? nowPlayingRes.json() : { results: [] },
+              liveRes.ok ? liveRes.json() : {},
+            ]);
 
-        const parseMovies = (data: Record<string, unknown>) =>
-          Array.isArray(data) ? data : (data.movies as Movie[]) || [];
+          const mapResults = (data: Record<string, unknown>): Movie[] =>
+            (data.results as Movie[]) || [];
 
-        setFeaturedMovies(parseMovies(featuredData));
-        setTrendingMovies(parseMovies(trendingData));
-        setLiveMovies(parseMovies(liveData));
-        setPeliculas(parseMovies(peliculasData));
-        setSeries(parseMovies(seriesData));
-        setAllMovies(parseMovies(allData));
+          // Featured: use now playing (movies in theaters)
+          setFeaturedMovies(mapResults(nowPlayingData).slice(0, 5));
+          setTrendingMovies(mapResults(trendingData).slice(0, 15));
+          setPeliculas(mapResults(popularMoviesData).slice(0, 15));
+          setSeries(mapResults(popularTVData).slice(0, 15));
+          // Live movies always come from seed data
+          setLiveMovies(parseMovies(liveData));
+          // Combine all for the bottom rows
+          const combined = [
+            ...mapResults(popularMoviesData),
+            ...mapResults(popularTVData),
+            ...mapResults(topRatedData),
+          ];
+          setAllMovies(combined.slice(0, 50));
+        } else {
+          // TMDB not configured — fallback to seed data
+          const [featuredRes, trendingRes2, liveRes2, peliculasRes, seriesRes, allRes] =
+            await Promise.all([
+              fetch('/api/movies?featured=true&limit=10'),
+              fetch('/api/movies?trending=true&limit=15'),
+              fetch('/api/movies?category=deportes&limit=10'),
+              fetch('/api/movies?category=peliculas&limit=15'),
+              fetch('/api/movies?category=series&limit=15'),
+              fetch('/api/movies?limit=50'),
+            ]);
+
+          const [featuredData, trendingData, liveData, peliculasData, seriesData, allData] =
+            await Promise.all([
+              featuredRes.json(),
+              trendingRes2.json(),
+              liveRes2.json(),
+              peliculasRes.json(),
+              seriesRes.json(),
+              allRes.json(),
+            ]);
+
+          setFeaturedMovies(parseMovies(featuredData));
+          setTrendingMovies(parseMovies(trendingData));
+          setLiveMovies(parseMovies(liveData));
+          setPeliculas(parseMovies(peliculasData));
+          setSeries(parseMovies(seriesData));
+          setAllMovies(parseMovies(allData));
+        }
       } catch (error) {
         console.error('Error fetching movies:', error);
       } finally {
@@ -129,9 +173,25 @@ export default function Home() {
     fetchMovies();
   }, [currentView, isAuthenticated]);
 
-  // Fetch related movies when a movie is selected
+  // Fetch related movies when a movie is selected (TMDB similar + seed fallback)
   const fetchRelatedMovies = async (movie: Movie) => {
     try {
+      // If movie has TMDB mediaType, try fetching similar from TMDB
+      if (movie.mediaType) {
+        const res = await fetch(
+          `/api/tmdb/${movie.id}?type=${movie.mediaType}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.similar && data.similar.length > 0) {
+            const { useAppStore } = await import('@/lib/store');
+            useAppStore.getState().setSelectedMovie(movie, data.similar.slice(0, 12));
+            return;
+          }
+        }
+      }
+
+      // Fallback: fetch by category from seed data
       const res = await fetch(
         `/api/movies?category=${encodeURIComponent(movie.category)}&limit=12`
       );

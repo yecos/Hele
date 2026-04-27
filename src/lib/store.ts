@@ -15,6 +15,8 @@ export type Movie = {
   isLive: boolean;
   featured: boolean;
   trending: boolean;
+  genreIds?: number[];
+  mediaType?: 'movie' | 'tv';
 };
 
 export type ViewType = 'home' | 'category' | 'search' | 'favorites' | 'movieDetail' | 'player' | 'auth' | 'pricing' | 'profile' | 'admin' | 'watchHistory';

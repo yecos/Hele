@@ -34,15 +34,25 @@ export default function SearchView() {
     };
   }, [searchQuery]);
 
-  // Fetch search results
+  // Fetch search results (TMDB first, seed data fallback)
   useEffect(() => {
     if (currentView !== 'search') return;
 
     const fetchResults = async () => {
       if (!debouncedQuery.trim()) {
         setResults([]);
-        // Fetch trending when search is empty
+        // Fetch trending when search is empty — try TMDB, fallback to seed
         try {
+          const tmdbRes = await fetch('/api/tmdb/trending?type=all&time=week');
+          if (tmdbRes.ok) {
+            const tmdbData = await tmdbRes.json();
+            const trendingResults = (tmdbData.results || []).slice(0, 15);
+            if (trendingResults.length > 0) {
+              setTrending(trendingResults);
+              return;
+            }
+          }
+          // Fallback to seed data trending
           const res = await fetch('/api/movies?trending=true');
           if (res.ok) {
             const data = await res.json();
@@ -56,10 +66,22 @@ export default function SearchView() {
 
       setIsLoading(true);
       try {
+        // Try TMDB search first
+        const tmdbRes = await fetch(`/api/tmdb/search?q=${encodeURIComponent(debouncedQuery)}`);
+        if (tmdbRes.ok) {
+          const tmdbData = await tmdbRes.json();
+          const tmdbResults = tmdbData.results || [];
+          if (tmdbResults.length > 0) {
+            setResults(tmdbResults);
+            return;
+          }
+        }
+        // Fallback to local search
         const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`);
         if (res.ok) {
           const data = await res.json();
-          setResults(Array.isArray(data) ? data : data.movies || []);
+          const localResults = Array.isArray(data) ? data : data.movies || (data.results || []);
+          setResults(localResults);
         }
       } catch {
         setResults([]);
