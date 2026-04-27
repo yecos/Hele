@@ -57,6 +57,12 @@ export default function Home() {
   const [liveMovies, setLiveMovies] = useState<Movie[]>([]);
   const [peliculas, setPeliculas] = useState<Movie[]>([]);
   const [series, setSeries] = useState<Movie[]>([]);
+  const [latamMovies, setLatamMovies] = useState<Movie[]>([]);
+  const [latamSeries, setLatamSeries] = useState<Movie[]>([]);
+  const [latamTopRated, setLatamTopRated] = useState<Movie[]>([]);
+  const [latamComedia, setLatamComedia] = useState<Movie[]>([]);
+  const [latamAccion, setLatamAccion] = useState<Movie[]>([]);
+  const [latamDrama, setLatamDrama] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [authChecking, setAuthChecking] = useState(true);
 
@@ -97,7 +103,11 @@ export default function Home() {
       setIsLoading(true);
       try {
         // Try TMDB API routes first
-        const [trendingRes, popularMoviesRes, popularTVRes, topRatedRes, nowPlayingRes, liveRes] =
+        const [
+          trendingRes, popularMoviesRes, popularTVRes, topRatedRes, nowPlayingRes, liveRes,
+          latamMoviesRes, latamSeriesRes, latamTopRatedRes,
+          latamComediaRes, latamAccionRes, latamDramaRes,
+        ] =
           await Promise.all([
             fetch('/api/tmdb/trending?type=all&time=week'),
             fetch('/api/tmdb/popular?type=movie&page=1'),
@@ -105,11 +115,21 @@ export default function Home() {
             fetch('/api/tmdb/top-rated?type=movie&page=1'),
             fetch('/api/tmdb/now-playing?page=1'),
             fetch('/api/movies?category=deportes&limit=10'),
+            fetch('/api/tmdb/latam?type=movie&section=popular&page=1'),
+            fetch('/api/tmdb/latam?type=tv&section=popular&page=1'),
+            fetch('/api/tmdb/latam?type=movie&section=top_rated&page=1'),
+            fetch('/api/tmdb/latam?type=all&section=popular&genre=35'),
+            fetch('/api/tmdb/latam?type=all&section=popular&genre=28'),
+            fetch('/api/tmdb/latam?type=all&section=popular&genre=18'),
           ]);
 
         if (trendingRes.ok && popularMoviesRes.ok) {
           // TMDB is configured — use real data
-          const [trendingData, popularMoviesData, popularTVData, topRatedData, nowPlayingData, liveData] =
+          const [
+            trendingData, popularMoviesData, popularTVData, topRatedData, nowPlayingData, liveData,
+            latamMoviesData, latamSeriesData, latamTopRatedData,
+            latamComediaData, latamAccionData, latamDramaData,
+          ] =
             await Promise.all([
               trendingRes.json(),
               popularMoviesRes.json(),
@@ -117,6 +137,12 @@ export default function Home() {
               topRatedRes.ok ? topRatedRes.json() : { results: [] },
               nowPlayingRes.ok ? nowPlayingRes.json() : { results: [] },
               liveRes.ok ? liveRes.json() : {},
+              latamMoviesRes.ok ? latamMoviesRes.json() : { results: [] },
+              latamSeriesRes.ok ? latamSeriesRes.json() : { results: [] },
+              latamTopRatedRes.ok ? latamTopRatedRes.json() : { results: [] },
+              latamComediaRes.ok ? latamComediaRes.json() : { results: [] },
+              latamAccionRes.ok ? latamAccionRes.json() : { results: [] },
+              latamDramaRes.ok ? latamDramaRes.json() : { results: [] },
             ]);
 
           const mapResults = (data: Record<string, unknown>): Movie[] =>
@@ -129,6 +155,13 @@ export default function Home() {
           setSeries(mapResults(popularTVData).slice(0, 15));
           // Live movies always come from seed data
           setLiveMovies(parseMovies(liveData));
+          // Latin American content
+          setLatamMovies(mapResults(latamMoviesData).slice(0, 15));
+          setLatamSeries(mapResults(latamSeriesData).slice(0, 15));
+          setLatamTopRated(mapResults(latamTopRatedData).slice(0, 15));
+          setLatamComedia(mapResults(latamComediaData).slice(0, 12));
+          setLatamAccion(mapResults(latamAccionData).slice(0, 12));
+          setLatamDrama(mapResults(latamDramaData).slice(0, 12));
           // Combine all for the bottom rows
           const combined = [
             ...mapResults(popularMoviesData),
@@ -279,7 +312,7 @@ export default function Home() {
               <div className="-mt-16 sm:-mt-24 relative z-10 pb-16">
                 {isLoading ? (
                   <div className="px-4 sm:px-8 md:px-12 lg:px-16 space-y-8">
-                    {[1, 2, 3, 4].map((i) => (
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                       <div key={i}>
                         <Skeleton className="h-7 w-48 mb-4 bg-gray-800" />
                         <div className="flex gap-3 overflow-hidden">
@@ -300,6 +333,16 @@ export default function Home() {
                       movies={trendingMovies}
                     />
                     <MovieRow
+                      title="Cine en Español"
+                      movies={latamMovies}
+                      category="peliculas"
+                    />
+                    <MovieRow
+                      title="Series Latinoamericanas"
+                      movies={latamSeries}
+                      category="series"
+                    />
+                    <MovieRow
                       title="Películas Populares"
                       movies={peliculas}
                       category="peliculas"
@@ -308,6 +351,22 @@ export default function Home() {
                       title="Series Destacadas"
                       movies={series}
                       category="series"
+                    />
+                    <MovieRow
+                      title="Comedia en Español"
+                      movies={latamComedia}
+                    />
+                    <MovieRow
+                      title="Acción en Español"
+                      movies={latamAccion}
+                    />
+                    <MovieRow
+                      title="Drama Latino"
+                      movies={latamDrama}
+                    />
+                    <MovieRow
+                      title="Mejor Valoradas en Español"
+                      movies={latamTopRated}
                     />
                     <MovieRow
                       title="En Vivo"

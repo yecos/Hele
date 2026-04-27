@@ -52,6 +52,7 @@ export default function CategoryView({ category, title, description }: CategoryV
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [tmdbAvailable, setTmdbAvailable] = useState(false);
+  const [spanishOnly, setSpanishOnly] = useState(false);
 
   const mediaType = category === 'series' ? 'tv' : category === 'peliculas' ? 'movie' : null;
 
@@ -99,6 +100,9 @@ export default function CategoryView({ category, title, description }: CategoryV
           if (selectedGenre && selectedGenre.id !== 0) {
             params.set('genre', String(selectedGenre.id));
           }
+          if (spanishOnly) {
+            params.set('original_language', 'es');
+          }
 
           const res = await fetch(`/api/tmdb/discover?${params.toString()}`);
           if (res.ok) {
@@ -125,13 +129,13 @@ export default function CategoryView({ category, title, description }: CategoryV
     };
 
     fetchMovies();
-  }, [category, currentView, selectedGenre, sortBy, page, mediaType, tmdbAvailable]);
+  }, [category, currentView, selectedGenre, sortBy, page, mediaType, tmdbAvailable, spanishOnly]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
     setMovies([]);
-  }, [selectedGenre, sortBy]);
+  }, [selectedGenre, sortBy, spanishOnly]);
 
   if (currentView !== 'category') return null;
 
@@ -199,7 +203,7 @@ export default function CategoryView({ category, title, description }: CategoryV
 
         {/* Sort Options (only for TMDB categories) */}
         {tmdbAvailable && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 flex-wrap">
             <SlidersHorizontal className="h-4 w-4 text-gray-500 flex-shrink-0" />
             <div className="flex gap-2 overflow-x-auto pb-1">
               {SORT_OPTIONS.map((option) => (
@@ -218,6 +222,20 @@ export default function CategoryView({ category, title, description }: CategoryV
                 </Button>
               ))}
             </div>
+            {(mediaType === 'movie' || mediaType === 'tv') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSpanishOnly(!spanishOnly)}
+                className={`flex-shrink-0 text-xs rounded-full border ${
+                  spanishOnly
+                    ? 'border-yellow-500/50 text-yellow-400 bg-yellow-500/10'
+                    : 'border-gray-700 text-gray-500 hover:text-white hover:border-gray-500'
+                }`}
+              >
+                {spanishOnly ? 'Espanol activado' : 'Solo en Espanol'}
+              </Button>
+            )}
           </div>
         )}
       </div>

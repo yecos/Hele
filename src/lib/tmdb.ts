@@ -274,6 +274,9 @@ export async function discoverMovies(params: {
   year?: number;
   sort_by?: string;
   page?: number;
+  language?: string;
+  region?: string;
+  original_language?: string;
 }): Promise<TMDBPaginatedResponse<TMDBMovie>> {
   const searchParams: Record<string, string> = {
     sort_by: params.sort_by || 'popularity.desc',
@@ -281,6 +284,9 @@ export async function discoverMovies(params: {
   };
   if (params.genre) searchParams.with_genres = params.genre;
   if (params.year) searchParams.primary_release_year = String(params.year);
+  if (params.language) searchParams.language = params.language;
+  if (params.region) searchParams.region = params.region;
+  if (params.original_language) searchParams.with_original_language = params.original_language;
   return tmdbFetch<TMDBPaginatedResponse<TMDBMovie>>('/discover/movie', searchParams);
 }
 
@@ -288,13 +294,106 @@ export async function discoverTV(params: {
   genre?: string;
   sort_by?: string;
   page?: number;
+  language?: string;
+  original_language?: string;
 }): Promise<TMDBPaginatedResponse<TMDBTV>> {
   const searchParams: Record<string, string> = {
     sort_by: params.sort_by || 'popularity.desc',
     page: String(params.page || 1),
   };
   if (params.genre) searchParams.with_genres = params.genre;
+  if (params.language) searchParams.language = params.language;
+  if (params.original_language) searchParams.with_original_language = params.original_language;
   return tmdbFetch<TMDBPaginatedResponse<TMDBTV>>('/discover/tv', searchParams);
+}
+
+// ─── Latin American Content ──────────────────────────────────────────────
+
+export async function getLatamMovies(
+  page = 1
+): Promise<TMDBPaginatedResponse<TMDBMovie>> {
+  return discoverMovies({
+    sort_by: 'popularity.desc',
+    page,
+    original_language: 'es',
+    region: 'CO',
+  });
+}
+
+export async function getLatamTV(
+  page = 1
+): Promise<TMDBPaginatedResponse<TMDBTV>> {
+  return discoverTV({
+    sort_by: 'popularity.desc',
+    page,
+    original_language: 'es',
+  });
+}
+
+export async function getSpanishTopRated(
+  page = 1
+): Promise<TMDBPaginatedResponse<TMDBMovie>> {
+  return discoverMovies({
+    sort_by: 'vote_average.desc',
+    page,
+    original_language: 'es',
+  });
+}
+
+export async function getSpanishTVTopRated(
+  page = 1
+): Promise<TMDBPaginatedResponse<TMDBTV>> {
+  return discoverTV({
+    sort_by: 'vote_average.desc',
+    page,
+    original_language: 'es',
+  });
+}
+
+export async function getLatinGenreMovies(
+  genre: string,
+  page = 1
+): Promise<TMDBPaginatedResponse<TMDBMovie>> {
+  return discoverMovies({
+    genre,
+    sort_by: 'popularity.desc',
+    page,
+    original_language: 'es',
+  });
+}
+
+export async function getLatinGenreTV(
+  genre: string,
+  page = 1
+): Promise<TMDBPaginatedResponse<TMDBTV>> {
+  return discoverTV({
+    genre,
+    sort_by: 'popularity.desc',
+    page,
+    original_language: 'es',
+  });
+}
+
+export async function getNowPlayingLatam(
+  page = 1
+): Promise<TMDBPaginatedResponse<TMDBMovie>> {
+  return discoverMovies({
+    sort_by: 'popularity.desc',
+    page,
+    original_language: 'es',
+    year: 2025,
+  });
+}
+
+export async function getAiringTodayLatam(
+  page = 1
+): Promise<TMDBPaginatedResponse<TMDBTV>> {
+  const searchParams: Record<string, string> = {
+    sort_by: 'popularity.desc',
+    page: String(page),
+    'with_original_language': 'es',
+  };
+  return tmdbFetch<TMDBPaginatedResponse<TMDBTV>>('/tv/airing_today', searchParams);
 }
 
 export async function getMovieVideos(

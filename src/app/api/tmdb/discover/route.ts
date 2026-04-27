@@ -22,9 +22,12 @@ export async function GET(request: Request) {
     const year = yearStr ? parseInt(yearStr) : undefined;
     const sort_by = searchParams.get('sort_by') || undefined;
     const page = parseInt(searchParams.get('page') || '1');
+    const language = searchParams.get('language') || undefined;
+    const region = searchParams.get('region') || undefined;
+    const original_language = searchParams.get('original_language') || undefined;
 
     if (type === 'tv') {
-      const data = await discoverTV({ genre, sort_by, page });
+      const data = await discoverTV({ genre, sort_by, page, language, original_language });
       const movies = data.results.map(mapTmdbToMovie);
       return NextResponse.json({
         results: movies,
@@ -33,7 +36,7 @@ export async function GET(request: Request) {
         total_results: data.total_results,
       });
     } else {
-      const data = await discoverMovies({ genre, year, sort_by, page });
+      const data = await discoverMovies({ genre, year, sort_by, page, language, region, original_language });
       const movies = data.results.map(mapTmdbToMovie);
       return NextResponse.json({
         results: movies,
