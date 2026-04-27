@@ -20,6 +20,9 @@ import {
   List,
   ChevronDown,
   MonitorPlay,
+  ExternalLink,
+  Radio,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/lib/store';
@@ -56,9 +59,12 @@ export default function VideoPlayer() {
   >([]);
   const [loadingEpisodes, setLoadingEpisodes] = useState(false);
   const [iframeError, setIframeError] = useState(false);
+  const [useProxy, setUseProxy] = useState(true);
 
   const currentSource = playerState.currentSource;
   const isEmbed = currentSource?.type === 'embed';
+  const isHLS = currentSource?.type === 'hls' || currentSource?.url?.includes('.m3u8');
+  const isLiveTV = currentSource?.type === 'live';
   const isTVShow = playerState.isTVShow;
 
   // Cleanup HLS on unmount
@@ -86,6 +92,7 @@ export default function VideoPlayer() {
   // Reset iframe error when source changes
   useEffect(() => {
     setIframeError(false);
+    setUseProxy(true);
   }, [currentSource?.url]);
 
   // Load episodes for TV shows
@@ -128,12 +135,12 @@ export default function VideoPlayer() {
     loadEpisodes();
   }, [isTVShow, selectedMovie?.id, playerState.selectedSeason]);
 
-  // Handle native video playback (HLS or direct URL)
+  // Handle HLS / direct video / live TV playback
   useEffect(() => {
-    if (isEmbed || !currentSource) return;
+    if (isEmbed) return;
 
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !currentSource) return;
 
     // Destroy existing HLS instance
     if (hlsRef.current) {
@@ -143,12 +150,14 @@ export default function VideoPlayer() {
 
     const url = currentSource.url;
 
-    if (url.endsWith('.m3u8') || url.includes('.m3u8')) {
-      // HLS stream
+    if (isHLS || url.includes('.m3u8')) {
+      // HLS stream (live TV or movies)
       if (Hls.isSupported()) {
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: true,
+          liveSyncDurationCount: 3,
+          liveMaxLatencyDurationCount: 6,
         });
         hls.loadSource(url);
         hls.attachMedia(video);
@@ -158,11 +167,16 @@ export default function VideoPlayer() {
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
             console.error('HLS fatal error:', data);
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+              // Try to recover from network errors
+              setTimeout(() => hls.startLoad(), 3000);
+            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+              hls.recoverMediaError();
+            }
           }
         });
         hlsRef.current = hls;
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS support (Safari)
         video.src = url;
         video.play().catch(() => {});
       }
@@ -171,10 +185,10 @@ export default function VideoPlayer() {
       video.src = url;
       video.play().catch(() => {});
     }
-  }, [currentSource, isEmbed]);
+  }, [currentSource, isEmbed, isHLS]);
 
   const togglePlay = useCallback(() => {
-    if (isEmbed) return; // Can't control embed playback
+    if (isEmbed || isLiveTV) return;
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
@@ -184,7 +198,7 @@ export default function VideoPlayer() {
       video.pause();
       setIsPlaying(false);
     }
-  }, [isEmbed]);
+  }, [isEmbed, isLiveTV]);
 
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current;
@@ -201,13 +215,14 @@ export default function VideoPlayer() {
 
   const handleSeek = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (isLiveTV) return; // No seeking on live TV
       const video = videoRef.current;
       if (!video) return;
       const time = parseFloat(e.target.value);
       video.currentTime = time;
       setCurrentTime(time);
     },
-    []
+    [isLiveTV]
   );
 
   const handleVolumeChange = useCallback(
@@ -256,9 +271,9 @@ export default function VideoPlayer() {
     setShowControls(true);
     if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
     hideControlsTimer.current = setTimeout(() => {
-      if (isPlaying || isEmbed) setShowControls(false);
+      if (isPlaying || isEmbed || isLiveTV) setShowControls(false);
     }, 3000);
-  }, [isPlaying, isEmbed]);
+  }, [isPlaying, isEmbed, isLiveTV]);
 
   const handleMouseMove = useCallback(() => {
     resetHideControls();
@@ -284,16 +299,18 @@ export default function VideoPlayer() {
   }, [goBack, setPlayerState]);
 
   const handleSkipBack = useCallback(() => {
+    if (isLiveTV) return;
     const video = videoRef.current;
     if (!video) return;
     video.currentTime = Math.max(0, video.currentTime - 10);
-  }, []);
+  }, [isLiveTV]);
 
   const handleSkipForward = useCallback(() => {
+    if (isLiveTV) return;
     const video = videoRef.current;
     if (!video) return;
     video.currentTime = Math.min(video.duration, video.currentTime + 10);
-  }, []);
+  }, [isLiveTV]);
 
   const handleSourceSwitch = useCallback(
     (sourceIndex: number, sourceItemIndex: number) => {
@@ -317,12 +334,33 @@ export default function VideoPlayer() {
   const handleSeasonChange = useCallback(
     (seasonNumber: number) => {
       setPlayerState({ selectedSeason: seasonNumber });
-      // Load episodes for new season and auto-play episode 1
       switchEpisode(seasonNumber, 1);
       setShowEpisodeList(false);
     },
     [setPlayerState, switchEpisode]
   );
+
+  // Open embed URL in new tab as fallback
+  const openInNewTab = useCallback(() => {
+    if (currentSource?.url) {
+      window.open(currentSource.url, '_blank');
+    }
+  }, [currentSource?.url]);
+
+  // Retry without proxy
+  const retryWithoutProxy = useCallback(() => {
+    setUseProxy(false);
+    setIframeError(false);
+  }, []);
+
+  // Get iframe src
+  const getIframeSrc = useCallback(() => {
+    if (!currentSource?.url) return '';
+    if (useProxy) {
+      return `/api/proxy?url=${encodeURIComponent(currentSource.url)}`;
+    }
+    return currentSource.url;
+  }, [currentSource?.url, useProxy]);
 
   if (currentView !== 'player') return null;
 
@@ -335,11 +373,11 @@ export default function VideoPlayer() {
       className="fixed inset-0 z-[200] bg-black flex items-center justify-center"
       onMouseMove={handleMouseMove}
     >
-      {/* Embed Player (iframe) */}
+      {/* Embed Player (iframe with proxy) */}
       {isEmbed && currentSource && !iframeError ? (
         <iframe
           ref={iframeRef}
-          src={currentSource.url}
+          src={getIframeSrc()}
           className="w-full h-full border-0"
           allowFullScreen
           allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
@@ -347,24 +385,10 @@ export default function VideoPlayer() {
           onError={() => setIframeError(true)}
           title={`Reproduciendo ${selectedMovie?.title || 'video'}`}
         />
-      ) : !isEmbed && currentSource && currentSource.type === 'hls' ? (
-        /* HLS Video Element */
+      ) : !isEmbed && currentSource && (isHLS || !isEmbed) ? (
+        /* HLS / Direct Video Element (also for live TV) */
         <video
           ref={videoRef}
-          className="w-full h-full object-contain"
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onWaiting={() => setIsBuffering(true)}
-          onCanPlay={() => setIsBuffering(false)}
-          playsInline
-        />
-      ) : !isEmbed && currentSource ? (
-        /* Direct Video Element */
-        <video
-          ref={videoRef}
-          src={currentSource.url}
           className="w-full h-full object-contain"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
@@ -375,9 +399,9 @@ export default function VideoPlayer() {
           playsInline
         />
       ) : (
-        /* No Source Available */
+        /* No Source Available / Embed Error */
         <div className="flex flex-col items-center justify-center gap-4 text-center px-8">
-          <div className="relative w-64 h-40 rounded-lg overflow-hidden bg-gray-900">
+          <div className="relative w-72 h-44 rounded-lg overflow-hidden bg-gray-900">
             {selectedMovie && (
               <img
                 src={selectedMovie.backdropUrl}
@@ -393,11 +417,39 @@ export default function VideoPlayer() {
                 </p>
                 <p className="text-gray-600 text-sm mt-1">
                   {iframeError
-                    ? 'Intenta cambiar de servidor'
+                    ? 'Intenta con otro servidor o abre en nueva pestaña'
                     : 'Selecciona un servidor para reproducir'}
                 </p>
+                {iframeError && (
+                  <div className="flex gap-2 mt-4 justify-center">
+                    <Button
+                      onClick={retryWithoutProxy}
+                      className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-3 py-1.5"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                      Reintentar
+                    </Button>
+                    <Button
+                      onClick={openInNewTab}
+                      className="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1.5"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                      Abrir en nueva pestaña
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live TV Badge */}
+      {isLiveTV && (
+        <div className="absolute top-16 left-4 z-20">
+          <div className="flex items-center gap-2 bg-red-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full">
+            <Radio className="h-3.5 w-3.5 text-white animate-pulse" />
+            <span className="text-white text-xs font-bold uppercase tracking-wider">En Vivo</span>
           </div>
         </div>
       )}
@@ -439,7 +491,10 @@ export default function VideoPlayer() {
               <h2 className="text-sm sm:text-base font-medium text-white truncate max-w-[40%]">
                 {selectedMovie?.title || 'Reproductor'}
               </h2>
-              {isTVShow && (
+              {isLiveTV && (
+                <span className="text-xs text-red-400 font-semibold animate-pulse">LIVE</span>
+              )}
+              {isTVShow && !isLiveTV && (
                 <span className="text-xs text-gray-400">
                   T{playerState.selectedSeason}E{playerState.selectedEpisode}
                 </span>
@@ -468,7 +523,6 @@ export default function VideoPlayer() {
             className="absolute top-0 right-0 bottom-0 z-40 w-80 sm:w-96 bg-black/95 backdrop-blur-md border-l border-gray-800 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Episode list header */}
             <div className="sticky top-0 z-10 bg-black/95 backdrop-blur-md border-b border-gray-800 p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-white font-semibold text-sm flex items-center gap-2">
@@ -484,7 +538,6 @@ export default function VideoPlayer() {
                 </Button>
               </div>
 
-              {/* Season Selector */}
               {playerState.tvDetails && playerState.tvDetails.numberOfSeasons > 1 && (
                 <div className="relative">
                   <select
@@ -506,7 +559,6 @@ export default function VideoPlayer() {
               )}
             </div>
 
-            {/* Episode List */}
             <div className="p-2">
               {loadingEpisodes ? (
                 <div className="flex items-center justify-center py-8">
@@ -580,8 +632,8 @@ export default function VideoPlayer() {
             className="absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Progress bar (only for native video, not embeds) */}
-            {!isEmbed && (
+            {/* Progress bar (only for non-embed, non-live) */}
+            {!isEmbed && !isLiveTV && (
               <div className="mb-3 sm:mb-4 group/seek">
                 <input
                   type="range"
@@ -612,18 +664,12 @@ export default function VideoPlayer() {
             {/* Controls Row */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1 sm:gap-2">
-                {/* Skip Back (only for native video) */}
-                {!isEmbed && (
-                  <Button
-                    variant="ghost"
-                    onClick={handleSkipBack}
-                    className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full"
-                  >
+                {!isEmbed && !isLiveTV && (
+                  <Button variant="ghost" onClick={handleSkipBack} className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full">
                     <SkipBack className="h-4 w-4" />
                   </Button>
                 )}
 
-                {/* Play/Pause (only functional for native video) */}
                 <Button
                   variant="ghost"
                   onClick={togglePlay}
@@ -636,25 +682,16 @@ export default function VideoPlayer() {
                   )}
                 </Button>
 
-                {/* Skip Forward (only for native video) */}
-                {!isEmbed && (
-                  <Button
-                    variant="ghost"
-                    onClick={handleSkipForward}
-                    className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full"
-                  >
+                {!isEmbed && !isLiveTV && (
+                  <Button variant="ghost" onClick={handleSkipForward} className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full">
                     <SkipForward className="h-4 w-4" />
                   </Button>
                 )}
 
-                {/* Volume (only for native video) */}
+                {/* Volume (for native video, not embeds) */}
                 {!isEmbed && (
                   <div className="flex items-center gap-1 ml-1 sm:ml-2">
-                    <Button
-                      variant="ghost"
-                      onClick={toggleMute}
-                      className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full"
-                    >
+                    <Button variant="ghost" onClick={toggleMute} className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full">
                       {isMuted || volume === 0 ? (
                         <VolumeX className="h-4 w-4" />
                       ) : (
@@ -693,64 +730,72 @@ export default function VideoPlayer() {
 
               {/* Right Side Controls */}
               <div className="flex items-center gap-1 sm:gap-2">
-                {/* Source Menu */}
-                <div className="relative">
+                {/* Open in new tab (for embeds) */}
+                {isEmbed && (
                   <Button
                     variant="ghost"
-                    onClick={() => {
-                      setShowSourceMenu(!showSourceMenu);
-                      setShowEpisodeList(false);
-                    }}
+                    onClick={openInNewTab}
                     className="text-white hover:bg-white/20 h-9 w-9 p-0 rounded-full"
+                    title="Abrir en nueva pestaña"
                   >
-                    <Server className="h-4 w-4" />
+                    <ExternalLink className="h-4 w-4" />
                   </Button>
+                )}
 
-                  {/* Source Dropdown */}
-                  <AnimatePresence>
-                    {showSourceMenu && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute bottom-12 right-0 z-50 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-lg shadow-xl min-w-[200px] overflow-hidden"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="p-3 border-b border-gray-800">
-                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                            Servidores
-                          </p>
-                        </div>
-                        {playerState.sources.map((group, groupIdx) =>
-                          group.sources.map((source, sourceIdx) => (
-                            <button
-                              key={`${groupIdx}-${sourceIdx}`}
-                              onClick={() => handleSourceSwitch(groupIdx, sourceIdx)}
-                              className={`w-full text-left px-4 py-3 text-sm transition-colors ${
-                                currentSource?.id === source.id
-                                  ? 'bg-red-600/20 text-red-400 border-l-2 border-red-600'
-                                  : 'text-gray-300 hover:bg-gray-800 border-l-2 border-transparent'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <Server className="h-3.5 w-3.5" />
-                                <span className="font-medium">{source.name}</span>
-                              </div>
-                              <p className="text-xs text-gray-500 mt-0.5 ml-5">
-                                {source.quality || 'Auto'}
-                              </p>
-                            </button>
-                          ))
-                        )}
-                        {playerState.sources.length === 0 && (
-                          <div className="px-4 py-3 text-sm text-gray-500">
-                            No hay servidores disponibles
+                {/* Source Menu */}
+                {playerState.sources.length > 0 && (
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setShowSourceMenu(!showSourceMenu);
+                        setShowEpisodeList(false);
+                      }}
+                      className="text-white hover:bg-white/20 h-9 w-9 p-0 rounded-full"
+                    >
+                      <Server className="h-4 w-4" />
+                    </Button>
+
+                    <AnimatePresence>
+                      {showSourceMenu && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute bottom-12 right-0 z-50 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-lg shadow-xl min-w-[200px] overflow-hidden"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="p-3 border-b border-gray-800">
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                              Servidores
+                            </p>
                           </div>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                          {playerState.sources.map((group, groupIdx) =>
+                            group.sources.map((source, sourceIdx) => (
+                              <button
+                                key={`${groupIdx}-${sourceIdx}`}
+                                onClick={() => handleSourceSwitch(groupIdx, sourceIdx)}
+                                className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                                  currentSource?.id === source.id
+                                    ? 'bg-red-600/20 text-red-400 border-l-2 border-red-600'
+                                    : 'text-gray-300 hover:bg-gray-800 border-l-2 border-transparent'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Server className="h-3.5 w-3.5" />
+                                  <span className="font-medium">{source.name}</span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-0.5 ml-5">
+                                  {source.quality || 'Auto'}
+                                </p>
+                              </button>
+                            ))
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
 
                 {/* Fullscreen */}
                 <Button

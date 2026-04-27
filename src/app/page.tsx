@@ -17,6 +17,7 @@ import PricingView from '@/components/streaming/PricingView';
 import ProfileView from '@/components/streaming/ProfileView';
 import AdminView from '@/components/streaming/AdminView';
 import WatchHistoryView from '@/components/streaming/WatchHistoryView';
+import LiveTVView from '@/components/streaming/LiveTVView';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2 } from 'lucide-react';
 
@@ -330,8 +331,11 @@ export default function Home() {
             </div>
           )}
 
-          {/* Category View */}
-          {currentView === 'category' && CATEGORY_META[selectedCategory] && (
+          {/* Category View (but redirect 'tv' to LiveTVView) */}
+          {currentView === 'category' && selectedCategory === 'tv' && (
+            <LiveTVView key="live-tv" />
+          )}
+          {currentView === 'category' && selectedCategory !== 'tv' && CATEGORY_META[selectedCategory] && (
             <CategoryView
               key={`category-${selectedCategory}`}
               category={selectedCategory}
