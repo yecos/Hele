@@ -16,6 +16,7 @@ import {
   Settings,
   Shield,
   LogOut,
+  Server,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -159,6 +160,22 @@ export default function Sidebar() {
 
               {/* Additional Links */}
               <div className="mt-2 pt-2 border-t border-gray-800/50 space-y-0.5">
+                <button
+                  onClick={() => handleViewClick('iptv')}
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    currentView === 'iptv'
+                      ? 'bg-red-600/15 text-red-500'
+                      : 'text-gray-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Server
+                    className={`h-[18px] w-[18px] ${
+                      currentView === 'iptv' ? 'text-red-500' : 'text-gray-500'
+                    }`}
+                  />
+                  <span>IPTV / Xuper</span>
+                </button>
+
                 <button
                   onClick={() => handleViewClick('watchHistory')}
                   className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${

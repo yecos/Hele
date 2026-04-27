@@ -18,6 +18,7 @@ import ProfileView from '@/components/streaming/ProfileView';
 import AdminView from '@/components/streaming/AdminView';
 import WatchHistoryView from '@/components/streaming/WatchHistoryView';
 import LiveTVView from '@/components/streaming/LiveTVView';
+import IPTVView from '@/components/streaming/IPTVView';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2 } from 'lucide-react';
 
@@ -361,6 +362,9 @@ export default function Home() {
 
           {/* Watch History View */}
           {currentView === 'watchHistory' && <WatchHistoryView key="watchHistory" />}
+
+          {/* IPTV / Xtream Codes View */}
+          {currentView === 'iptv' && <IPTVView key="iptv" />}
         </AnimatePresence>
       </main>
 
