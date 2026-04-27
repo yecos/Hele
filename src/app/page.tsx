@@ -329,8 +329,13 @@ export default function Home() {
                 ) : (
                   <>
                     <MovieRow
-                      title="Tendencias Ahora"
+                      title="Tendencias en Colombia"
                       movies={trendingMovies}
+                    />
+                    <MovieRow
+                      title="Estrenos en Cartelera"
+                      movies={featuredMovies.slice(0, 15)}
+                      category="peliculas"
                     />
                     <MovieRow
                       title="Cine en Español"
@@ -338,14 +343,14 @@ export default function Home() {
                       category="peliculas"
                     />
                     <MovieRow
+                      title="Películas Populares en Colombia"
+                      movies={peliculas}
+                      category="peliculas"
+                    />
+                    <MovieRow
                       title="Series Latinoamericanas"
                       movies={latamSeries}
                       category="series"
-                    />
-                    <MovieRow
-                      title="Películas Populares"
-                      movies={peliculas}
-                      category="peliculas"
                     />
                     <MovieRow
                       title="Series Destacadas"
@@ -378,7 +383,7 @@ export default function Home() {
                       movies={allMovies.filter((m) => m.rating >= 8.5)}
                     />
                     <MovieRow
-                      title="Nuevos Estrenos"
+                      title="Nuevos Estrenos 2025"
                       movies={allMovies.filter((m) => m.year === 2025)}
                     />
                     <MovieRow

@@ -38,17 +38,17 @@ const STREAM_SERVERS = [
   {
     id: 'vidsrc-pm',
     name: 'Servidor 1 (vidsrc.pm)',
-    // Works in direct iframe, no X-Frame-Options restrictions
+    // Works in direct iframe, supports ?lang=es for Spanish audio/subs
     getMovieUrl: (tmdbId: number, _title?: string) =>
-      `https://vidsrc.pm/embed/movie/${tmdbId}`,
+      `https://vidsrc.pm/embed/movie/${tmdbId}?lang=es`,
     getTVUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://vidsrc.pm/embed/tv/${tmdbId}/${season}/${episode}`,
+      `https://vidsrc.pm/embed/tv/${tmdbId}/${season}/${episode}?lang=es`,
     type: 'embed' as const,
   },
   {
     id: 'moviesapi',
     name: 'Servidor 2 (moviesapi)',
-    // Clean embed, no restrictive framing headers
+    // Clean embed, may have subtitle selector inside
     getMovieUrl: (tmdbId: number, _title?: string) =>
       `https://moviesapi.to/movie/${tmdbId}`,
     getTVUrl: (tmdbId: number, season: number, episode: number) =>
@@ -58,11 +58,11 @@ const STREAM_SERVERS = [
   {
     id: 'vidsrc-me',
     name: 'Servidor 3 (vidsrc.me)',
-    // Redirects to vidsrcme.ru which has Access-Control-Allow-Origin: *
+    // Redirects to vidsrcme.ru, supports ?lang=es (server-side)
     getMovieUrl: (tmdbId: number, _title?: string) =>
-      `https://vidsrc.me/embed/movie/${tmdbId}`,
+      `https://vidsrc.me/embed/movie/${tmdbId}?lang=es`,
     getTVUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://vidsrc.me/embed/tv/${tmdbId}/${season}/${episode}`,
+      `https://vidsrc.me/embed/tv/${tmdbId}/${season}/${episode}?lang=es`,
     type: 'embed' as const,
   },
   {
@@ -70,19 +70,19 @@ const STREAM_SERVERS = [
     name: 'Servidor 4 (vidsrc.io)',
     // Fallback server
     getMovieUrl: (tmdbId: number, _title?: string) =>
-      `https://vidsrc.io/embed/movie/${tmdbId}`,
+      `https://vidsrc.io/embed/movie/${tmdbId}?lang=es`,
     getTVUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://vidsrc.io/embed/tv/${tmdbId}/${season}/${episode}`,
+      `https://vidsrc.io/embed/tv/${tmdbId}/${season}/${episode}?lang=es`,
     type: 'embed' as const,
   },
   {
     id: 'vidsrc-dev',
     name: 'Servidor 5 (vidsrc.dev)',
-    // May require JS-enabled webview, works as fallback
+    // Fallback, may require JS webview
     getMovieUrl: (tmdbId: number, _title?: string) =>
-      `https://vidsrc.dev/embed/movie/${tmdbId}`,
+      `https://vidsrc.dev/embed/movie/${tmdbId}?lang=es`,
     getTVUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://vidsrc.dev/embed/tv/${tmdbId}/${season}/${episode}`,
+      `https://vidsrc.dev/embed/tv/${tmdbId}/${season}/${episode}?lang=es`,
     type: 'embed' as const,
   },
 ];

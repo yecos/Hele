@@ -181,7 +181,7 @@ export async function getTrending(
 ): Promise<TMDBPaginatedResponse<TMDBMediaItem>> {
   return tmdbFetch<TMDBPaginatedResponse<TMDBMediaItem>>(
     `/trending/${mediaType}/${timeWindow}`,
-    { page: String(page) }
+    { page: String(page), region: 'CO' }
   );
 }
 
@@ -190,7 +190,7 @@ export async function getPopularMovies(
 ): Promise<TMDBPaginatedResponse<TMDBMovie>> {
   return tmdbFetch<TMDBPaginatedResponse<TMDBMovie>>(
     '/movie/popular',
-    { page: String(page) }
+    { page: String(page), region: 'CO' }
   );
 }
 
@@ -226,7 +226,7 @@ export async function getNowPlayingMovies(
 ): Promise<TMDBPaginatedResponse<TMDBMovie>> {
   return tmdbFetch<TMDBPaginatedResponse<TMDBMovie>>(
     '/movie/now_playing',
-    { page: String(page) }
+    { page: String(page), region: 'CO' }
   );
 }
 
@@ -408,7 +408,7 @@ export async function getSimilarMovies(
 ): Promise<TMDBPaginatedResponse<TMDBMovie>> {
   return tmdbFetch<TMDBPaginatedResponse<TMDBMovie>>(
     `/movie/${movieId}/similar`,
-    { page: String(page) }
+    { page: String(page), region: 'CO' }
   );
 }
 
