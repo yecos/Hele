@@ -28,12 +28,32 @@ import {
   Music,
   Unplug,
   Zap,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/lib/store';
 import { useChromecast } from '@/hooks/use-chromecast';
 import AudioManager from './AudioManager';
+
+// ─── Types for resolved sources ───────────────────────────────────────────
+
+interface ResolvedNativeSource {
+  url: string;
+  type: 'hls' | 'direct';
+  quality: string;
+  server: string;
+  label: string;
+}
+
+interface FallbackSource {
+  url: string;
+  type: 'embed';
+  server: string;
+  label: string;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────
 
 export default function VideoPlayer() {
   const {
@@ -73,6 +93,13 @@ export default function VideoPlayer() {
   const [extracting, setExtracting] = useState(false);
   const [extractedSources, setExtractedSources] = useState<{ url: string; type: 'hls' | 'direct'; quality: string; label: string }[]>([]);
 
+  // ─── NEW: Native-first resolution state ────────────────────────────────
+  const [isResolving, setIsResolving] = useState(false);
+  const [resolvedNativeSources, setResolvedNativeSources] = useState<ResolvedNativeSource[]>([]);
+  const [fallbackSources, setFallbackSources] = useState<FallbackSource[]>([]);
+  const [autoResolved, setAutoResolved] = useState(false);
+  const [hlsError, setHlsError] = useState(false);
+
   // Chromecast
   const { available: castAvailable, connected: castConnected, deviceName: castDeviceName, casting: isCasting, castMedia, castEmbed, stopCasting } = useChromecast();
 
@@ -82,7 +109,7 @@ export default function VideoPlayer() {
   const isLiveTV = currentSource?.type === 'live';
   const isTVShow = playerState.isTVShow;
 
-  // Cleanup HLS on unmount
+  // ─── Cleanup HLS on unmount ────────────────────────────────────────────
   useEffect(() => {
     return () => {
       if (hlsRef.current) {
@@ -91,6 +118,78 @@ export default function VideoPlayer() {
       }
     };
   }, []);
+
+  // ─── Reset auto-resolve flag when content changes ──────────────────────
+  useEffect(() => {
+    setAutoResolved(false);
+    setResolvedNativeSources([]);
+    setFallbackSources([]);
+    setHlsError(false);
+  }, [selectedMovie?.id, playerState.selectedSeason, playerState.selectedEpisode]);
+
+  // ─── Auto-Resolve Effect: Call /api/sources/resolve when player opens ──
+  useEffect(() => {
+    if (currentView !== 'player') return;
+    if (!selectedMovie) return;
+
+    const tmdbId = parseInt(selectedMovie.id);
+    if (isNaN(tmdbId)) return;
+    if (autoResolved) return; // Already resolved for this content
+
+    const mediaType = playerState.isTVShow ? 'tv' : 'movie';
+    const seasonParam = playerState.isTVShow
+      ? `&season=${playerState.selectedSeason}&episode=${playerState.selectedEpisode}`
+      : '';
+    const resolveUrl = `/api/sources/resolve?type=${mediaType}&id=${tmdbId}${seasonParam}`;
+
+    setIsResolving(true);
+    fetch(resolveUrl)
+      .then((res) => res.json())
+      .then((data) => {
+        const sources: ResolvedNativeSource[] = data.sources || [];
+        const fallbacks: FallbackSource[] = data.fallback || [];
+        setResolvedNativeSources(sources);
+        setFallbackSources(fallbacks);
+        setAutoResolved(true);
+
+        // Auto-play first native source
+        if (sources.length > 0) {
+          const first = sources[0];
+          const nativeSource = {
+            id: `native-${first.server}`,
+            name: first.label,
+            type: first.type as 'hls' | 'direct',
+            mode: 'native' as const,
+            url: first.url,
+            quality: first.quality,
+            server: first.server,
+            isNative: true,
+          };
+          switchSource(nativeSource);
+        } else if (fallbacks.length > 0) {
+          // No native sources, use first fallback embed
+          const fb = fallbacks[0];
+          const embedSource = {
+            id: `fallback-${fb.server}`,
+            name: fb.label,
+            type: 'embed' as const,
+            mode: 'embed' as const,
+            url: fb.url,
+            quality: 'Auto',
+            server: fb.server,
+            isNative: false,
+          };
+          switchSource(embedSource);
+        }
+        // If neither, the store's existing source will remain active
+      })
+      .catch((err) => {
+        console.error('Resolve error:', err);
+        // Fall back to whatever source was set by store
+        setAutoResolved(true);
+      })
+      .finally(() => setIsResolving(false));
+  }, [currentView, selectedMovie?.id, playerState.selectedSeason, playerState.selectedEpisode, playerState.isTVShow, autoResolved, switchSource]);
 
   // ─── Pop-up & Ad Blocker ───────────────────────────────────────────────
   // Block unwanted pop-ups, new tabs, and redirects while player is open
@@ -161,9 +260,10 @@ export default function VideoPlayer() {
   useEffect(() => {
     setIframeError(false);
     setUseProxy(false);
+    setHlsError(false);
   }, [currentSource?.url]);
 
-  // Load episodes for TV shows
+  // ─── Load episodes for TV shows ────────────────────────────────────────
   useEffect(() => {
     if (!isTVShow || !selectedMovie) return;
 
@@ -201,9 +301,47 @@ export default function VideoPlayer() {
     };
 
     loadEpisodes();
-  }, [isTVShow, selectedMovie?.id, playerState.selectedSeason]);
+  }, [isTVShow, selectedMovie?.id, playerState.selectedSeason, setPlayerState]);
 
-  // Handle HLS / direct video / live TV playback
+  // ─── "Try Next Source" Logic ───────────────────────────────────────────
+  const tryNextSource = useCallback(() => {
+    if (!currentSource) return;
+
+    const currentIdx = resolvedNativeSources.findIndex(s => s.url === currentSource.url);
+    if (currentIdx >= 0 && currentIdx < resolvedNativeSources.length - 1) {
+      // Try next native source
+      const next = resolvedNativeSources[currentIdx + 1];
+      const nextSource = {
+        id: `native-${next.server}`,
+        name: next.label,
+        type: next.type,
+        mode: 'native' as const,
+        url: next.url,
+        quality: next.quality,
+        server: next.server,
+        isNative: true,
+      };
+      switchSource(nextSource);
+      setHlsError(false);
+    } else if (fallbackSources.length > 0) {
+      // Fall back to iframe
+      const fb = fallbackSources[0];
+      const embedSource = {
+        id: `fallback-${fb.server}`,
+        name: fb.label,
+        type: 'embed' as const,
+        mode: 'embed' as const,
+        url: fb.url,
+        quality: 'Auto',
+        server: fb.server,
+        isNative: false,
+      };
+      switchSource(embedSource);
+      setHlsError(false);
+    }
+  }, [resolvedNativeSources, currentSource, fallbackSources, switchSource]);
+
+  // ─── Handle HLS / direct video / live TV playback ──────────────────────
   useEffect(() => {
     if (isEmbed) return;
 
@@ -219,7 +357,7 @@ export default function VideoPlayer() {
     const url = currentSource.url;
 
     if (isHLS || url.includes('.m3u8')) {
-      // HLS stream (live TV or movies)
+      // HLS stream (native resolved or live TV)
       if (Hls.isSupported()) {
         const hls = new Hls({
           enableWorker: true,
@@ -236,16 +374,22 @@ export default function VideoPlayer() {
           if (data.fatal) {
             console.error('HLS fatal error:', data);
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-              // Try to recover from network errors
+              // Try to recover from network errors once
               setTimeout(() => hls.startLoad(), 3000);
             } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
               hls.recoverMediaError();
+            } else {
+              // Other fatal errors: trigger fallback
+              setHlsError(true);
             }
           }
         });
         hlsRef.current = hls;
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
+        video.addEventListener('error', () => {
+          setHlsError(true);
+        }, { once: true });
         video.play().catch(() => {});
       }
     } else {
@@ -254,6 +398,13 @@ export default function VideoPlayer() {
       video.play().catch(() => {});
     }
   }, [currentSource, isEmbed, isHLS]);
+
+  // ─── Auto-fallback when HLS error occurs ───────────────────────────────
+  useEffect(() => {
+    if (hlsError) {
+      tryNextSource();
+    }
+  }, [hlsError, tryNextSource]);
 
   const togglePlay = useCallback(() => {
     if (isEmbed || isLiveTV) return;
@@ -474,7 +625,7 @@ export default function VideoPlayer() {
   }, [currentSource?.url, isEmbed]);
 
   // Play an extracted source directly in our <video> element
-  const handlePlayExtracted = useCallback((source: { url: string; type: 'hls' | 'direct' }) => {
+  const handlePlayExtracted = useCallback((source: { url: string; type: 'hls' | 'direct'; quality: string; label: string }) => {
     if (!currentSource) return;
     // Switch to a direct source type to bypass the iframe
     const directSource = {
@@ -488,7 +639,48 @@ export default function VideoPlayer() {
     setExtractedSources([]);
   }, [currentSource, switchSource]);
 
+  // ─── Switch to a specific resolved native source ───────────────────────
+  const handleResolvedNativeSwitch = useCallback((source: ResolvedNativeSource) => {
+    const nativeSource = {
+      id: `native-${source.server}`,
+      name: source.label,
+      type: source.type,
+      mode: 'native' as const,
+      url: source.url,
+      quality: source.quality,
+      server: source.server,
+      isNative: true,
+    };
+    switchSource(nativeSource);
+    setShowSourceMenu(false);
+    setHlsError(false);
+  }, [switchSource]);
+
+  // ─── Switch to a specific fallback embed source ────────────────────────
+  const handleFallbackSwitch = useCallback((source: FallbackSource) => {
+    const embedSource = {
+      id: `fallback-${source.server}`,
+      name: source.label,
+      type: 'embed' as const,
+      mode: 'embed' as const,
+      url: source.url,
+      quality: 'Auto',
+      server: source.server,
+      isNative: false,
+    };
+    switchSource(embedSource);
+    setShowSourceMenu(false);
+    setHlsError(false);
+  }, [switchSource]);
+
   if (currentView !== 'player') return null;
+
+  // ─── Determine if source menu should show ──────────────────────────────
+  const hasSourceMenuItems = (
+    playerState.sources.length > 0 ||
+    resolvedNativeSources.length > 0 ||
+    fallbackSources.length > 0
+  );
 
   return (
     <motion.div
@@ -499,8 +691,42 @@ export default function VideoPlayer() {
       className="fixed inset-0 z-[200] bg-black flex items-center justify-center"
       onMouseMove={handleMouseMove}
     >
-      {/* Embed Player (iframe with proxy) */}
-      {isEmbed && currentSource && !iframeError ? (
+      {/* ─── Resolving Loading Overlay ────────────────────────────────── */}
+      {isResolving && (
+        <div className="absolute inset-0 z-[15] bg-black flex flex-col items-center justify-center">
+          {selectedMovie?.backdropUrl && (
+            <div className="absolute inset-0">
+              <img
+                src={selectedMovie.backdropUrl}
+                alt=""
+                className="w-full h-full object-cover opacity-20 blur-sm"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/80" />
+            </div>
+          )}
+          <div className="relative z-10 flex flex-col items-center">
+            <div className="w-16 h-16 border-4 border-white/20 border-t-red-600 rounded-full animate-spin mb-4" />
+            <p className="text-white text-sm font-medium">Obteniendo fuente directa...</p>
+            <p className="text-gray-500 text-xs mt-1">Buscando la mejor calidad</p>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Native Video Player (HLS / Direct) ──────────────────────── */}
+      {!isEmbed && currentSource && !isResolving && !hlsError ? (
+        <video
+          ref={videoRef}
+          className="w-full h-full object-contain"
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onWaiting={() => setIsBuffering(true)}
+          onCanPlay={() => setIsBuffering(false)}
+          playsInline
+        />
+      ) : isEmbed && currentSource && !iframeError ? (
+        /* ─── Embed Player (iframe with proxy) — FALLBACK ONLY ────────── */
         <>
           <iframe
             ref={iframeRef}
@@ -533,21 +759,8 @@ export default function VideoPlayer() {
             </>
           )}
         </>
-      ) : !isEmbed && currentSource && (isHLS || !isEmbed) ? (
-        /* HLS / Direct Video Element (also for live TV) */
-        <video
-          ref={videoRef}
-          className="w-full h-full object-contain"
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onWaiting={() => setIsBuffering(true)}
-          onCanPlay={() => setIsBuffering(false)}
-          playsInline
-        />
-      ) : (
-        /* No Source Available / Embed Error */
+      ) : !isResolving ? (
+        /* ─── No Source Available / Embed Error / HLS Error ──────────── */
         <div className="flex flex-col items-center justify-center gap-4 text-center px-8">
           <div className="relative w-72 h-44 rounded-lg overflow-hidden bg-gray-900">
             {selectedMovie && (
@@ -559,47 +772,64 @@ export default function VideoPlayer() {
             )}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <MonitorPlay className="h-12 w-12 text-gray-500 mx-auto mb-3" />
+                {hlsError ? (
+                  <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-3" />
+                ) : (
+                  <MonitorPlay className="h-12 w-12 text-gray-500 mx-auto mb-3" />
+                )}
                 <p className="text-gray-400 text-lg font-medium">
-                  {iframeError ? 'Servidor no disponible' : 'Sin fuente de video'}
+                  {iframeError ? 'Servidor no disponible' : hlsError ? 'Error de reproduccion nativa' : 'Sin fuente de video'}
                 </p>
                 <p className="text-gray-600 text-sm mt-1">
                   {iframeError
                     ? 'Intenta con otro servidor o abre en nueva pestaña'
-                    : 'Selecciona un servidor para reproducir'}
+                    : hlsError
+                      ? 'No se pudo cargar la fuente nativa'
+                      : 'Selecciona un servidor para reproducir'}
                 </p>
-                {iframeError && (
-                  <div className="flex gap-2 mt-4 justify-center">
+                <div className="flex gap-2 mt-4 justify-center flex-wrap">
+                  {hlsError && fallbackSources.length > 0 && (
                     <Button
-                      onClick={retryWithProxy}
-                      className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-3 py-1.5"
+                      onClick={() => handleFallbackSwitch(fallbackSources[0])}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white text-sm px-3 py-1.5"
                     >
-                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                      Reintentar con proxy
+                      <Unplug className="h-3.5 w-3.5 mr-1" />
+                      Usar Iframe
                     </Button>
-                    <Button
-                      onClick={retryWithoutProxy}
-                      className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-3 py-1.5"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                      Reintentar directo
-                    </Button>
-                    <Button
-                      onClick={openInNewTab}
-                      className="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1.5"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                      Abrir externo
-                    </Button>
-                  </div>
-                )}
+                  )}
+                  {iframeError && (
+                    <>
+                      <Button
+                        onClick={retryWithProxy}
+                        className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-3 py-1.5"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                        Reintentar con proxy
+                      </Button>
+                      <Button
+                        onClick={retryWithoutProxy}
+                        className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-3 py-1.5"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                        Reintentar directo
+                      </Button>
+                      <Button
+                        onClick={openInNewTab}
+                        className="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1.5"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                        Abrir externo
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Chromecast Connected Badge */}
+      {/* ─── Chromecast Connected Badge ───────────────────────────────── */}
       {castConnected && castDeviceName && (
         <div className="absolute top-16 right-4 z-20">
           <div className="flex items-center gap-2 bg-blue-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full">
@@ -609,7 +839,7 @@ export default function VideoPlayer() {
         </div>
       )}
 
-      {/* Live TV Badge */}
+      {/* ─── Live TV Badge ────────────────────────────────────────────── */}
       {isLiveTV && (
         <div className="absolute top-16 left-4 z-20">
           <div className="flex items-center gap-2 bg-red-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full">
@@ -619,7 +849,7 @@ export default function VideoPlayer() {
         </div>
       )}
 
-      {/* Buffering Indicator */}
+      {/* ─── Buffering Indicator ──────────────────────────────────────── */}
       <AnimatePresence>
         {isBuffering && (
           <motion.div
@@ -633,7 +863,7 @@ export default function VideoPlayer() {
         )}
       </AnimatePresence>
 
-      {/* Persistent Back Button - ALWAYS visible */}
+      {/* ─── Persistent Back Button — ALWAYS visible ─────────────────── */}
       <div className="absolute top-3 left-3 z-[50]">
         <Button
           variant="ghost"
@@ -645,7 +875,7 @@ export default function VideoPlayer() {
         </Button>
       </div>
 
-      {/* Top Bar (with title, shows/hides with controls) */}
+      {/* ─── Top Bar (with title, Nativo/Iframe badge, shows/hides) ──── */}
       <AnimatePresence>
         {showControls && (
           <motion.div
@@ -659,15 +889,26 @@ export default function VideoPlayer() {
             {/* Spacer for the persistent back button */}
             <div className="w-10" />
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-1 justify-center min-w-0">
               <h2 className="text-sm sm:text-base font-medium text-white truncate max-w-[50%]">
                 {selectedMovie?.title || 'Reproductor'}
               </h2>
+              {/* Nativo / Iframe badge */}
+              {!isEmbed && currentSource?.isNative && (
+                <Badge className="bg-green-600/80 text-white text-[10px] px-2 py-0.5 border-0 shrink-0">
+                  Nativo
+                </Badge>
+              )}
+              {isEmbed && (
+                <Badge className="bg-yellow-600/80 text-white text-[10px] px-2 py-0.5 border-0 shrink-0">
+                  Iframe
+                </Badge>
+              )}
               {isLiveTV && (
                 <span className="text-xs text-red-400 font-semibold animate-pulse">LIVE</span>
               )}
               {isTVShow && !isLiveTV && (
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-400 shrink-0">
                   T{playerState.selectedSeason}E{playerState.selectedEpisode}
                 </span>
               )}
@@ -676,7 +917,7 @@ export default function VideoPlayer() {
             <Button
               variant="ghost"
               onClick={handleClose}
-              className="text-white hover:bg-white/30 bg-black/50 backdrop-blur-md rounded-full h-10 w-10 p-0 shadow-lg shadow-black/50 border border-white/10"
+              className="text-white hover:bg-white/30 bg-black/50 backdrop-blur-md rounded-full h-10 w-10 p-0 shadow-lg shadow-black/50 border border-white/10 shrink-0"
               title="Cerrar"
             >
               <X className="h-5 w-5" />
@@ -685,7 +926,7 @@ export default function VideoPlayer() {
         )}
       </AnimatePresence>
 
-      {/* Episode List Panel (for TV shows) */}
+      {/* ─── Episode List Panel (for TV shows) ───────────────────────── */}
       <AnimatePresence>
         {showEpisodeList && isTVShow && (
           <motion.div
@@ -794,7 +1035,7 @@ export default function VideoPlayer() {
         )}
       </AnimatePresence>
 
-      {/* Bottom Controls */}
+      {/* ─── Bottom Controls ──────────────────────────────────────────── */}
       <AnimatePresence>
         {showControls && (
           <motion.div
@@ -951,7 +1192,7 @@ export default function VideoPlayer() {
                 )}
 
                 {/* Source Menu */}
-                {playerState.sources.length > 0 && (
+                {hasSourceMenuItems && (
                   <div className="relative">
                     <Button
                       variant="ghost"
@@ -971,7 +1212,7 @@ export default function VideoPlayer() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 10 }}
-                          className="absolute bottom-12 right-0 z-50 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-lg shadow-xl min-w-[240px] max-h-[70vh] overflow-y-auto"
+                          className="absolute bottom-12 right-0 z-50 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-lg shadow-xl min-w-[260px] max-h-[70vh] overflow-y-auto"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="p-3 border-b border-gray-800">
@@ -979,29 +1220,125 @@ export default function VideoPlayer() {
                               Servidores
                             </p>
                           </div>
-                          {playerState.sources.map((group, groupIdx) =>
-                            group.sources.map((source, sourceIdx) => (
-                              <button
-                                key={`${groupIdx}-${sourceIdx}`}
-                                onClick={() => handleSourceSwitch(groupIdx, sourceIdx)}
-                                className={`w-full text-left px-4 py-3 text-sm transition-colors ${
-                                  currentSource?.id === source.id
-                                    ? 'bg-red-600/20 text-red-400 border-l-2 border-red-600'
-                                    : 'text-gray-300 hover:bg-gray-800 border-l-2 border-transparent'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Server className="h-3.5 w-3.5" />
-                                  <span className="font-medium">{source.name}</span>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-0.5 ml-5">
-                                  {source.quality || 'Auto'}
+
+                          {/* ── Resolved Native Sources ── */}
+                          {resolvedNativeSources.length > 0 && (
+                            <>
+                              <div className="px-4 py-2 bg-gray-800/50">
+                                <p className="text-[10px] font-semibold text-green-400 uppercase tracking-wider flex items-center gap-1">
+                                  <Zap className="h-3 w-3" />
+                                  Fuentes Nativas
                                 </p>
-                              </button>
-                            ))
+                              </div>
+                              {resolvedNativeSources.map((source, idx) => {
+                                const isActive = currentSource?.url === source.url;
+                                return (
+                                  <button
+                                    key={`native-${source.server}-${idx}`}
+                                    onClick={() => handleResolvedNativeSwitch(source)}
+                                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                                      isActive
+                                        ? 'bg-green-600/15 text-green-400 border-l-2 border-green-600'
+                                        : 'text-gray-300 hover:bg-gray-800 border-l-2 border-transparent'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Zap className="h-3.5 w-3.5 text-green-500" />
+                                      <span className="font-medium">{source.label}</span>
+                                      <Badge className="text-[9px] bg-green-500/20 text-green-400 border-0 ml-auto shrink-0">
+                                        Nativo
+                                      </Badge>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-0.5 ml-5">
+                                      {source.quality} {source.server && `· ${source.server}`}
+                                    </p>
+                                  </button>
+                                );
+                              })}
+                            </>
                           )}
 
-                          {/* Extract Direct Source (for embed servers) */}
+                          {/* ── Fallback Embed Sources ── */}
+                          {fallbackSources.length > 0 && (
+                            <>
+                              <div className="px-4 py-2 bg-gray-800/50 border-t border-gray-700/50">
+                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                                  <Unplug className="h-3 w-3" />
+                                  Fallback Iframe
+                                </p>
+                              </div>
+                              {fallbackSources.map((source, idx) => {
+                                const isActive = currentSource?.url === source.url;
+                                return (
+                                  <button
+                                    key={`fallback-${source.server}-${idx}`}
+                                    onClick={() => handleFallbackSwitch(source)}
+                                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                                      isActive
+                                        ? 'bg-yellow-600/15 text-yellow-400 border-l-2 border-yellow-600'
+                                        : 'text-gray-300 hover:bg-gray-800 border-l-2 border-transparent'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Unplug className="h-3.5 w-3.5 text-gray-500" />
+                                      <span className="font-medium">{source.label}</span>
+                                      <Badge className="text-[9px] bg-gray-500/20 text-gray-400 border-0 ml-auto shrink-0">
+                                        Iframe
+                                      </Badge>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-0.5 ml-5">
+                                      {source.server}
+                                    </p>
+                                  </button>
+                                );
+                              })}
+                            </>
+                          )}
+
+                          {/* ── Legacy Store Sources (if no resolved sources) ── */}
+                          {resolvedNativeSources.length === 0 && fallbackSources.length === 0 && playerState.sources.length > 0 && (
+                            <>
+                              {playerState.sources.map((group, groupIdx) =>
+                                group.sources.map((source, sourceIdx) => (
+                                  <button
+                                    key={`${groupIdx}-${sourceIdx}`}
+                                    onClick={() => handleSourceSwitch(groupIdx, sourceIdx)}
+                                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                                      currentSource?.id === source.id
+                                        ? 'bg-red-600/20 text-red-400 border-l-2 border-red-600'
+                                        : 'text-gray-300 hover:bg-gray-800 border-l-2 border-transparent'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Server className="h-3.5 w-3.5" />
+                                      <span className="font-medium">{source.name}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-0.5 ml-5">
+                                      {source.quality || 'Auto'}
+                                    </p>
+                                  </button>
+                                ))
+                              )}
+                            </>
+                          )}
+
+                          {/* ── Try Next Source Button (on HLS error) ── */}
+                          {hlsError && !isEmbed && (
+                            <button
+                              onClick={tryNextSource}
+                              className="w-full text-left px-4 py-3 text-sm text-yellow-400 hover:bg-yellow-500/10 transition-colors border-t border-gray-700/50 border-l-2 border-transparent"
+                            >
+                              <div className="flex items-center gap-2">
+                                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                <span className="font-medium">Probar siguiente servidor</span>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-0.5 ml-5">
+                                Intentar con otra fuente disponible
+                              </p>
+                            </button>
+                          )}
+
+                          {/* ── Extract Direct Source (for embed servers) ── */}
                           {isEmbed && (
                             <>
                               <div className="border-t border-gray-800 p-3">
@@ -1031,7 +1368,7 @@ export default function VideoPlayer() {
                             </>
                           )}
 
-                          {/* Extracted Sources (if any) */}
+                          {/* ── Extracted Sources (if any) ── */}
                           {extractedSources.length > 0 && (
                             <>
                               <div className="border-t border-gray-800 p-3">
@@ -1083,7 +1420,8 @@ export default function VideoPlayer() {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Audio Manager Panel */}
+
+      {/* ─── Audio Manager Panel ──────────────────────────────────────── */}
       <AnimatePresence>
         {showAudioManager && (
           <AudioManager
