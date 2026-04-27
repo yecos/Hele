@@ -4,12 +4,24 @@ import { verifyPassword, generateToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const body = await request.json();
+    const { email, password } = body;
 
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email y contraseña son obligatorios' },
         { status: 400 }
+      );
+    }
+
+    // Check database connection
+    try {
+      await db.$connect();
+    } catch (dbErr) {
+      console.error('Database connection failed:', dbErr);
+      return NextResponse.json(
+        { error: 'Error de conexión a la base de datos' },
+        { status: 503 }
       );
     }
 
@@ -50,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set('auth-token', token, {
       httpOnly: true,
-      secure: false,
+      secure: true,
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60,
       path: '/',
@@ -60,7 +72,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
-      { error: 'Error al iniciar sesión' },
+      { error: 'Error al iniciar sesión', details: String(error) },
       { status: 500 }
     );
   }
