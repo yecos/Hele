@@ -1,0 +1,92 @@
+[
+  {
+    "url": "http://tv-handles.atwebpages.com",
+    "name": "Understanding Xuper TV's Server Architecture & CDN Routing",
+    "snippet": "Unlike legacy IPTV infrastructure, Xuper TV uses distributed server clusters, intelligent CDN routing, adaptive segmenting, and dynamic bandwidth matching. You ... Missing: works API technology",
+    "host_name": "tv-handles.atwebpages.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.itu.int/epublications/publication/itu-t-h-705-1-2023-09-layered-specification-for-the-iptv-service-platform-functional-architecture-based-on-open-service-capabilities",
+    "name": "Layered specification for the IPTV service platform functional  - ITU",
+    "snippet": "The text provides a comprehensive framework for the functional architecture of an Internet Protocol Television (IPTV) service platform.",
+    "host_name": "www.itu.int",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.slideshare.net/slideshow/master-thesis-on-a-detail-performance-evaluation-of-internet-protocol-television-iptv-triple-play-services-over-ip-based-networks/75840965",
+    "name": "How to use IPTV | PDF - Slideshare",
+    "snippet": "The document further explores the architecture of IPTV systems, their components, and the implications of transmission methodologies, emphasizing the challenges ...",
+    "host_name": "www.slideshare.net",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=j7ABr4DVki0",
+    "name": "IPTV and Architecture - YouTube",
+    "snippet": "What is IPTV? IPTV refers to Internet-based Protocol Television where internet is used to deliver TV programs & Videos that are either live ... Missing: xuper API backend",
+    "host_name": "www.youtube.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://patents.google.com/patent/WO2012073027A2/en",
+    "name": "WO2012073027A2 - Content Provision - Google Patents",
+    "snippet": "The present invention relates to a user interface for a content provision system, which comprises: means for generating graphical ...",
+    "host_name": "patents.google.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.epsio.io",
+    "name": "Epsio - Streaming Transformations, Made Easy",
+    "snippet": "Epsio is a SQL-first streaming engine. It does not require any custom code, only the creation of an Epsio view with a simple SQL command.",
+    "host_name": "www.epsio.io",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.ikon-interactive.com",
+    "name": "IKON Interactive - MultiScreen TV / OTT Solutions",
+    "snippet": "The first adaptive bitrate streaming based Over-The-Top TV service deployed in Turkey! Massively scaled live streaming of Turkish Super League matches.",
+    "host_name": "www.ikon-interactive.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.freelancer.com/projects/app-development/development-advanced-optimized-iptv",
+    "name": "Development of an Advanced and Optimized IPTV Player for Android.",
+    "snippet": "The Core functions come first: smooth Live TV streaming, a reliable VOD catalog with thumbnails and descriptions, and an Electronic Program Guide with ...",
+    "host_name": "www.freelancer.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/posts/apollogrouptv_top-6-iptv-services-for-seamless-streaming-activity-7283961383027716096-l7CS",
+    "name": "Top 6 IPTV Services for Seamless Streaming in 2025 As  - LinkedIn",
+    "snippet": "Here, we've curated the top 7 IPTV services for 2025, starting with one of the most reliable options on the market.",
+    "host_name": "www.linkedin.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/posts/streamvx_streamvx-at-nab-2026-activity-7439355389600706560-rxaG",
+    "name": "Streamvx at NAB 2026 - LinkedIn",
+    "snippet": "Just modeled the 3-year TCO for a 100-channel operator migrating from a legacy appliance to cloud vs on-prem. The gap is significant. StreamVX ...",
+    "host_name": "www.linkedin.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

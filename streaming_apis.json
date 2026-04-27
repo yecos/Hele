@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.reddit.com/r/learnprogramming/comments/1esy7m7/is_there_an_apisome_kind_of_site_where_i_can",
+    "name": "Is there an api/some kind of site where I can access videos",
+    "snippet": "I was thinking of making something similar to what Aniwatch or Animedrive did, they just access the given movie from another site, and stream it on theirs.",
+    "host_name": "www.reddit.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://getstream.io/blog/best-live-streaming",
+    "name": "The 7 Best Live Streaming SDKs & APIs",
+    "snippet": "Apr 23, 2024 — Learn more about live-streaming components , including what to look for when selecting one, top solutions, and how to leverage them.",
+    "host_name": "getstream.io",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@rohanbimalraj/finding-alternatives-to-tmdb-for-movie-apps-a-developers-guide-8ddccc5d21f7",
+    "name": "Finding Alternatives to TMDB for Movie Apps",
+    "snippet": "In this article, I'll share my experience and the alternative APIs I discovered that allow you to build a fully functional movie app.",
+    "host_name": "medium.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/topics/movies-streaming?l=typescript&o=desc&s=forks",
+    "name": "movies-streaming",
+    "snippet": "StreamParadise is a modern movie website using TMDB , lightning-fast streaming platform that brings you unlimited access to movies, TV shows, and anime. Built ...\nStreamParadise is a modern movie website using TMDB, lightning-fast streaming platform that brings you unlimited access to movies, TV shows, and anime. Built ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/28430924/apis-to-get-movies-music-tv-shows-and-books-details",
+    "name": "APIs to get Movies, Music, TV Shows and Books details",
+    "snippet": "OMDb API - Movies and TV. Free, no registration required , and easy to get started with data all retrieved from IMDB. It returns Title, Poster ...",
+    "host_name": "stackoverflow.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://api.watchmode.com",
+    "name": "Watchmode - Streaming Availability Metadata API for Netflix",
+    "snippet": "Watchmode is the ultimate streaming availability metadata API . Netflix, Hulu, HBO Max, Prime Video, Disney+ & over 100 more streaming services all indexed.\nWatchmode is the ultimate streaming availability metadata API. Netflix, Hulu, HBO Max, Prime Video, Disney+ & over 100 more streaming services all indexed.",
+    "host_name": "api.watchmode.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://zylalabs.com/en/blog/top-movie-and-series-database-api-alternatives-in-2025",
+    "name": "Top Movie and Series Database API alternatives in 2025",
+    "snippet": "Discover the top Movie Series Database API alternatives in 2025. Explore unique features and find the perfect API to enhance your film and TV projects ...",
+    "host_name": "zylalabs.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=z7eUM9vE6NM",
+    "name": "Top 5 Websites to Watch Movies & Shows for Free",
+    "snippet": "Tired of paying for streaming services? In this video, we're revealing the best free and legal websites to watch movies and TV shows online.",
+    "host_name": "www.youtube.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mux.com/live",
+    "name": "Live streaming API | Live streaming SDK",
+    "snippet": "Create live video streams and make them play beautifully at scale on any device with our live streaming API and SDKs, powered by data-driven encoding ...",
+    "host_name": "www.mux.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/PiracyArchive/comments/1r81f6x/best_streaming_website",
+    "name": "Best streaming website. : r/PiracyArchive - Reddit",
+    "snippet": "It's not a problem to use the TMDB API , in opposite it's something cool because not every website will manualy search for the whole thing again ... Is there an api/some kind of site where I can access videos/movies ... Is there a better alternative than \"themoviedb.org\"? - Reddit More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

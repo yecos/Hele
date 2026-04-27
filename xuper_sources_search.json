@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://developer.themoviedb.org/reference/movie-videos",
+    "name": "Videos - TMDB APIs",
+    "snippet": "Use the world's best entertainment API to get information about what movies and TV shows are streaming where, as well as all the metadata you need to build ... Missing: xuper tv openload streamango sources",
+    "host_name": "developer.themoviedb.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developer.themoviedb.org/reference/movie-watch-providers",
+    "name": "Watch Providers - TMDB APIs",
+    "snippet": "Get the list of streaming providers we have for a movie. Recent Requests. Log in to see full request history. Time, Status, User Agent ... Missing: xuper tv openload embed video sources",
+    "host_name": "developer.themoviedb.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/StremioAddons/comments/1iiyse1/tmdb_addon_offline",
+    "name": "TMDB Addon Offline : r/StremioAddons - Reddit",
+    "snippet": "Over the past few days, the TMDB Addon has undergone several updates, but I'm facing issues keeping it hosted on BeamUp. Missing: xuper openload",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/Inside4ndroid/TMDB-Embed-API",
+    "name": "Inside4ndroid/TMDB-Embed-API - GitHub",
+    "snippet": "TMDB Embed API. Modern, configurable streaming metadata + source aggregation API with a secure admin panel and multi-key TMDB rotation. Missing: xuper tv openload",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.superembed.stream",
+    "name": "SuperEmbed | Free Movie Streaming API - stream movies by IMDB ID",
+    "snippet": "SuperEmbed is the best free movie streaming API for your website. Auto embed thousands of movies and tv shows available on multiple servers.",
+    "host_name": "www.superembed.stream",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developer.themoviedb.org/docs/getting-started",
+    "name": "Getting Started - TMDB API key",
+    "snippet": "This is where you will find the definitive list of currently available methods for our movie, tv, actor and image API. If you need help or support, please ... Missing: xuper openload streamango video sources",
+    "host_name": "developer.themoviedb.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=TkZouQoOmEA",
+    "name": "Movie Database Now Playing API Tutorial | Movies Playing in Theaters",
+    "snippet": "... video and want to support me? https ... Easy way to get data from Movies & TV Shows with IMDB API and RapidAPI. Missing: xuper openload streamango embed sources",
+    "host_name": "www.youtube.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.quora.com/How-can-I-build-a-movie-streaming-website-as-good-as-Netflix-What-tools-do-I-need",
+    "name": "How to build a movie streaming website as good as Netflix  - Quora",
+    "snippet": "What is a good live video streaming service I can easily embed in my website? 4,519 Views · What do you need to build a streaming movies website ...",
+    "host_name": "www.quora.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=LgVk7rks-40",
+    "name": "Building a Free Movie Streaming Site with NextJS 15, and TMDb API",
+    "snippet": "Learn how to build a fully functional movie streaming website from scratch using Next.js, TMDb API for movie data, and VidSrc for streaming. Missing: xuper openload sources",
+    "host_name": "www.youtube.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRCK3VaABs6SlEL-nBXtbvDPhMkgbKpHKENGK_-1kOtkpUT2KSznjlTgCbmT2lcur9LinZRM7c-wDp-/pub?gid=878215409&amp%3Bsingle=true&amp%3Boutput=csv",
+    "name": "Sample IPTV Data - Google Drive",
+    "snippet": "http://stitcher.pluto.tv/stitch/hls/ ...",
+    "host_name": "docs.google.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

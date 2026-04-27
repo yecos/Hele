@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://vidsrc.to",
+    "name": "VidSrc - Next generation Video Streaming API",
+    "snippet": "Feb 1, 2025 — We offer free streaming links for movies and episodes that can be effortlessly integrated into your website through our embed links, API. Read more",
+    "host_name": "vidsrc.to",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/cool-dev-guy/vidsrc-api",
+    "name": "vidsrc-api",
+    "snippet": "This api is made for educational purpouse only. This is just a simple scrapper built arround `https://github.com/Ciarands` vidsrc downloader. Read more",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/DataHoarder/comments/qgne3i/how_to_download_videos_from_vidsrcme",
+    "name": "How to download videos from vidsrc.me? : r/DataHoarder",
+    "snippet": "Go to the video in vidsrc you want. Select Click the DownThemAll! Extension Button and select oneclick! There will be a link that has https://fvs.io in it. Read more",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://vidsrc.domains",
+    "name": "VidSrc - Video Streaming API",
+    "snippet": "Vidsrc offers streaming links for movies and episodes that can be effortlessly integrated into your website through embed links, API, or WordPress plugins. Read more",
+    "host_name": "vidsrc.domains",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.wjunction.com/threads/vidsrc-me-movie-streaming-api-discussion-thread.261605",
+    "name": "Vidsrc.me Movie Streaming API - Discussion Thread",
+    "snippet": "Aug 1, 2023 — Hey guys, Many of you may already have heard about Vidsrc API , as our service has been online for over 5 years now.",
+    "host_name": "www.wjunction.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/debrone/i-built-a-movie-streaming-site-in-48-hours-heres-how-it-went-42g8",
+    "name": "I Built a Movie Streaming Site in 48 Hours - Here's How It",
+    "snippet": "Dec 20, 2024 — I set myself a 48-hour challenge to build a movie streaming site. No backend, no databases—just React for the frontend, and some APIs to pull in ... Read more",
+    "host_name": "dev.to",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://greasyfork.org/en/scripts/485149-imdb-video-player-vidsrc-me-play-streaming-videos-from-imdb/code",
+    "name": "IMDB Video Player - vidsrc.me (play streaming videos from",
+    "snippet": "Play streaming videos from IMDb. Add video player from vidsrc.to directly into IMDB movie/serie webpage. Read more",
+    "host_name": "greasyfork.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.blackhatworld.com/seo/movie-streaming-site-with-api-question.1516650",
+    "name": "Movie Streaming Site with API question",
+    "snippet": "Jul 26, 2023 — I have found a new API without ads called https:// vidsrc . pro / . Vidsrc .me and 2embed API have lot of ads on player. This vidsrc . pro looks ... Read more",
+    "host_name": "www.blackhatworld.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.scribd.com/document/953692645/GitHub-Habitual69-VidSrc-Streamer-VidSrc-Streamer-is-a-Python-Application-Designed-to-Simplify-the-Process-of-Fetching-Direct-Stream-URLs-for-Movie",
+    "name": "VidSrc Streamer: Python IPTV Tool | PDF",
+    "snippet": "VidSrc Streamer is a Python application that fetches direct stream URLs for movies from the VidSrc website using IMDb IDs and generates IPTV playlists ... Read more",
+    "host_name": "www.scribd.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/vjdev1212/embedin",
+    "name": "vjdev1212/embedin: A frontend for VidSrc and similar",
+    "snippet": "EmbedIn . A simple and sleek frontend for VidSrc and similar services that provide embedded movies and TV shows. Easily search, browse, ... Read more",
+    "host_name": "github.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://github.com/Inside4ndroid/M3U-XCAPI-EPG-IPTV-Stremio",
+    "name": "Inside4ndroid/M3U-XCAPI-EPG-IPTV-Stremio: A feature  - GitHub",
+    "snippet": "A feature‑rich, configurable Stremio addon that ingests IPTV M3U playlists and optional EPG (XMLTV) guide data – with built‑in Xtream Codes ...",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/Youri666/Xtream-m3u_plus-IPTV-Player",
+    "name": "GitHub - Youri666/Xtream-m3u_plus-IPTV-Player",
+    "snippet": "This IPTV player, built with Python and PyQt5, supports M3U_plus playlists and Xtream Codes API, allowing users to manage and play IPTV channels, movies, and ... Missing: xuper endpoint",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/selfhosted/comments/1pte9th/dispatcharr_release_v0151_iptv_stream_epg",
+    "name": "Dispatcharr Release v0.15.1 - IPTV Stream & EPG Management",
+    "snippet": "Quick refresher for those who haven't seen our previous post: Dispatcharr is an open-source middleware for managing IPTV streams and EPG data.",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/iptv-org/iptv/issues/21025",
+    "name": "Add: Super TV · Issue #21025 · iptv-org/iptv - GitHub",
+    "snippet": "Stream ID (required). SuperTV.ro. Stream URL (required). https://live.supertv.ro/live/supertv/playlist.m3u8. Quality. 1080i. Label. Not 24/7 ... Missing: endpoint | Show results with: endpoint",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.lemmymorgan.com/load-m3u-url-manually",
+    "name": "Load .M3U IPTV URL Manually on Supported Devices like Android",
+    "snippet": "My tutorial will enable you to load a .M3U Playlist URL into any supported/compatible device such as a smart TV, PC, Mac, Android(phone or box), iPhone and ...",
+    "host_name": "www.lemmymorgan.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.instagram.com/reel/DRzEn6KkSjp",
+    "name": "I just built one of the cleanest and smoothest IPTV Player apps out",
+    "snippet": "And yes… the full source code is available. If you want it, just drop ... ✓ Live TV Streaming (IPTV) ✓ OTT Platforms (Movies, Series ...",
+    "host_name": "www.instagram.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/selfhosted/comments/1nx5l9h/dispatcharr_your_ultimate_iptv_stream_management",
+    "name": "Dispatcharr — Your Ultimate IPTV & Stream Management Companion",
+    "snippet": "Dispatcharr is a middleware service that helps you take the chaos out of managing playlists and TV guide data. It doesn't provide any content ...",
+    "host_name": "www.reddit.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.zeevee.com",
+    "name": "ZeeVee: AV over IP Made Easy | AVoIP Products",
+    "snippet": "Our AV over IP products offer flexibility (1 Gb or 10 Gb), varied input/output types and scalability – from a handful of endpoints to thousands. Our only ...",
+    "host_name": "www.zeevee.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://en.wikipedia.org/wiki/Internet_Protocol_television",
+    "name": "Internet Protocol television - Wikipedia",
+    "snippet": "Internet Protocol television (IPTV), also called TV over broadband, is the service delivery of television over Internet Protocol (IP) networks.",
+    "host_name": "en.wikipedia.org",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://docs.dask.org",
+    "name": "Dask — Dask documentation",
+    "snippet": "Dask is a Python library for parallel and distributed computing. Dask is: Dask dashboard animation showing the task stream, memory stored on each worker.",
+    "host_name": "docs.dask.org",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

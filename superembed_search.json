@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.superembed.stream",
+    "name": "SuperEmbed | Free Movie Streaming API - stream movies by IMDB ID",
+    "snippet": "SuperEmbed is the best free movie streaming API for your website. Auto embed thousands of movies and tv shows available on multiple servers. Missing: documentation | Show results with: documentation",
+    "host_name": "www.superembed.stream",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.superembed.stream/movie-streaming-api.html",
+    "name": "Movie Streaming API - Get movie and TV show stream in JSON",
+    "snippet": "Get movie and episode streams in JSON format. With our SuperEmbed API you can get streaming links in JSON format and store them to your database.",
+    "host_name": "www.superembed.stream",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://superembed.docs.apiary.io/reference/0/get-movie-or-episode-by-id/get-sources-by-imdb-or-tmdb-id",
+    "name": "SuperEmbed Movie & TV Show Streaming API - Apiary",
+    "snippet": "SuperEmbed is the best movie streaming api for your website. Auto embed thousands of movies and tv shows available on multiple servers. Movie Streaming API info.",
+    "host_name": "superembed.docs.apiary.io",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://w3techs.com/sites/info/superembed.stream",
+    "name": "Web Technologies used by Superembed.stream - W3Techs",
+    "snippet": "Free movie streaming API. Get movie and tv show stream by IMDB ID, TMDB ID or fulltext search. Movie streaming API in JSON. Best 2embed.to alternative. Missing: embed | Show results with: embed",
+    "host_name": "w3techs.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/AdvithGopinath/LetMeWatch/issues/4",
+    "name": "More movie & tvshow APIs you can add · Issue #4 - GitHub",
+    "snippet": "customization for superembed: info = `just add the variable to the end of the url, like this: https://getsuperembed.link/? ...",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.geeksforgeeks.org/javascript/stream-netflix-videos-for-free-using-imdb-tmdb-and-2embed-apis",
+    "name": "Stream Netflix Videos for Free using IMDB, TMDB and 2Embed APIs",
+    "snippet": "In this tutorial, we'll walk you through the steps of creating a website that allows users to watch their favorite content for free.",
+    "host_name": "www.geeksforgeeks.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://streamembed.net.atlaq.com",
+    "name": "SuperEmbed | Free Movie Streaming API - stream movies by IMDB ID",
+    "snippet": "Free movie streaming API. Get movie and tv show stream by IMDB ID, TMDB ID or fulltext search. Movie streaming API in JSON. Best 2embed.ru alternative. Missing: documentation | Show results with: documentation",
+    "host_name": "streamembed.net.atlaq.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.wjunction.com/threads/superembed-stream-real-movie-streaming-api.257007",
+    "name": "SuperEmbed.stream - Real Movie Streaming API - WJunction",
+    "snippet": "API supports searching movies and episodes by IMDB ID, TMDB ID or fulltext title search. You can get up to 5 links for each streaming server.",
+    "host_name": "www.wjunction.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=LgVk7rks-40",
+    "name": "Building a Free Movie Streaming Site with NextJS 15, and TMDb API",
+    "snippet": "Learn how to build a fully functional movie streaming website from scratch using Next.js, TMDb API for movie data, and VidSrc for streaming. Missing: superembed. documentation",
+    "host_name": "www.youtube.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.blackhatworld.com/seo/free-movie-streaming-api-request.1683726",
+    "name": "Free Movie Streaming API Request | BlackHatWorld",
+    "snippet": "Hello everyone , i am in search of a free movie streaming database api website like superembed.stream , embed.su and vidsrc.me.",
+    "host_name": "www.blackhatworld.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
