@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://github.com/AndreyPavlenko/Fermata/discussions/434",
+    "name": "Xtream Code API implementation · AndreyPavlenko Fermata",
+    "snippet": "With these informations, we can get a full list of Lives, Serie and Movie streams . It can provide as well EPG and Replay, depending on the code provider. ====== ...",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/infinitel8p/xtream/blob/main/api.md",
+    "name": "xtream/api.md at main",
+    "snippet": "Get Streams of a Specific Live Category · Movies (VOD) ; Get VOD by Category · Get VOD Info · Series ; Get Series by ...",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/BifrostBuilder/xtream-player",
+    "name": "BlinkStrike/xtream-player",
+    "snippet": "The player supports all standard Xtream Codes API endpoints including: Live Streams ; VOD (Movies); Series; EPG Data; Stream Categories ; Multi-connection support ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pkg.go.dev/github.com/sherif-fanous/xtreamcodes",
+    "name": "xtreamcodes package - github.com/sherif-fanous",
+    "snippet": "3 Jun 2025 — This client provides a clean, type-safe interface to the Xtream Codes API , handling all the complexity of serialization and deserialization ...",
+    "host_name": "pkg.go.dev",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/pavan-kumar-murapala/yupp",
+    "name": "pavan-kumar-murapala/yupp: Sample",
+    "snippet": "This endpoint is common to every Xtream Codes based provider and is used to download a M3U playlist to the user.",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.npmjs.com/package/@iptv/xtream-api",
+    "name": "iptv/xtream-api",
+    "snippet": "6 Oct 2025 — Standardized access to Xtream compatible player API . Latest version: 1.4.1, last published: 6 months ago. Start using @ iptv / xtream - api in ...",
+    "host_name": "www.npmjs.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pub.dev/documentation/xtream_code_client/latest",
+    "name": "xtream_code_client - Dart API docs",
+    "snippet": "Xtream Code Client. A Dart client for Xtream-compatible IPTV APIs . Version 2.x is the recommended API surface. It adds resilient parsing, structured parse ...",
+    "host_name": "pub.dev",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/broken-droid/XtreamClient",
+    "name": "broken-droid/XtreamClient: Python Xtream API client to",
+    "snippet": "Connect to a server using Xtream API , authorize, get user and server information, get live/vod/series information, get categories, get epgs, download a playlist ...",
+    "host_name": "github.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.cosmos.esa.int/documents/344502/344540/best-iptv-provider-service-199.pdf",
+    "name": "Xtream IPTV Setup Tutorial For All Media Players --K5@u",
+    "snippet": "24 Jan 2026 — Choose \" Login with Xtream Codes API .\" 4. Enter Details: Any Name: Enter a name for your profile (e.g., \"My IPTV ,\" \" iptvbestprovider \"). 7 pages",
+    "host_name": "www.cosmos.esa.int",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.scribd.com/document/968880080/Xtream-Iptv-Codes-3",
+    "name": "Xtream IPTV Access and Apps Guide | PDF",
+    "snippet": "The document provides various IPTV access details, including hosts, usernames, passwords, and M3U links for streaming . It also includes links to join ...",
+    "host_name": "www.scribd.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

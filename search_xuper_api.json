@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://medium.com/@Bohr/reverse-engineering-android-application-iptv-36a9f0f3e322",
+    "name": "Reverse Engineering Android Application IPTV",
+    "snippet": "Let's do some reverse engineering first. I wanted to understand how they are working, as you know, most of the iptv service they give you some files.",
+    "host_name": "medium.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/pierre-emmanuelJ/iptv-proxy",
+    "name": "pierre-emmanuelJ/iptv-proxy: Reverse proxy on iptv m3u",
+    "snippet": "Description. Iptv -Proxy is a project to proxyfie an m3u file and to proxyfie an Xtream iptv service (client API ).",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.kuylar.dev/accidentally-reverse-engineering-an-iptv-service",
+    "name": "Reverse Engineering an IPTV Service",
+    "snippet": "29 Feb 2024 — Oh hey look, Android TV documentation about implementing an IPTV service into the system's own live channel list! kuylar's stuff © 2026.",
+    "host_name": "blog.kuylar.dev",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.vidovation.com/blog/iptv-television-distribution-digital-signage-broadcast-media-sports-facilities-sign-up?srsltid=AfmBOorhpgavoYBCXEoj5NMvq0_U_101BK32Ixrprh1uDO44UlEekkmE",
+    "name": "IPTV, Television Distribution & Digital Signage for",
+    "snippet": "14 Jun 2022 — In this training session, attendees will learn how to design a successful, impressive, cost-effective IPTV and digital signage system that suits ...",
+    "host_name": "www.vidovation.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://rgsilva.com/blog/reverse-engineering-and-fixing-a-streaming-app",
+    "name": "Reverse engineering and fixing a streaming app - Ricardo",
+    "snippet": "22 Apr 2022 — What happens when a major TV network decides to soft-block an older version of their own streaming app? Yep, we make it work again!",
+    "host_name": "rgsilva.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://patents.google.com/patent/EP2424239A2/en",
+    "name": "Method for transmitting an iptv streaming service by p2p",
+    "snippet": "The objects of the present invention can be achieved by providing a method for transmitting an IPTV (Internet Protocol Television ) streaming service by P2P ( ...",
+    "host_name": "patents.google.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.facebook.com/groups/techtitansgroup/posts/1519897219337591",
+    "name": "Open-source live tv channel creator",
+    "snippet": "It enables you to create custom live TV channels powered by Plex, Jellyfin, or Emby, with advanced scheduling, streaming optimization, and a ...",
+    "host_name": "www.facebook.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://data-dive.com/reverse-engineer-android-app-api",
+    "name": "Reverse engineering the private API of an Android app",
+    "snippet": "21 Jan 2024 — In this post, I present a simple, yet clever solution for defeating the security measures: reverting to an old, less secured Android version for running the ...",
+    "host_name": "data-dive.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/rednblkx/iptv_ro",
+    "name": "rednblkx/iptv_ro: A simple web API for acquiring media",
+    "snippet": "26 Jan 2025 — This script offers a way to retrieve the streams using the credentials PROVIDED BY YOU. THIS SCRIPT DOES NOT OFFER FREE IPTV . THERE IS NO WARRANTY FOR THE ...",
+    "host_name": "github.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://tyrrrz.me/blog/reverse-engineering-youtube-revisited",
+    "name": "Reverse-Engineering YouTube: Revisited",
+    "snippet": "3 Feb 2023 — In this article, I'll cover the current state of YouTube's internal API , highlight the most important changes, and explain how things work today.",
+    "host_name": "tyrrrz.me",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

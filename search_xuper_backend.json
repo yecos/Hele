@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://github.com/drag0n141/awesome-stars/blob/master/README.md",
+    "name": "awesome-stars/README.md at master",
+    "snippet": "This project includes a CLI (Command Line Interface), PowerShell modules, and a COM (Component Object Model) API (Application Programming Interface). ossrs/srs ...",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/fscorrupt/awesome-stars",
+    "name": "fscorrupt/awesome-stars: My starred Repos",
+    "snippet": "This project includes a CLI (Command Line Interface), PowerShell modules, and a COM (Component Object Model) API (Application Programming Interface). stax76/run ...",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/Addons4Kodi/comments/1saefbx/kodi_addons_and_iptv_channels_m3u",
+    "name": "Kodi Addons and IPTV Channels (M3U) : r/Addons4Kodi - Reddit",
+    "snippet": "You make text files of one group/channel per line and you load it to pastebin and provide the URL to the addon to download and save these lists. New Xtream IPTV Plugin : r/Addons4Kodi - Reddit [COMMUNITY SUPPORT NEEDED] \"Allow querying multiple ids at ... More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/euzu/tuliprox/discussions/134",
+    "name": "Add TMDB-ID and add individual schedule per target · euzu tuliprox",
+    "snippet": "Streams started via the reverse proxy in m3u-filter cannot skip or rewind and always start from the beginning, unlike the original resolved URL, which works as ... Missing: Xuper | Show results with: Xuper",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://apps.apple.com/us/app/iptv-my-smart-iptv-player/id1525121231?l=ko&platform=watch",
+    "name": "‎IPTV+: My Smart IPTV Player 앱 - App Store",
+    "snippet": "Free · iOS Experience the freedom of watching what you want, when you want, wherever you go. Disclaimers and Attributions: IPTV+ integrates information using the TMDb API ...",
+    "host_name": "apps.apple.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.wirelesshack.org/how-to-install-the-crew-kodi-addon.html",
+    "name": "How To Install The Crew Kodi Addon - WirelesSHack",
+    "snippet": "It is located in the Crew Repository and has many sections and categories. The main menu has Movies, TV shows, Sports, IPTV, Kids, 1-Clicks, Collections, Tools ...",
+    "host_name": "www.wirelesshack.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://wiki.condrau.com/media:jarvis",
+    "name": "Kodi 16.1 on LibreELEC 7.0.2 - Bernard's Wiki",
+    "snippet": "Add TV streams to the file iptv.m3u. If you do not have access to a web server, or if you only use one Kodi box, then you can also save that information locally ...",
+    "host_name": "wiki.condrau.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/StremioAddons",
+    "name": "Stremio Addons - Reddit",
+    "snippet": "One all-in one place to manage your catalogs & search. No need to combine several addons/accounts/api's to get the best experience. Search by ...",
+    "host_name": "www.reddit.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/drag0n141/awesome-stars",
+    "name": "drag0n141/awesome-stars: A curated list of my GitHub stars!",
+    "snippet": "euzu/tuliprox - Flexible IPTV playlist processor & proxy in Rust - supports M3U, Xtream Codes, HDHomeRun, Plex, Emby & Jellyfin. Filtering, merging, ...",
+    "host_name": "github.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://channels1867.rssing.com/chan-55464362/all_p264.html",
+    "name": "Sonarr Agent - Plex Channel Plugins — Plex Forums",
+    "snippet": "It's a metadata agent for Plex. It retrieves metadata from the Sonarr API. This agent can come in handy for people using both Plex and Sonarr. Lately a lot of ...",
+    "host_name": "channels1867.rssing.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://play.google.com/store/apps/details?id=com.magis_ver.player",
+    "name": "Magic M3U IPTV Player - Apps on Google Play",
+    "snippet": "Sep 28, 2025 — Key Features: Play your own IPTV and M3U playlists (live streams, videos, and audio). 🎛️ Easy playlist management – add, edit, or remove items.",
+    "host_name": "play.google.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/iptv-org/iptv/issues/11724",
+    "name": "Add: Magic TV [RO] · Issue #11724 · iptv-org/iptv",
+    "snippet": "Feb 13, 2023 — Channel ID: MagicTV.ro Stream URL: https:// tv .broadcasting.ro/memfs/925f90db-5c88-4190-a53d-5163cdffe6f4.m3u8 Notes: No response",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://m3u.ibert.me/txt/o_all.txt",
+    "name": "o_all.txt - iptv-sources",
+    "snippet": "... tv / playlist .m3u8 5_Emergency_Rescue,https://jmp2.uk/plu-63c1384e829c850007922ca4.m3u8 5_Exploring_Britain,https://jmp2.uk/plu-5ddf901280e3550009139c86.m3u8 ...",
+    "host_name": "m3u.ibert.me",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.broadcom.com/documents/36634/296390154/buy-iptv-account-100.pdf",
+    "name": "How To Use Xtream IPTV Codes For Fast Access --K2@w",
+    "snippet": "This comprehensive guide will demystify Xtream IPTV codes, explain why they are the preferred method for many users seeking quick access, and provide you with a ... 6 pages",
+    "host_name": "support.broadcom.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.instagram.com/p/DW5tprfDLfB",
+    "name": "Fix Your IPTV Streams in Jellyfin or Plex Easily Struggling",
+    "snippet": "Struggling to get live streams working in your media server ? This lightweight proxy is a game-changer for anyone using Jellyfin, Emby, or Plex.",
+    "host_name": "www.instagram.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://gist.github.com/nsdevaraj/48239b1a55a1df69be38126ed1092e13",
+    "name": "combined_playlist.m3u",
+    "snippet": "... Magic TV (720p). https://bss1.neterra.tv/magictv/magictv.m3u8. #EXTINF ... TV. stream / playlist .m3u8. #EXTINF:-1 tvg-id=\"VallenatoInternacional.us@SD\" tvg ...",
+    "host_name": "gist.github.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.instagram.com/p/DPdlJwhDvXP",
+    "name": "🚀 Next-Level Flutter IPTV Player — One App. All Platforms.",
+    "snippet": "✨ Key Highlights: ✔️ Live TV & VOD Streaming — Watch your favorite channels and on-demand content anytime. ✔️ Smart Categorization — Explore ...",
+    "host_name": "www.instagram.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.facebook.com/groups/linuxmintdesktop/posts/1749793582642209",
+    "name": "Some program as StbEmu for watching IPTV on Linux? It's",
+    "snippet": "For your Linux Mint setup, I would strongly recommend starting with Kodi with the Stalker Client add-on or IPTVnator due to their direct support ...",
+    "host_name": "www.facebook.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.epsio.io",
+    "name": "Epsio - Streaming Transformations, Made Easy",
+    "snippet": "Epsio is a SQL-first streaming engine . It does not require any custom code, only the creation of an Epsio view with a simple SQL command.",
+    "host_name": "www.epsio.io",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.slunecnice.cz/android/sw/iptv-player",
+    "name": "IPTV Player",
+    "snippet": "IP-TV Android Player is quite simply the most advanced client-end Cloud IPTV media playlist solution around, which works in tandem with our unique",
+    "host_name": "www.slunecnice.cz",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
