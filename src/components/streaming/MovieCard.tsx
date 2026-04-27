@@ -12,7 +12,7 @@ interface MovieCardProps {
 }
 
 export default function MovieCard({ movie, showProgress = false }: MovieCardProps) {
-  const { setCurrentView, setSelectedMovie, toggleFavorite, isFavorite } = useAppStore();
+  const { setCurrentView, setSelectedMovie, toggleFavorite, isFavorite, playMovie, setPlayerState } = useAppStore();
   const [isHovered, setIsHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [favAnimating, setFavAnimating] = useState(false);
@@ -33,7 +33,42 @@ export default function MovieCard({ movie, showProgress = false }: MovieCardProp
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedMovie(movie);
-    setCurrentView('player');
+    const tmdbId = parseInt(movie.id);
+    const hasTmdbId = !isNaN(tmdbId);
+    if (hasTmdbId && movie.mediaType) {
+      // TMDB content: generate embed sources
+      playMovie(tmdbId, movie.mediaType, movie.title);
+    } else if (movie.videoUrl) {
+      // Seed data with direct video URL
+      setPlayerState({
+        sources: [{
+          server: 'Directo',
+          sources: [{
+            id: 'direct',
+            name: 'Reproduccion Directa',
+            type: 'direct',
+            url: movie.videoUrl,
+            quality: 'Auto',
+            server: 'direct',
+          }],
+        }],
+        currentSource: {
+          id: 'direct',
+          name: 'Reproduccion Directa',
+          type: 'direct',
+          url: movie.videoUrl,
+          quality: 'Auto',
+          server: 'direct',
+        },
+        isTVShow: false,
+      });
+      setCurrentView('player');
+    } else {
+      // Fallback: try as movie with numeric ID
+      if (hasTmdbId) {
+        playMovie(tmdbId, 'movie', movie.title);
+      }
+    }
   };
 
   return (
