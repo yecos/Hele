@@ -8,15 +8,18 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  password  String?
-  avatar    String?
-  plan      String   @default("free")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  favorites Favorite[]
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  passwordHash String
+  avatar      String?
+  role        String   @default("user")
+  plan        String   @default("free")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  favorites   Favorite[]
+  history     WatchHistory[]
+  playlists   Playlist[]
 }
 
 model Movie {
@@ -36,7 +39,10 @@ model Movie {
   trending    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  favorites Favorite[]
+  favorites   Favorite[]
+  history     WatchHistory[]
+  episodes    Episode[]
+  playlists   PlaylistItem[]
 }
 
 model Favorite {
@@ -48,4 +54,55 @@ model Favorite {
   movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
   @@unique([userId, movieId])
+}
+
+model WatchHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  movieId   String
+  progress  Float    @default(0)
+  duration  Float    @default(0)
+  watchedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, movieId])
+}
+
+model Playlist {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  isPublic    Boolean        @default(false)
+  userId      String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       PlaylistItem[]
+}
+
+model PlaylistItem {
+  id         String   @id @default(cuid())
+  playlistId String
+  movieId    String
+  order      Int      @default(0)
+  addedAt    DateTime @default(now())
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  movie      Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, movieId])
+}
+
+model Episode {
+  id          String   @id @default(cuid())
+  seasonNumber Int
+  episodeNumber Int
+  title       String
+  description String?
+  duration    String
+  videoUrl    String?
+  movieId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  movie       Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
 }

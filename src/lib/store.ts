@@ -17,7 +17,7 @@ export type Movie = {
   trending: boolean;
 };
 
-export type ViewType = 'home' | 'category' | 'search' | 'favorites' | 'movieDetail' | 'player';
+export type ViewType = 'home' | 'category' | 'search' | 'favorites' | 'movieDetail' | 'player' | 'auth' | 'pricing' | 'profile' | 'admin' | 'watchHistory';
 
 interface AppState {
   // Navigation
@@ -46,10 +46,19 @@ interface AppState {
   toggleFavorite: (movieId: string) => void;
   isFavorite: (movieId: string) => boolean;
 
+  // Auth
+  isAuthenticated: boolean;
+  authToken: string | null;
+  userRole: 'user' | 'admin';
+  login: (token: string, user: { id: string; name: string; email: string; plan: string; role: string }) => void;
+  logout: () => void;
+
   // User
   userId: string;
   userName: string;
   userPlan: string;
+  userEmail: string;
+  userCreatedAt: string;
   setUserId: (id: string) => void;
   setUserInfo: (name: string, plan: string) => void;
 
@@ -107,10 +116,39 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   isFavorite: (movieId) => get().favoriteIds.has(movieId),
 
+  // Auth
+  isAuthenticated: false,
+  authToken: null,
+  userRole: 'user',
+  login: (token, user) =>
+    set({
+      isAuthenticated: true,
+      authToken: token,
+      userId: user.id,
+      userName: user.name,
+      userEmail: user.email,
+      userPlan: user.plan,
+      userRole: user.role as 'user' | 'admin',
+    }),
+  logout: () =>
+    set({
+      isAuthenticated: false,
+      authToken: null,
+      userId: '',
+      userName: '',
+      userEmail: '',
+      userPlan: 'free',
+      userRole: 'user',
+      userCreatedAt: '',
+      currentView: 'auth',
+    }),
+
   // User
-  userId: 'demo-user',
-  userName: 'Invitado',
+  userId: '',
+  userName: '',
   userPlan: 'free',
+  userEmail: '',
+  userCreatedAt: '',
   setUserId: (id) => set({ userId: id }),
   setUserInfo: (name, plan) => set({ userName: name, userPlan: plan }),
 

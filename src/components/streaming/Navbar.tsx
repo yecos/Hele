@@ -12,6 +12,11 @@ import {
   Trophy,
   Radio,
   ChevronDown,
+  Clock,
+  CreditCard,
+  Shield,
+  LogOut,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,11 +47,14 @@ export default function Navbar() {
     setSidebarOpen,
     userPlan,
     userName,
+    userRole,
+    isAuthenticated,
     setSelectedMovie,
   } = useAppStore();
 
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -61,6 +69,25 @@ export default function Navbar() {
     setSelectedCategory(category);
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleViewClick = (view: string) => {
+    setCurrentView(view as typeof navLinks[number]['view']);
+    setMobileMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      useAppStore.getState().logout();
+    } catch {
+      // still logout locally
+      useAppStore.getState().logout();
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -125,70 +152,114 @@ export default function Navbar() {
           {/* Right Side */}
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Search Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-gray-300 hover:text-white hover:bg-white/10"
-              onClick={() => {
-                setCurrentView('search');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            >
-              <Search className="h-5 w-5" />
-            </Button>
+            {isAuthenticated && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-300 hover:text-white hover:bg-white/10"
+                onClick={() => {
+                  setCurrentView('search');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+            )}
 
             {/* User Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="flex items-center gap-2 text-gray-300 hover:text-white hover:bg-white/10 px-2"
-                >
-                  <Avatar className="h-7 w-7">
-                    <AvatarFallback className="bg-red-600/20 text-red-500 text-xs font-bold">
-                      {userName.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="hidden sm:inline text-sm">{userName}</span>
-                  <ChevronDown className="h-3 w-3 hidden sm:inline" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-48 bg-gray-900 border-gray-800 text-gray-200"
-              >
-                <div className="flex items-center gap-2 px-2 py-2">
-                  <User className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm font-medium">{userName}</span>
-                </div>
-                <div className="px-2 pb-2">
-                  <Badge
-                    variant={userPlan === 'vip' ? 'default' : 'secondary'}
-                    className={
-                      userPlan === 'vip'
-                        ? 'bg-yellow-600 text-white text-xs'
-                        : 'bg-gray-700 text-gray-300 text-xs'
-                    }
+            {isAuthenticated && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-2 text-gray-300 hover:text-white hover:bg-white/10 px-2"
                   >
-                    {userPlan === 'vip' ? '👑 VIP' : 'Gratis'}
-                  </Badge>
-                </div>
-                <DropdownMenuSeparator className="bg-gray-800" />
-                <DropdownMenuItem
-                  className="cursor-pointer focus:bg-gray-800 focus:text-white"
-                  onClick={() => handleNavClick('favorites', 'all')}
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="bg-red-600/20 text-red-500 text-xs font-bold">
+                        {userName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden sm:inline text-sm">{userName}</span>
+                    <ChevronDown className="h-3 w-3 hidden sm:inline" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-52 bg-gray-900 border-gray-800 text-gray-200"
                 >
-                  <Heart className="h-4 w-4 mr-2" />
-                  Mi Lista
-                </DropdownMenuItem>
-                {userPlan === 'free' && (
-                  <DropdownMenuItem className="cursor-pointer focus:bg-gray-800 focus:text-yellow-500 text-yellow-500">
-                    <Trophy className="h-4 w-4 mr-2" />
-                    Mejorar a VIP
+                  <div className="flex items-center gap-2 px-2 py-2">
+                    <User className="h-4 w-4 text-gray-400" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium truncate block">{userName}</span>
+                    </div>
+                  </div>
+                  <div className="px-2 pb-2">
+                    <Badge
+                      variant={userPlan === 'vip' ? 'default' : 'secondary'}
+                      className={
+                        userPlan === 'vip'
+                          ? 'bg-yellow-600 text-white text-xs'
+                          : userPlan === 'premium'
+                          ? 'bg-red-600 text-white text-xs'
+                          : 'bg-gray-700 text-gray-300 text-xs'
+                      }
+                    >
+                      {userPlan === 'vip' ? '👑 VIP' : userPlan === 'premium' ? '⭐ Premium' : 'Gratis'}
+                    </Badge>
+                  </div>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  <DropdownMenuItem
+                    className="cursor-pointer focus:bg-gray-800 focus:text-white"
+                    onClick={() => handleNavClick('favorites', 'all')}
+                  >
+                    <Heart className="h-4 w-4 mr-2" />
+                    Mi Lista
                   </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem
+                    className="cursor-pointer focus:bg-gray-800 focus:text-white"
+                    onClick={() => handleViewClick('watchHistory')}
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Historial
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer focus:bg-gray-800 focus:text-white"
+                    onClick={() => handleViewClick('profile')}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Mi Perfil
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer focus:bg-gray-800 focus:text-white"
+                    onClick={() => handleViewClick('pricing')}
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Planes y Precios
+                  </DropdownMenuItem>
+                  {userRole === 'admin' && (
+                    <>
+                      <DropdownMenuSeparator className="bg-gray-800" />
+                      <DropdownMenuItem
+                        className="cursor-pointer focus:bg-gray-800 focus:text-red-400"
+                        onClick={() => handleViewClick('admin')}
+                      >
+                        <Shield className="h-4 w-4 mr-2" />
+                        Panel Admin
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  <DropdownMenuItem
+                    className="cursor-pointer focus:bg-red-600/10 focus:text-red-400 text-red-400"
+                    onClick={handleLogout}
+                    disabled={loggingOut}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Cerrar Sesión
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {/* Mobile Hamburger */}
             <Button
@@ -230,6 +301,64 @@ export default function Navbar() {
                   {link.label}
                 </button>
               ))}
+
+              {isAuthenticated && (
+                <>
+                  <div className="border-t border-gray-800 my-2" />
+                  <button
+                    onClick={() => {
+                      handleViewClick('watchHistory');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                  >
+                    <Clock className="h-4 w-4" />
+                    Historial
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleViewClick('pricing');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    Planes
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleViewClick('profile');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Perfil
+                  </button>
+                  {userRole === 'admin' && (
+                    <button
+                      onClick={() => {
+                        handleViewClick('admin');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-600/10 rounded-lg transition-colors"
+                    >
+                      <Shield className="h-4 w-4" />
+                      Panel Admin
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-600/10 rounded-lg transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Cerrar Sesión
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
         )}

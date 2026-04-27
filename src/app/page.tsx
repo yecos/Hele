@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore, Movie } from '@/lib/store';
 import Navbar from '@/components/streaming/Navbar';
 import HeroBanner from '@/components/streaming/HeroBanner';
@@ -12,7 +12,13 @@ import SearchView from '@/components/streaming/SearchView';
 import CategoryView from '@/components/streaming/CategoryView';
 import FavoritesView from '@/components/streaming/FavoritesView';
 import Sidebar from '@/components/streaming/Sidebar';
+import AuthView from '@/components/streaming/AuthView';
+import PricingView from '@/components/streaming/PricingView';
+import ProfileView from '@/components/streaming/ProfileView';
+import AdminView from '@/components/streaming/AdminView';
+import WatchHistoryView from '@/components/streaming/WatchHistoryView';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2 } from 'lucide-react';
 
 const CATEGORY_META: Record<string, { title: string; description: string }> = {
   peliculas: {
@@ -34,7 +40,15 @@ const CATEGORY_META: Record<string, { title: string; description: string }> = {
 };
 
 export default function Home() {
-  const { currentView, selectedCategory, setUserId, setUserInfo } = useAppStore();
+  const {
+    currentView,
+    selectedCategory,
+    isAuthenticated,
+    setCurrentView,
+    login,
+    setUserId,
+    setUserInfo,
+  } = useAppStore();
   const [allMovies, setAllMovies] = useState<Movie[]>([]);
   const [featuredMovies, setFeaturedMovies] = useState<Movie[]>([]);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
@@ -42,16 +56,36 @@ export default function Home() {
   const [peliculas, setPeliculas] = useState<Movie[]>([]);
   const [series, setSeries] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [authChecking, setAuthChecking] = useState(true);
 
-  // Initialize user
+  // Check auth on mount
   useEffect(() => {
-    setUserId('demo-user');
-    setUserInfo('Usuario Demo', 'vip');
-  }, [setUserId, setUserInfo]);
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            login('', data.user);
+          } else {
+            setCurrentView('auth');
+          }
+        } else {
+          setCurrentView('auth');
+        }
+      } catch {
+        setCurrentView('auth');
+      } finally {
+        setAuthChecking(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   // Fetch all movies for home view
   useEffect(() => {
-    if (currentView !== 'home') return;
+    if (currentView !== 'home' || !isAuthenticated) return;
 
     const fetchMovies = async () => {
       setIsLoading(true);
@@ -93,7 +127,7 @@ export default function Home() {
     };
 
     fetchMovies();
-  }, [currentView]);
+  }, [currentView, isAuthenticated]);
 
   // Fetch related movies when a movie is selected
   const fetchRelatedMovies = async (movie: Movie) => {
@@ -128,6 +162,30 @@ export default function Home() {
   const handleMovieClick = (movie: Movie) => {
     fetchRelatedMovies(movie);
   };
+
+  // Auth checking
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <Loader2 className="h-8 w-8 text-red-500 animate-spin" />
+          <span className="text-xl font-black tracking-tight text-red-600">XUPER</span>
+          <span className="text-[10px] font-light text-gray-500 tracking-widest uppercase">
+            STREAM
+          </span>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Auth gate
+  if (!isAuthenticated) {
+    return <AuthView />;
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -227,6 +285,18 @@ export default function Home() {
 
           {/* Favorites View */}
           {currentView === 'favorites' && <FavoritesView key="favorites" />}
+
+          {/* Pricing View */}
+          {currentView === 'pricing' && <PricingView key="pricing" />}
+
+          {/* Profile View */}
+          {currentView === 'profile' && <ProfileView key="profile" />}
+
+          {/* Admin View */}
+          {currentView === 'admin' && <AdminView key="admin" />}
+
+          {/* Watch History View */}
+          {currentView === 'watchHistory' && <WatchHistoryView key="watchHistory" />}
         </AnimatePresence>
       </main>
 

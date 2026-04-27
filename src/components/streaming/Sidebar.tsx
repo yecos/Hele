@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
-  Menu,
   User,
   Heart,
   Film,
@@ -12,6 +11,11 @@ import {
   Radio,
   X,
   Crown,
+  Clock,
+  CreditCard,
+  Settings,
+  Shield,
+  LogOut,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +40,8 @@ export default function Sidebar() {
     setSelectedCategory,
     userName,
     userPlan,
+    userRole,
+    isAuthenticated,
   } = useAppStore();
 
   const handleNavClick = (view: (typeof navLinks)[number]['view'], category: string) => {
@@ -43,6 +49,21 @@ export default function Sidebar() {
     setSelectedCategory(category);
     setSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleViewClick = (view: string) => {
+    setCurrentView(view as (typeof navLinks)[number]['view']);
+    setSidebarOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // silent
+    }
+    useAppStore.getState().logout();
   };
 
   return (
@@ -135,36 +156,123 @@ export default function Sidebar() {
                   <span>Buscar</span>
                 </button>
               </div>
+
+              {/* Additional Links */}
+              <div className="mt-2 pt-2 border-t border-gray-800/50 space-y-0.5">
+                <button
+                  onClick={() => handleViewClick('watchHistory')}
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    currentView === 'watchHistory'
+                      ? 'bg-red-600/15 text-red-500'
+                      : 'text-gray-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Clock
+                    className={`h-[18px] w-[18px] ${
+                      currentView === 'watchHistory' ? 'text-red-500' : 'text-gray-500'
+                    }`}
+                  />
+                  <span>Historial</span>
+                </button>
+
+                <button
+                  onClick={() => handleViewClick('pricing')}
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    currentView === 'pricing'
+                      ? 'bg-red-600/15 text-red-500'
+                      : 'text-gray-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <CreditCard
+                    className={`h-[18px] w-[18px] ${
+                      currentView === 'pricing' ? 'text-red-500' : 'text-gray-500'
+                    }`}
+                  />
+                  <span>Planes</span>
+                </button>
+
+                <button
+                  onClick={() => handleViewClick('profile')}
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    currentView === 'profile'
+                      ? 'bg-red-600/15 text-red-500'
+                      : 'text-gray-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Settings
+                    className={`h-[18px] w-[18px] ${
+                      currentView === 'profile' ? 'text-red-500' : 'text-gray-500'
+                    }`}
+                  />
+                  <span>Perfil</span>
+                </button>
+
+                {userRole === 'admin' && (
+                  <button
+                    onClick={() => handleViewClick('admin')}
+                    className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                      currentView === 'admin'
+                        ? 'bg-red-600/15 text-red-500'
+                        : 'text-red-400 hover:text-red-300 hover:bg-red-600/10'
+                    }`}
+                  >
+                    <Shield className="h-[18px] w-[18px] text-red-500" />
+                    <span>Admin</span>
+                  </button>
+                )}
+              </div>
             </nav>
 
             {/* User Info */}
-            <div className="border-t border-gray-800/50 px-4 py-4">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-red-600/20 text-red-500 text-sm font-bold">
-                    {userName.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{userName}</p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    {userPlan === 'vip' ? (
-                      <Badge className="bg-yellow-600/20 text-yellow-500 border-yellow-600/30 text-[10px] px-1.5 py-0 font-bold">
-                        <Crown className="h-2.5 w-2.5 mr-1" />
-                        VIP
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="secondary"
-                        className="bg-gray-800 text-gray-400 text-[10px] px-1.5 py-0"
-                      >
-                        Gratis
-                      </Badge>
-                    )}
+            {isAuthenticated ? (
+              <div className="border-t border-gray-800/50 px-4 py-4">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="bg-red-600/20 text-red-500 text-sm font-bold">
+                      {userName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{userName}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {userPlan === 'vip' ? (
+                        <Badge className="bg-yellow-600/20 text-yellow-500 border-yellow-600/30 text-[10px] px-1.5 py-0 font-bold">
+                          <Crown className="h-2.5 w-2.5 mr-1" />
+                          VIP
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="secondary"
+                          className="bg-gray-800 text-gray-400 text-[10px] px-1.5 py-0"
+                        >
+                          Gratis
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
+                <Button
+                  variant="ghost"
+                  onClick={handleLogout}
+                  className="w-full mt-3 h-9 text-red-400 hover:text-red-300 hover:bg-red-600/10 text-xs justify-start"
+                >
+                  <LogOut className="h-3.5 w-3.5 mr-2" />
+                  Cerrar Sesión
+                </Button>
               </div>
-            </div>
+            ) : (
+              <div className="border-t border-gray-800/50 px-4 py-4">
+                <Button
+                  onClick={() => {
+                    setCurrentView('auth');
+                    setSidebarOpen(false);
+                  }}
+                  className="w-full h-10 bg-red-600 hover:bg-red-700 text-white text-sm"
+                >
+                  Iniciar Sesión
+                </Button>
+              </div>
+            )}
           </motion.div>
         </>
       )}
