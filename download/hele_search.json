@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://github.com/PiaCOS",
+    "name": "ELCO PiaCOS",
+    "snippet": "13 following. Read more",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/nawawi/eyeOS",
+    "name": "eyeOS v2.5 -- the last release under an open source license",
+    "snippet": "eyeOS is a web desktop following the cloud computing concept that seeks to enable collaboration and communication among users. It is mainly written in PHP, XML, ... Read more",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/kokkos",
+    "name": "Kokkos",
+    "snippet": "The Kokkos C++ Performance Portability Ecosystem is a production level solution for writing modern C++ applications in a hardware agnostic way. Read more",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/MarbleHE/HECO",
+    "name": "MarbleHE/HECO: Optimizing compiler for Fully",
+    "snippet": "HECO is an end-to-end compiler for FHE that takes high-level imperative programs and emits efficient and secure FHE implementations. Read more",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/cisco",
+    "name": "Cisco Systems",
+    "snippet": "A package for capturing and analyzing network flow data and intraflow data, for network research, forensics, and security monitoring. Read more",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/christianvedels/OccCANINE",
+    "name": "christianvedels/OccCANINE: A method for automatically",
+    "snippet": "This repository provides everything needed to generate automatic HISCO codes from occupational descriptions using OccCANINE. It also provides replication files ... Read more",
+    "host_name": "github.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.scribd.com/document/439614818/Solved-Calculus-Thomas-Finney-Ch-8-14-pdf",
+    "name": "Solved Calculus Thomas Finney (CH 8-14) PDF",
+    "snippet": "Solved Calculus Thomas Finney (Ch 8-14).pdf - Free download as PDF File (.pdf) or read online for free.",
+    "host_name": "www.scribd.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10130954",
+    "name": "Emulation of Randomized Clinical Trials With Nonrandomized",
+    "snippet": "2023 · Cited by 431 — Nonrandomized studies using insurance claims databases can be analyzed to produce real-world evidence on the effectiveness of medical products.",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/somcosoftware",
+    "name": "Somco Software",
+    "snippet": "Somco Software (previously Scythe Studio) is an embedded and cross-platform software development company with a strong focus on Qt, C++ and MedTech.",
+    "host_name": "github.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://orcid.org/0000-0003-2102-5461",
+    "name": "Xinyang Hua (0000-0003-2102-5461)",
+    "snippet": "Xinyang Hua, University of Oxford: Oxford, Oxfordshire, GB, 2018-10-01 to 2020-12-01 | Researcher in Health Economics (Nuffield Department of Population Health) Read more",
+    "host_name": "orcid.org",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
