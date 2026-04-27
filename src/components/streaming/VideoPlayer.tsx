@@ -23,9 +23,12 @@ import {
   ExternalLink,
   Radio,
   RefreshCw,
+  Cast,
+  Podcast,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/lib/store';
+import { useChromecast } from '@/hooks/use-chromecast';
 
 export default function VideoPlayer() {
   const {
@@ -60,6 +63,10 @@ export default function VideoPlayer() {
   const [loadingEpisodes, setLoadingEpisodes] = useState(false);
   const [iframeError, setIframeError] = useState(false);
   const [useProxy, setUseProxy] = useState(false);
+  const [castLoading, setCastLoading] = useState(false);
+
+  // Chromecast
+  const { available: castAvailable, connected: castConnected, deviceName: castDeviceName, casting: isCasting, castMedia, castEmbed, stopCasting } = useChromecast();
 
   const currentSource = playerState.currentSource;
   const isEmbed = currentSource?.type === 'embed';
@@ -359,6 +366,23 @@ export default function VideoPlayer() {
     setIframeError(false);
   }, []);
 
+  // Cast handler
+  const handleCast = useCallback(async () => {
+    if (!currentSource || !selectedMovie) return;
+    setCastLoading(true);
+    try {
+      if (isCasting) {
+        stopCasting();
+      } else if (isEmbed) {
+        await castEmbed(currentSource.url, selectedMovie.title);
+      } else {
+        await castMedia(currentSource.url, selectedMovie.title, selectedMovie.backdropUrl);
+      }
+    } finally {
+      setCastLoading(false);
+    }
+  }, [currentSource, selectedMovie, isEmbed, isCasting, castMedia, castEmbed, stopCasting]);
+
   // Get iframe src - try direct embed first, proxy as fallback
   const getIframeSrc = useCallback(() => {
     if (!currentSource?.url) return '';
@@ -453,6 +477,16 @@ export default function VideoPlayer() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chromecast Connected Badge */}
+      {castConnected && castDeviceName && (
+        <div className="absolute top-16 right-4 z-20">
+          <div className="flex items-center gap-2 bg-blue-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full">
+            <Cast className="h-3.5 w-3.5 text-white" />
+            <span className="text-white text-xs font-bold">En {castDeviceName}</span>
           </div>
         </div>
       )}
@@ -743,6 +777,29 @@ export default function VideoPlayer() {
 
               {/* Right Side Controls */}
               <div className="flex items-center gap-1 sm:gap-2">
+                {/* Chromecast Button */}
+                <Button
+                  variant="ghost"
+                  onClick={handleCast}
+                  disabled={castLoading}
+                  className={`h-9 w-9 p-0 rounded-full transition-all ${
+                    castConnected
+                      ? 'text-blue-400 hover:bg-blue-400/20'
+                      : castAvailable
+                        ? 'text-white hover:bg-white/20'
+                        : 'text-gray-600 hover:bg-white/10'
+                  }`}
+                  title={castConnected ? `Desconectar de ${castDeviceName}` : castAvailable ? 'Enviar a Chromecast' : 'No hay dispositivos Chromecast'}
+                >
+                  {castLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : castConnected ? (
+                    <Podcast className="h-4 w-4" />
+                  ) : (
+                    <Cast className="h-4 w-4" />
+                  )}
+                </Button>
+
                 {/* Open in new tab (for embeds) */}
                 {isEmbed && (
                   <Button
