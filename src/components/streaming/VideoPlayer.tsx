@@ -25,10 +25,15 @@ import {
   RefreshCw,
   Cast,
   Podcast,
+  Music,
+  Unplug,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/lib/store';
 import { useChromecast } from '@/hooks/use-chromecast';
+import AudioManager from './AudioManager';
 
 export default function VideoPlayer() {
   const {
@@ -64,6 +69,9 @@ export default function VideoPlayer() {
   const [iframeError, setIframeError] = useState(false);
   const [useProxy, setUseProxy] = useState(false);
   const [castLoading, setCastLoading] = useState(false);
+  const [showAudioManager, setShowAudioManager] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractedSources, setExtractedSources] = useState<{ url: string; type: 'hls' | 'direct'; quality: string; label: string }[]>([]);
 
   // Chromecast
   const { available: castAvailable, connected: castConnected, deviceName: castDeviceName, casting: isCasting, castMedia, castEmbed, stopCasting } = useChromecast();
@@ -83,6 +91,59 @@ export default function VideoPlayer() {
       }
     };
   }, []);
+
+  // ─── Pop-up & Ad Blocker ───────────────────────────────────────────────
+  // Block unwanted pop-ups, new tabs, and redirects while player is open
+  useEffect(() => {
+    if (currentView !== 'player') return;
+
+    // Block window.open pop-ups from the embed
+    const originalOpen = window.open.bind(window);
+    const allowedHosts = ['xuperstream', 'localhost', '127.0.0.1'];
+
+    window.open = (...args: Parameters<typeof window.open>) => {
+      const url = typeof args[0] === 'string' ? args[0] : '';
+      // Allow our own domain, block everything else (ad pop-ups)
+      const isAllowed = allowedHosts.some(h => url.includes(h)) || url === '' || url === '_blank';
+      if (!isAllowed) {
+        console.log('[AdBlocker] Blocked pop-up:', url);
+        return null;
+      }
+      return originalOpen(...args);
+    };
+
+    // Block beforeunload / page navigation attempts from iframe
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (e.defaultPrevented) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Intercept and block clicks that try to navigate away
+    const handleClickCapture = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Check for links that navigate outside
+      const link = target.closest('a[href]') as HTMLAnchorElement | null;
+      if (link) {
+        const href = link.getAttribute('href') || '';
+        const isExternal = href.startsWith('http') && !allowedHosts.some(h => href.includes(h));
+        if (isExternal) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('[AdBlocker] Blocked external link:', href);
+        }
+      }
+    };
+    document.addEventListener('click', handleClickCapture, true);
+
+    // Restore original window.open on cleanup
+    return () => {
+      window.open = originalOpen;
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('click', handleClickCapture, true);
+    };
+  }, [currentView]);
 
   // Manage body overflow
   useEffect(() => {
@@ -392,6 +453,41 @@ export default function VideoPlayer() {
     return currentSource.url;
   }, [currentSource?.url, useProxy]);
 
+  // Extract direct video source from embed URL
+  const handleExtractSource = useCallback(async () => {
+    if (!currentSource?.url || !isEmbed) return;
+    setExtracting(true);
+    setExtractedSources([]);
+    try {
+      const res = await fetch(`/api/sources/extract?url=${encodeURIComponent(currentSource.url)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.sources && data.sources.length > 0) {
+          setExtractedSources(data.sources);
+        }
+      }
+    } catch (err) {
+      console.error('Extract error:', err);
+    } finally {
+      setExtracting(false);
+    }
+  }, [currentSource?.url, isEmbed]);
+
+  // Play an extracted source directly in our <video> element
+  const handlePlayExtracted = useCallback((source: { url: string; type: 'hls' | 'direct' }) => {
+    if (!currentSource) return;
+    // Switch to a direct source type to bypass the iframe
+    const directSource = {
+      ...currentSource,
+      type: source.type,
+      url: source.url,
+      name: `Directo - ${source.label}`,
+      id: `extracted-${source.label}`,
+    };
+    switchSource(directSource);
+    setExtractedSources([]);
+  }, [currentSource, switchSource]);
+
   if (currentView !== 'player') return null;
 
   return (
@@ -405,16 +501,38 @@ export default function VideoPlayer() {
     >
       {/* Embed Player (iframe with proxy) */}
       {isEmbed && currentSource && !iframeError ? (
-        <iframe
-          ref={iframeRef}
-          src={getIframeSrc()}
-          className="w-full h-full border-0"
-          allowFullScreen
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          referrerPolicy="no-referrer"
-          onError={() => setIframeError(true)}
-          title={`Reproduciendo ${selectedMovie?.title || 'video'}`}
-        />
+        <>
+          <iframe
+            ref={iframeRef}
+            src={getIframeSrc()}
+            className="w-full h-full border-0 absolute inset-0"
+            allowFullScreen
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            referrerPolicy="no-referrer"
+            onError={() => setIframeError(true)}
+            title={`Reproduciendo ${selectedMovie?.title || 'video'}`}
+            sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+          />
+          {/* Ad-blocking overlay: catches clicks on the iframe area.
+              When controls are hidden, it blocks ALL clicks to prevent ad pop-ups.
+              When controls are visible, passes through to the iframe for player interaction. */}
+          <div
+            className="absolute inset-0 z-[25]"
+            style={{ pointerEvents: showControls ? 'none' : 'auto' }}
+            onMouseMove={handleMouseMove}
+            onClick={handleMouseMove}
+            onContextMenu={(e) => e.preventDefault()}
+          />
+          {/* Anti-ad click shield: thin border zones that absorb stray ad clicks */}
+          {!showControls && (
+            <>
+              <div className="absolute top-0 left-0 right-0 h-12 z-[26]" />
+              <div className="absolute bottom-0 left-0 right-0 h-12 z-[26]" />
+              <div className="absolute top-0 left-0 bottom-0 w-12 z-[26]" />
+              <div className="absolute top-0 right-0 bottom-0 w-12 z-[26]" />
+            </>
+          )}
+        </>
       ) : !isEmbed && currentSource && (isHLS || !isEmbed) ? (
         /* HLS / Direct Video Element (also for live TV) */
         <video
@@ -515,7 +633,19 @@ export default function VideoPlayer() {
         )}
       </AnimatePresence>
 
-      {/* Top Bar */}
+      {/* Persistent Back Button - ALWAYS visible */}
+      <div className="absolute top-3 left-3 z-[50]">
+        <Button
+          variant="ghost"
+          onClick={handleClose}
+          className="text-white hover:bg-white/30 bg-black/50 backdrop-blur-md rounded-full h-10 w-10 p-0 shadow-lg shadow-black/50 border border-white/10 transition-all hover:scale-110"
+          title="Atras"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+      </div>
+
+      {/* Top Bar (with title, shows/hides with controls) */}
       <AnimatePresence>
         {showControls && (
           <motion.div
@@ -523,19 +653,14 @@ export default function VideoPlayer() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -60, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent p-4 flex items-center justify-between"
+            className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent pt-4 pb-8 px-16 flex items-center justify-between"
             onClick={(e) => e.stopPropagation()}
           >
-            <Button
-              variant="ghost"
-              onClick={handleClose}
-              className="text-white hover:bg-white/20 bg-black/30 backdrop-blur-sm rounded-full h-9 w-9 p-0"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+            {/* Spacer for the persistent back button */}
+            <div className="w-10" />
 
             <div className="flex items-center gap-2">
-              <h2 className="text-sm sm:text-base font-medium text-white truncate max-w-[40%]">
+              <h2 className="text-sm sm:text-base font-medium text-white truncate max-w-[50%]">
                 {selectedMovie?.title || 'Reproductor'}
               </h2>
               {isLiveTV && (
@@ -551,7 +676,8 @@ export default function VideoPlayer() {
             <Button
               variant="ghost"
               onClick={handleClose}
-              className="text-white hover:bg-white/20 bg-black/30 backdrop-blur-sm rounded-full h-9 w-9 p-0"
+              className="text-white hover:bg-white/30 bg-black/50 backdrop-blur-md rounded-full h-10 w-10 p-0 shadow-lg shadow-black/50 border border-white/10"
+              title="Cerrar"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -767,12 +893,24 @@ export default function VideoPlayer() {
                 {isTVShow && (
                   <Button
                     variant="ghost"
-                    onClick={() => setShowEpisodeList(!showEpisodeList)}
+                    onClick={() => { setShowEpisodeList(!showEpisodeList); setShowAudioManager(false); }}
                     className="text-white hover:bg-white/20 h-9 w-9 p-0 rounded-full ml-1 sm:ml-2"
                   >
                     <Tv className="h-4 w-4" />
                   </Button>
                 )}
+
+                {/* Audio Latino Button */}
+                <Button
+                  variant="ghost"
+                  onClick={() => { setShowAudioManager(!showAudioManager); setShowEpisodeList(false); }}
+                  className={`h-9 w-9 p-0 rounded-full ml-1 sm:ml-2 transition-all ${
+                    showAudioManager ? 'text-green-400 bg-green-400/20' : 'text-white hover:bg-white/20'
+                  }`}
+                  title="Audio Latino - Cargar audio externo"
+                >
+                  <Music className="h-4 w-4" />
+                </Button>
               </div>
 
               {/* Right Side Controls */}
@@ -820,6 +958,7 @@ export default function VideoPlayer() {
                       onClick={() => {
                         setShowSourceMenu(!showSourceMenu);
                         setShowEpisodeList(false);
+                        setShowAudioManager(false);
                       }}
                       className="text-white hover:bg-white/20 h-9 w-9 p-0 rounded-full"
                     >
@@ -832,7 +971,7 @@ export default function VideoPlayer() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 10 }}
-                          className="absolute bottom-12 right-0 z-50 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-lg shadow-xl min-w-[200px] overflow-hidden"
+                          className="absolute bottom-12 right-0 z-50 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-lg shadow-xl min-w-[240px] max-h-[70vh] overflow-y-auto"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="p-3 border-b border-gray-800">
@@ -861,6 +1000,66 @@ export default function VideoPlayer() {
                               </button>
                             ))
                           )}
+
+                          {/* Extract Direct Source (for embed servers) */}
+                          {isEmbed && (
+                            <>
+                              <div className="border-t border-gray-800 p-3">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                  Herramientas
+                                </p>
+                              </div>
+                              <button
+                                onClick={handleExtractSource}
+                                disabled={extracting}
+                                className="w-full text-left px-4 py-3 text-sm text-green-400 hover:bg-gray-800 transition-colors border-l-2 border-transparent"
+                              >
+                                <div className="flex items-center gap-2">
+                                  {extracting ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Zap className="h-3.5 w-3.5" />
+                                  )}
+                                  <span className="font-medium">
+                                    {extracting ? 'Extrayendo...' : 'Extraer fuente directa'}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-0.5 ml-5">
+                                  Obtener URL de video directa
+                                </p>
+                              </button>
+                            </>
+                          )}
+
+                          {/* Extracted Sources (if any) */}
+                          {extractedSources.length > 0 && (
+                            <>
+                              <div className="border-t border-gray-800 p-3">
+                                <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wider flex items-center gap-1">
+                                  <Zap className="h-3 w-3" />
+                                  Fuentes directas encontradas
+                                </p>
+                              </div>
+                              {extractedSources.map((src, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => handlePlayExtracted(src)}
+                                  className="w-full text-left px-4 py-3 text-sm text-yellow-300 hover:bg-yellow-500/10 transition-colors border-l-2 border-yellow-600/50"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Unplug className="h-3.5 w-3.5" />
+                                    <span className="font-medium">{src.label}</span>
+                                    <Badge className="text-[10px] bg-yellow-500/20 text-yellow-400 border-0 ml-auto">
+                                      {src.quality}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-[10px] text-gray-600 mt-0.5 ml-5 truncate">
+                                    {src.url.substring(0, 60)}...
+                                  </p>
+                                </button>
+                              ))}
+                            </>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -882,6 +1081,17 @@ export default function VideoPlayer() {
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Audio Manager Panel */}
+      <AnimatePresence>
+        {showAudioManager && (
+          <AudioManager
+            videoRef={videoRef}
+            visible={showAudioManager}
+            onClose={() => setShowAudioManager(false)}
+            isEmbedPlayer={isEmbed}
+          />
         )}
       </AnimatePresence>
     </motion.div>

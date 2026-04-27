@@ -87,6 +87,11 @@ interface AppState {
   switchSource: (source: VideoSource) => void;
   switchEpisode: (season: number, episode: number) => void;
 
+  // Torrent
+  torrentQuery: string;
+  setTorrentQuery: (query: string) => void;
+  playTorrent: (title: string, mediaType?: 'movie' | 'tv') => void;
+
   // UI
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
@@ -228,6 +233,25 @@ export const useAppStore = create<AppState>((set, get) => ({
         selectedEpisode: episode,
       },
     });
+  },
+
+  // Torrent
+  torrentQuery: '',
+  setTorrentQuery: (query) => set({ torrentQuery: query }),
+  playTorrent: (title, mediaType = 'movie') => {
+    // Build search query optimized for torrents
+    let searchQuery = title;
+    // Remove special characters that might interfere with search
+    searchQuery = searchQuery.replace(/[^À-ɏḀ-ỿa-zA-Z0-9\s:]/g, '').trim();
+    // If it's a TV show, append season/episode info if available
+    const { playerState } = get();
+    if (mediaType === 'tv' && playerState.selectedSeason) {
+      searchQuery += ` S${String(playerState.selectedSeason).padStart(2, '0')}`;
+      if (playerState.selectedEpisode > 1) {
+        searchQuery += `E${String(playerState.selectedEpisode).padStart(2, '0')}`;
+      }
+    }
+    set({ torrentQuery: searchQuery, currentView: 'torrent' });
   },
 
   // UI

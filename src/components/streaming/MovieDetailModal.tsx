@@ -16,6 +16,7 @@ import {
   Loader2,
   Users,
   Clock3,
+  Magnet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -60,6 +61,7 @@ export default function MovieDetailModal() {
     playMovie,
     toggleFavorite,
     isFavorite,
+    playTorrent,
   } = useAppStore();
 
   const [tvDetails, setTvDetails] = useState<TVShowDetails | null>(null);
@@ -367,6 +369,20 @@ export default function MovieDetailModal() {
             />
             {favorite ? 'En Mi Lista' : 'Mi Lista'}
           </Button>
+
+          {hasTmdbId && (movie.mediaType === 'movie' || movie.mediaType === 'tv') && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                playTorrent(movie.title, movie.mediaType);
+              }}
+              className="bg-blue-600/10 hover:bg-blue-600/20 border-blue-600/50 px-4 sm:px-6 py-5 sm:py-6 text-sm sm:text-base font-semibold rounded-lg backdrop-blur-sm transition-all text-blue-400 hover:text-blue-300"
+              title="Buscar y reproducir via torrent P2P"
+            >
+              <Magnet className="h-5 w-5 mr-2" />
+              Torrent
+            </Button>
+          )}
         </div>
 
         {/* Description */}

@@ -137,3 +137,17 @@ Stage Summary:
 - New: sources.ts, /api/sources, /api/tv
 - Modified: VideoPlayer, MovieDetailModal, CategoryView, SearchView, store
 - Pushed to https://github.com/yecos/Hele (commit 0fbc535)
+---
+Task ID: 1
+Agent: Main Agent
+Task: Integrar streaming de torrents en XuperStream
+
+Work Log:
+- Creado /api/torrents/search/route.ts - API con 3 fuentes (YTS, TPB, SolidTorrents)
+- Actualizado store con torrentQuery y playTorrent action
+- Reescrito TorrentPlayer con búsqueda automática y lista de resultados
+- Agregado botón "Torrent" en MovieDetailModal
+- Build exitoso, sin errores nuevos
+
+Stage Summary:
+- Flujo completo: Película → Botón Torrent → Búsqueda → Selección → Streaming P2P
