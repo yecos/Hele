@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Hls from 'hls.js';
 import {
   Play,
   Pause,
@@ -13,14 +14,31 @@ import {
   X,
   SkipBack,
   SkipForward,
+  Server,
+  Loader2,
+  Tv,
+  List,
+  ChevronDown,
+  MonitorPlay,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/lib/store';
 
 export default function VideoPlayer() {
-  const { selectedMovie, currentView, goBack } = useAppStore();
+  const {
+    selectedMovie,
+    currentView,
+    playerState,
+    goBack,
+    switchSource,
+    switchEpisode,
+    setPlayerState,
+  } = useAppStore();
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const hideControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -31,9 +49,29 @@ export default function VideoPlayer() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
-  const [imgError, setImgError] = useState(false);
+  const [showSourceMenu, setShowSourceMenu] = useState(false);
+  const [showEpisodeList, setShowEpisodeList] = useState(false);
+  const [episodes, setEpisodes] = useState<
+    { episode_number: number; name: string; overview: string; still_path: string | null; runtime: number }[]
+  >([]);
+  const [loadingEpisodes, setLoadingEpisodes] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
 
-  // Manage body overflow via effect
+  const currentSource = playerState.currentSource;
+  const isEmbed = currentSource?.type === 'embed';
+  const isTVShow = playerState.isTVShow;
+
+  // Cleanup HLS on unmount
+  useEffect(() => {
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, []);
+
+  // Manage body overflow
   useEffect(() => {
     if (currentView === 'player') {
       document.body.style.overflow = 'hidden';
@@ -45,7 +83,98 @@ export default function VideoPlayer() {
     };
   }, [currentView]);
 
+  // Reset iframe error when source changes
+  useEffect(() => {
+    setIframeError(false);
+  }, [currentSource?.url]);
+
+  // Load episodes for TV shows
+  useEffect(() => {
+    if (!isTVShow || !selectedMovie) return;
+
+    const loadEpisodes = async () => {
+      setLoadingEpisodes(true);
+      try {
+        const res = await fetch(
+          `/api/tv?id=${selectedMovie.id}&season=${playerState.selectedSeason}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setEpisodes(data.episodes || []);
+          setPlayerState({
+            tvDetails: {
+              numberOfSeasons: data.tvShow?.number_of_seasons || 1,
+              numberOfEpisodes: data.tvShow?.number_of_episodes || 0,
+            },
+            seasons: (data.tvShow?.number_of_seasons || 1) >= 1
+              ? Array.from(
+                  { length: (data.tvShow?.number_of_seasons || 1) },
+                  (_, i) => ({
+                    season_number: i + 1,
+                    name: `Temporada ${i + 1}`,
+                    episode_count: 0,
+                  })
+                )
+              : [],
+          });
+        }
+      } catch {
+        console.error('Error loading episodes');
+      } finally {
+        setLoadingEpisodes(false);
+      }
+    };
+
+    loadEpisodes();
+  }, [isTVShow, selectedMovie?.id, playerState.selectedSeason]);
+
+  // Handle native video playback (HLS or direct URL)
+  useEffect(() => {
+    if (isEmbed || !currentSource) return;
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Destroy existing HLS instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    const url = currentSource.url;
+
+    if (url.endsWith('.m3u8') || url.includes('.m3u8')) {
+      // HLS stream
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+        });
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch(() => {});
+        });
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (data.fatal) {
+            console.error('HLS fatal error:', data);
+          }
+        });
+        hlsRef.current = hls;
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support (Safari)
+        video.src = url;
+        video.play().catch(() => {});
+      }
+    } else {
+      // Direct video URL
+      video.src = url;
+      video.play().catch(() => {});
+    }
+  }, [currentSource, isEmbed]);
+
   const togglePlay = useCallback(() => {
+    if (isEmbed) return; // Can't control embed playback
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
@@ -55,7 +184,7 @@ export default function VideoPlayer() {
       video.pause();
       setIsPlaying(false);
     }
-  }, []);
+  }, [isEmbed]);
 
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current;
@@ -81,14 +210,17 @@ export default function VideoPlayer() {
     []
   );
 
-  const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const video = videoRef.current;
-    if (!video) return;
-    const vol = parseFloat(e.target.value);
-    setVolume(vol);
-    video.volume = vol;
-    setIsMuted(vol === 0);
-  }, []);
+  const handleVolumeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const video = videoRef.current;
+      if (!video) return;
+      const vol = parseFloat(e.target.value);
+      setVolume(vol);
+      video.volume = vol;
+      setIsMuted(vol === 0);
+    },
+    []
+  );
 
   const toggleMute = useCallback(() => {
     const video = videoRef.current;
@@ -114,7 +246,7 @@ export default function VideoPlayer() {
   }, []);
 
   const formatTime = (seconds: number) => {
-    if (isNaN(seconds)) return '0:00';
+    if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s.toString().padStart(2, '0')}`;
@@ -124,9 +256,9 @@ export default function VideoPlayer() {
     setShowControls(true);
     if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
     hideControlsTimer.current = setTimeout(() => {
-      if (isPlaying) setShowControls(false);
+      if (isPlaying || isEmbed) setShowControls(false);
     }, 3000);
-  }, [isPlaying]);
+  }, [isPlaying, isEmbed]);
 
   const handleMouseMove = useCallback(() => {
     resetHideControls();
@@ -135,10 +267,21 @@ export default function VideoPlayer() {
   const handleClose = useCallback(() => {
     if (videoRef.current) {
       videoRef.current.pause();
-      // Let the onPause event handler set isPlaying to false
     }
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+    setPlayerState({
+      sources: [],
+      currentSource: null,
+      episodes: [],
+      seasons: [],
+      tvDetails: null,
+      isTVShow: false,
+    });
     goBack();
-  }, [goBack]);
+  }, [goBack, setPlayerState]);
 
   const handleSkipBack = useCallback(() => {
     const video = videoRef.current;
@@ -152,6 +295,35 @@ export default function VideoPlayer() {
     video.currentTime = Math.min(video.duration, video.currentTime + 10);
   }, []);
 
+  const handleSourceSwitch = useCallback(
+    (sourceIndex: number, sourceItemIndex: number) => {
+      const group = playerState.sources[sourceIndex];
+      if (group && group.sources[sourceItemIndex]) {
+        switchSource(group.sources[sourceItemIndex]);
+        setShowSourceMenu(false);
+      }
+    },
+    [playerState.sources, switchSource]
+  );
+
+  const handleEpisodeSelect = useCallback(
+    (episodeNumber: number) => {
+      switchEpisode(playerState.selectedSeason, episodeNumber);
+      setShowEpisodeList(false);
+    },
+    [playerState.selectedSeason, switchEpisode]
+  );
+
+  const handleSeasonChange = useCallback(
+    (seasonNumber: number) => {
+      setPlayerState({ selectedSeason: seasonNumber });
+      // Load episodes for new season and auto-play episode 1
+      switchEpisode(seasonNumber, 1);
+      setShowEpisodeList(false);
+    },
+    [setPlayerState, switchEpisode]
+  );
+
   if (currentView !== 'player') return null;
 
   return (
@@ -162,13 +334,23 @@ export default function VideoPlayer() {
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[200] bg-black flex items-center justify-center"
       onMouseMove={handleMouseMove}
-      onClick={togglePlay}
     >
-      {/* Video Element */}
-      {selectedMovie?.videoUrl && !imgError ? (
+      {/* Embed Player (iframe) */}
+      {isEmbed && currentSource && !iframeError ? (
+        <iframe
+          ref={iframeRef}
+          src={currentSource.url}
+          className="w-full h-full border-0"
+          allowFullScreen
+          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+          sandbox="allow-forms allow-same-origin allow-scripts allow-popups allow-presentation"
+          onError={() => setIframeError(true)}
+          title={`Reproduciendo ${selectedMovie?.title || 'video'}`}
+        />
+      ) : !isEmbed && currentSource && currentSource.type === 'hls' ? (
+        /* HLS Video Element */
         <video
           ref={videoRef}
-          src={selectedMovie.videoUrl}
           className="w-full h-full object-contain"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
@@ -176,26 +358,43 @@ export default function VideoPlayer() {
           onPause={() => setIsPlaying(false)}
           onWaiting={() => setIsBuffering(true)}
           onCanPlay={() => setIsBuffering(false)}
-          onError={() => setImgError(true)}
+          playsInline
+        />
+      ) : !isEmbed && currentSource ? (
+        /* Direct Video Element */
+        <video
+          ref={videoRef}
+          src={currentSource.url}
+          className="w-full h-full object-contain"
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onWaiting={() => setIsBuffering(true)}
+          onCanPlay={() => setIsBuffering(false)}
           playsInline
         />
       ) : (
+        /* No Source Available */
         <div className="flex flex-col items-center justify-center gap-4 text-center px-8">
           <div className="relative w-64 h-40 rounded-lg overflow-hidden bg-gray-900">
-            {selectedMovie && !imgError && (
+            {selectedMovie && (
               <img
                 src={selectedMovie.backdropUrl}
                 alt={selectedMovie.title}
                 className="w-full h-full object-cover opacity-50"
-                onError={() => setImgError(true)}
               />
             )}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <X className="h-12 w-12 text-gray-500 mx-auto mb-3" />
-                <p className="text-gray-400 text-lg font-medium">Contenido no disponible</p>
+                <MonitorPlay className="h-12 w-12 text-gray-500 mx-auto mb-3" />
+                <p className="text-gray-400 text-lg font-medium">
+                  {iframeError ? 'Servidor no disponible' : 'Sin fuente de video'}
+                </p>
                 <p className="text-gray-600 text-sm mt-1">
-                  El video no está disponible en este momento
+                  {iframeError
+                    ? 'Intenta cambiar de servidor'
+                    : 'Selecciona un servidor para reproducir'}
                 </p>
               </div>
             </div>
@@ -235,9 +434,18 @@ export default function VideoPlayer() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h2 className="text-sm sm:text-base font-medium text-white truncate max-w-[60%]">
-              {selectedMovie?.title || 'Reproductor'}
-            </h2>
+
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-medium text-white truncate max-w-[40%]">
+                {selectedMovie?.title || 'Reproductor'}
+              </h2>
+              {isTVShow && (
+                <span className="text-xs text-gray-400">
+                  T{playerState.selectedSeason}E{playerState.selectedEpisode}
+                </span>
+              )}
+            </div>
+
             <Button
               variant="ghost"
               onClick={handleClose}
@@ -245,6 +453,118 @@ export default function VideoPlayer() {
             >
               <X className="h-5 w-5" />
             </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Episode List Panel (for TV shows) */}
+      <AnimatePresence>
+        {showEpisodeList && isTVShow && (
+          <motion.div
+            initial={{ x: 300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 300, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute top-0 right-0 bottom-0 z-40 w-80 sm:w-96 bg-black/95 backdrop-blur-md border-l border-gray-800 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Episode list header */}
+            <div className="sticky top-0 z-10 bg-black/95 backdrop-blur-md border-b border-gray-800 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-white font-semibold text-sm flex items-center gap-2">
+                  <List className="h-4 w-4" />
+                  Episodios
+                </h3>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowEpisodeList(false)}
+                  className="text-gray-400 hover:text-white h-7 w-7 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Season Selector */}
+              {playerState.tvDetails && playerState.tvDetails.numberOfSeasons > 1 && (
+                <div className="relative">
+                  <select
+                    value={playerState.selectedSeason}
+                    onChange={(e) => handleSeasonChange(parseInt(e.target.value))}
+                    className="w-full bg-gray-900 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 appearance-none pr-8 cursor-pointer focus:outline-none focus:border-red-600"
+                  >
+                    {Array.from(
+                      { length: playerState.tvDetails.numberOfSeasons },
+                      (_, i) => i + 1
+                    ).map((s) => (
+                      <option key={s} value={s}>
+                        Temporada {s}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                </div>
+              )}
+            </div>
+
+            {/* Episode List */}
+            <div className="p-2">
+              {loadingEpisodes ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 text-red-500 animate-spin" />
+                </div>
+              ) : episodes.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-8">
+                  No hay episodios disponibles
+                </p>
+              ) : (
+                episodes.map((ep) => (
+                  <button
+                    key={ep.episode_number}
+                    onClick={() => handleEpisodeSelect(ep.episode_number)}
+                    className={`w-full text-left px-3 py-3 rounded-lg mb-1 transition-all ${
+                      playerState.selectedEpisode === ep.episode_number
+                        ? 'bg-red-600/20 border border-red-600/50'
+                        : 'hover:bg-gray-900 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 rounded bg-gray-800 flex items-center justify-center">
+                        <span
+                          className={`text-xs font-mono ${
+                            playerState.selectedEpisode === ep.episode_number
+                              ? 'text-red-500'
+                              : 'text-gray-400'
+                          }`}
+                        >
+                          {ep.episode_number}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className={`text-sm font-medium truncate ${
+                            playerState.selectedEpisode === ep.episode_number
+                              ? 'text-red-400'
+                              : 'text-white'
+                          }`}
+                        >
+                          {ep.name}
+                        </p>
+                        {ep.runtime > 0 && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {ep.runtime} min
+                          </p>
+                        )}
+                      </div>
+                      {playerState.selectedEpisode === ep.episode_number && (
+                        <div className="flex-shrink-0 flex items-center">
+                          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -260,42 +580,50 @@ export default function VideoPlayer() {
             className="absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Seek Bar */}
-            <div className="mb-3 sm:mb-4 group/seek">
-              <input
-                type="range"
-                min={0}
-                max={duration || 0}
-                value={currentTime}
-                onChange={handleSeek}
-                className="w-full h-1 bg-gray-600 rounded-full appearance-none cursor-pointer accent-red-600
-                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-red-600 [&::-webkit-slider-thumb]:shadow-lg
-                  [&::-webkit-slider-thumb]:group-hover/seek:scale-125 [&::-webkit-slider-thumb]:transition-transform"
-                style={{
-                  background: `linear-gradient(to right, #dc2626 ${
-                    duration ? (currentTime / duration) * 100 : 0
-                  }%, #4b5563 ${duration ? (currentTime / duration) * 100 : 0}%)`,
-                }}
-              />
-              <div className="flex justify-between mt-1">
-                <span className="text-xs text-gray-400">{formatTime(currentTime)}</span>
-                <span className="text-xs text-gray-400">{formatTime(duration)}</span>
+            {/* Progress bar (only for native video, not embeds) */}
+            {!isEmbed && (
+              <div className="mb-3 sm:mb-4 group/seek">
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 0}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  className="w-full h-1 bg-gray-600 rounded-full appearance-none cursor-pointer accent-red-600
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-red-600 [&::-webkit-slider-thumb]:shadow-lg
+                    [&::-webkit-slider-thumb]:group-hover/seek:scale-125 [&::-webkit-slider-thumb]:transition-transform"
+                  style={{
+                    background: `linear-gradient(to right, #dc2626 ${
+                      duration ? (currentTime / duration) * 100 : 0
+                    }%, #4b5563 ${duration ? (currentTime / duration) * 100 : 0}%)`,
+                  }}
+                />
+                <div className="flex justify-between mt-1">
+                  <span className="text-xs text-gray-400">
+                    {formatTime(currentTime)}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {formatTime(duration)}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Controls */}
+            {/* Controls Row */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1 sm:gap-2">
-                {/* Skip Back */}
-                <Button
-                  variant="ghost"
-                  onClick={handleSkipBack}
-                  className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full"
-                >
-                  <SkipBack className="h-4 w-4" />
-                </Button>
+                {/* Skip Back (only for native video) */}
+                {!isEmbed && (
+                  <Button
+                    variant="ghost"
+                    onClick={handleSkipBack}
+                    className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full"
+                  >
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+                )}
 
-                {/* Play/Pause */}
+                {/* Play/Pause (only functional for native video) */}
                 <Button
                   variant="ghost"
                   onClick={togglePlay}
@@ -308,58 +636,135 @@ export default function VideoPlayer() {
                   )}
                 </Button>
 
-                {/* Skip Forward */}
-                <Button
-                  variant="ghost"
-                  onClick={handleSkipForward}
-                  className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full"
-                >
-                  <SkipForward className="h-4 w-4" />
-                </Button>
-
-                {/* Volume */}
-                <div className="flex items-center gap-1 ml-1 sm:ml-2">
+                {/* Skip Forward (only for native video) */}
+                {!isEmbed && (
                   <Button
                     variant="ghost"
-                    onClick={toggleMute}
+                    onClick={handleSkipForward}
                     className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full"
                   >
-                    {isMuted || volume === 0 ? (
-                      <VolumeX className="h-4 w-4" />
-                    ) : (
-                      <Volume2 className="h-4 w-4" />
-                    )}
+                    <SkipForward className="h-4 w-4" />
                   </Button>
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={isMuted ? 0 : volume}
-                    onChange={handleVolumeChange}
-                    className="hidden sm:block w-20 h-1 bg-gray-600 rounded-full appearance-none cursor-pointer accent-red-600
-                      [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
-                    style={{
-                      background: `linear-gradient(to right, #dc2626 ${
-                        (isMuted ? 0 : volume) * 100
-                      }%, #4b5563 ${(isMuted ? 0 : volume) * 100}%)`,
-                    }}
-                  />
-                </div>
+                )}
+
+                {/* Volume (only for native video) */}
+                {!isEmbed && (
+                  <div className="flex items-center gap-1 ml-1 sm:ml-2">
+                    <Button
+                      variant="ghost"
+                      onClick={toggleMute}
+                      className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full"
+                    >
+                      {isMuted || volume === 0 ? (
+                        <VolumeX className="h-4 w-4" />
+                      ) : (
+                        <Volume2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={isMuted ? 0 : volume}
+                      onChange={handleVolumeChange}
+                      className="hidden sm:block w-20 h-1 bg-gray-600 rounded-full appearance-none cursor-pointer accent-red-600
+                        [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+                      style={{
+                        background: `linear-gradient(to right, #dc2626 ${
+                          (isMuted ? 0 : volume) * 100
+                        }%, #4b5563 ${(isMuted ? 0 : volume) * 100}%)`,
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Episode List Button (for TV shows) */}
+                {isTVShow && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowEpisodeList(!showEpisodeList)}
+                    className="text-white hover:bg-white/20 h-9 w-9 p-0 rounded-full ml-1 sm:ml-2"
+                  >
+                    <Tv className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
 
-              {/* Fullscreen */}
-              <Button
-                variant="ghost"
-                onClick={toggleFullscreen}
-                className="text-white hover:bg-white/20 h-9 w-9 p-0 rounded-full"
-              >
-                {isFullscreen ? (
-                  <Minimize className="h-4 w-4" />
-                ) : (
-                  <Maximize className="h-4 w-4" />
-                )}
-              </Button>
+              {/* Right Side Controls */}
+              <div className="flex items-center gap-1 sm:gap-2">
+                {/* Source Menu */}
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setShowSourceMenu(!showSourceMenu);
+                      setShowEpisodeList(false);
+                    }}
+                    className="text-white hover:bg-white/20 h-9 w-9 p-0 rounded-full"
+                  >
+                    <Server className="h-4 w-4" />
+                  </Button>
+
+                  {/* Source Dropdown */}
+                  <AnimatePresence>
+                    {showSourceMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute bottom-12 right-0 z-50 bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-lg shadow-xl min-w-[200px] overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="p-3 border-b border-gray-800">
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            Servidores
+                          </p>
+                        </div>
+                        {playerState.sources.map((group, groupIdx) =>
+                          group.sources.map((source, sourceIdx) => (
+                            <button
+                              key={`${groupIdx}-${sourceIdx}`}
+                              onClick={() => handleSourceSwitch(groupIdx, sourceIdx)}
+                              className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                                currentSource?.id === source.id
+                                  ? 'bg-red-600/20 text-red-400 border-l-2 border-red-600'
+                                  : 'text-gray-300 hover:bg-gray-800 border-l-2 border-transparent'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Server className="h-3.5 w-3.5" />
+                                <span className="font-medium">{source.name}</span>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-0.5 ml-5">
+                                {source.quality || 'Auto'}
+                              </p>
+                            </button>
+                          ))
+                        )}
+                        {playerState.sources.length === 0 && (
+                          <div className="px-4 py-3 text-sm text-gray-500">
+                            No hay servidores disponibles
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Fullscreen */}
+                <Button
+                  variant="ghost"
+                  onClick={toggleFullscreen}
+                  className="text-white hover:bg-white/20 h-9 w-9 p-0 rounded-full"
+                >
+                  {isFullscreen ? (
+                    <Minimize className="h-4 w-4" />
+                  ) : (
+                    <Maximize className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           </motion.div>
         )}

@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, TrendingUp, ArrowLeft } from 'lucide-react';
+import { Search, X, TrendingUp, ArrowLeft, Tv, Film } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import MovieCard from './MovieCard';
 import { useAppStore, Movie } from '@/lib/store';
 
 export default function SearchView() {
-  const { currentView, searchQuery, setSearchQuery, goBack, setSelectedMovie, setCurrentView } = useAppStore();
+  const { currentView, searchQuery, setSearchQuery, goBack } = useAppStore();
   const [results, setResults] = useState<Movie[]>([]);
   const [trending, setTrending] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +42,7 @@ export default function SearchView() {
     const fetchResults = async () => {
       if (!debouncedQuery.trim()) {
         setResults([]);
-        // Fetch trending when search is empty — try TMDB, fallback to seed
+        // Fetch trending when search is empty
         try {
           const tmdbRes = await fetch('/api/tmdb/trending?type=all&time=week');
           if (tmdbRes.ok) {
@@ -52,7 +53,6 @@ export default function SearchView() {
               return;
             }
           }
-          // Fallback to seed data trending
           const res = await fetch('/api/movies?trending=true');
           if (res.ok) {
             const data = await res.json();
@@ -67,7 +67,9 @@ export default function SearchView() {
       setIsLoading(true);
       try {
         // Try TMDB search first
-        const tmdbRes = await fetch(`/api/tmdb/search?q=${encodeURIComponent(debouncedQuery)}`);
+        const tmdbRes = await fetch(
+          `/api/tmdb/search?q=${encodeURIComponent(debouncedQuery)}`
+        );
         if (tmdbRes.ok) {
           const tmdbData = await tmdbRes.json();
           const tmdbResults = tmdbData.results || [];
@@ -77,10 +79,15 @@ export default function SearchView() {
           }
         }
         // Fallback to local search
-        const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`);
+        const res = await fetch(
+          `/api/search?q=${encodeURIComponent(debouncedQuery)}`
+        );
         if (res.ok) {
           const data = await res.json();
-          const localResults = Array.isArray(data) ? data : data.movies || (data.results || []);
+          const localResults = Array.isArray(data)
+            ? data
+            : data.movies ||
+              (data.results || []);
           setResults(localResults);
         }
       } catch {
@@ -110,6 +117,11 @@ export default function SearchView() {
   if (currentView !== 'search') return null;
 
   const displayResults = debouncedQuery.trim() ? results : trending;
+
+  // Filter out "person" results from TMDB multi-search
+  const filteredResults = displayResults.filter(
+    (m) => m.mediaType !== 'person' || !m.mediaType
+  );
 
   return (
     <motion.div
@@ -177,19 +189,43 @@ export default function SearchView() {
               </div>
             )}
 
-            {debouncedQuery.trim() && displayResults.length > 0 && (
+            {debouncedQuery.trim() && filteredResults.length > 0 && (
               <div className="mb-6">
                 <p className="text-sm text-gray-400">
-                  {displayResults.length} resultado{displayResults.length !== 1 ? 's' : ''} para &quot;{debouncedQuery}&quot;
+                  {filteredResults.length} resultado
+                  {filteredResults.length !== 1 ? 's' : ''} para &quot;
+                  {debouncedQuery}&quot;
                 </p>
               </div>
             )}
 
             {/* Grid */}
-            {displayResults.length > 0 ? (
+            {filteredResults.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
-                {displayResults.map((movie) => (
-                  <MovieCard key={movie.id} movie={movie} />
+                {filteredResults.map((movie) => (
+                  <div key={movie.id} className="relative">
+                    <MovieCard movie={movie} />
+                    {/* Media Type Badge */}
+                    {movie.mediaType && (
+                      <Badge
+                        className={`absolute top-2 left-2 z-10 text-[10px] px-1.5 py-0 border-0 ${
+                          movie.mediaType === 'tv'
+                            ? 'bg-purple-600/90 text-white'
+                            : 'bg-blue-600/90 text-white'
+                        }`}
+                      >
+                        {movie.mediaType === 'tv' ? (
+                          <span className="flex items-center gap-1">
+                            <Tv className="h-3 w-3" /> Serie
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <Film className="h-3 w-3" /> Película
+                          </span>
+                        )}
+                      </Badge>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (

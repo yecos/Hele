@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import type { VideoSource, VideoSourceGroup, EpisodeInfo, SeasonInfo } from './sources';
+import { getMovieSources, getTVSources } from './sources';
 
 export type Movie = {
   id: string;
@@ -20,6 +22,20 @@ export type Movie = {
 };
 
 export type ViewType = 'home' | 'category' | 'search' | 'favorites' | 'movieDetail' | 'player' | 'auth' | 'pricing' | 'profile' | 'admin' | 'watchHistory';
+
+export interface PlayerState {
+  sources: VideoSourceGroup[];
+  currentSource: VideoSource | null;
+  selectedSeason: number;
+  selectedEpisode: number;
+  seasons: SeasonInfo[];
+  episodes: EpisodeInfo[];
+  isTVShow: boolean;
+  tvDetails: {
+    numberOfSeasons: number;
+    numberOfEpisodes: number;
+  } | null;
+}
 
 interface AppState {
   // Navigation
@@ -63,6 +79,13 @@ interface AppState {
   userCreatedAt: string;
   setUserId: (id: string) => void;
   setUserInfo: (name: string, plan: string) => void;
+
+  // Player
+  playerState: PlayerState;
+  setPlayerState: (state: Partial<PlayerState>) => void;
+  playMovie: (tmdbId: number, mediaType: 'movie' | 'tv', title: string, season?: number, episode?: number) => void;
+  switchSource: (source: VideoSource) => void;
+  switchEpisode: (season: number, episode: number) => void;
 
   // UI
   sidebarOpen: boolean;
@@ -153,6 +176,59 @@ export const useAppStore = create<AppState>((set, get) => ({
   userCreatedAt: '',
   setUserId: (id) => set({ userId: id }),
   setUserInfo: (name, plan) => set({ userName: name, userPlan: plan }),
+
+  // Player
+  playerState: {
+    sources: [],
+    currentSource: null,
+    selectedSeason: 1,
+    selectedEpisode: 1,
+    seasons: [],
+    episodes: [],
+    isTVShow: false,
+    tvDetails: null,
+  },
+  setPlayerState: (state) =>
+    set((prev) => ({ playerState: { ...prev.playerState, ...state } })),
+  playMovie: (tmdbId, mediaType, title, season, episode) => {
+    const isTV = mediaType === 'tv';
+    const sources = isTV
+      ? getTVSources(tmdbId, season || 1, episode || 1)
+      : getMovieSources(tmdbId, title);
+    set({
+      playerState: {
+        sources,
+        currentSource: sources[0]?.sources[0] || null,
+        selectedSeason: season || 1,
+        selectedEpisode: episode || 1,
+        seasons: [],
+        episodes: [],
+        isTVShow: isTV,
+        tvDetails: null,
+      },
+      currentView: 'player',
+    });
+  },
+  switchSource: (source) =>
+    set((prev) => ({
+      playerState: { ...prev.playerState, currentSource: source },
+    })),
+  switchEpisode: (season, episode) => {
+    const { selectedMovie, playerState } = get();
+    if (!selectedMovie) return;
+    const tmdbId = parseInt(selectedMovie.id);
+    if (isNaN(tmdbId)) return;
+    const sources = getTVSources(tmdbId, season, episode);
+    set({
+      playerState: {
+        ...playerState,
+        sources,
+        currentSource: sources[0]?.sources[0] || null,
+        selectedSeason: season,
+        selectedEpisode: episode,
+      },
+    });
+  },
 
   // UI
   sidebarOpen: false,
