@@ -19,6 +19,7 @@ import AdminView from '@/components/streaming/AdminView';
 import WatchHistoryView from '@/components/streaming/WatchHistoryView';
 import LiveTVView from '@/components/streaming/LiveTVView';
 import IPTVView from '@/components/streaming/IPTVView';
+import IPTVOrgView from '@/components/streaming/IPTVOrgView';
 import dynamic from 'next/dynamic';
 
 const TorrentPlayer = dynamic(
@@ -435,6 +436,9 @@ export default function Home() {
 
           {/* IPTV / Xtream Codes View */}
           {currentView === 'iptv' && <IPTVView key="iptv" />}
+
+          {/* IPTV Org - Global Channels View */}
+          {currentView === 'iptvOrg' && <IPTVOrgView key="iptvOrg" />}
 
           {/* Torrent Player View */}
           {currentView === 'torrent' && <TorrentPlayer key="torrent" />}

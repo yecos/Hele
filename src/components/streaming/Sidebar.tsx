@@ -17,6 +17,7 @@ import {
   Shield,
   LogOut,
   Server,
+  Globe,
   Magnet,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -175,6 +176,25 @@ export default function Sidebar() {
                     }`}
                   />
                   <span>IPTV / Xuper</span>
+                </button>
+
+                <button
+                  onClick={() => handleViewClick('iptvOrg')}
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    currentView === 'iptvOrg'
+                      ? 'bg-purple-600/15 text-purple-500'
+                      : 'text-gray-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Globe
+                    className={`h-[18px] w-[18px] ${
+                      currentView === 'iptvOrg' ? 'text-purple-500' : 'text-gray-500'
+                    }`}
+                  />
+                  <span>IPTV Mundial</span>
+                  <Badge className="bg-purple-600/20 text-purple-400 border-purple-600/30 text-[10px] px-1.5 py-0 ml-auto">
+                    NEW
+                  </Badge>
                 </button>
 
                 <button
