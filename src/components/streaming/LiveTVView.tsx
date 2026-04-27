@@ -88,22 +88,40 @@ export default function LiveTVView() {
 
   const getCategoryIcon = (catId: string) => {
     switch (catId) {
+      case 'co-nacional': return Tv;
+      case 'co-regional': return Tv;
+      case 'co-deportes': return Trophy;
+      case 'co-noticias': return Newspaper;
+      case 'co-musica': return Music2;
+      case 'co-peliculas': return Film;
+      case 'co-infantil': return Radio;
+      case 'co-entretenimiento': return Film;
+      case 'co-religiosos': return Radio;
+      case 'latam': return Tv;
       case 'news': return Newspaper;
       case 'sports': return Trophy;
       case 'music': return Music2;
       case 'documentary': return Tv;
-      case 'entertainment': return Film;
       default: return Radio;
     }
   };
 
   const getCategoryColor = (catId: string) => {
     switch (catId) {
+      case 'co-nacional': return 'bg-yellow-600/20 text-yellow-400 border-yellow-600/30';
+      case 'co-regional': return 'bg-amber-600/20 text-amber-400 border-amber-600/30';
+      case 'co-deportes': return 'bg-green-600/20 text-green-400 border-green-600/30';
+      case 'co-noticias': return 'bg-blue-600/20 text-blue-400 border-blue-600/30';
+      case 'co-musica': return 'bg-purple-600/20 text-purple-400 border-purple-600/30';
+      case 'co-peliculas': return 'bg-red-600/20 text-red-400 border-red-600/30';
+      case 'co-infantil': return 'bg-cyan-600/20 text-cyan-400 border-cyan-600/30';
+      case 'co-entretenimiento': return 'bg-pink-600/20 text-pink-400 border-pink-600/30';
+      case 'co-religiosos': return 'bg-indigo-600/20 text-indigo-400 border-indigo-600/30';
+      case 'latam': return 'bg-teal-600/20 text-teal-400 border-teal-600/30';
       case 'news': return 'bg-blue-600/20 text-blue-400 border-blue-600/30';
       case 'sports': return 'bg-green-600/20 text-green-400 border-green-600/30';
       case 'music': return 'bg-purple-600/20 text-purple-400 border-purple-600/30';
       case 'documentary': return 'bg-orange-600/20 text-orange-400 border-orange-600/30';
-      case 'entertainment': return 'bg-pink-600/20 text-pink-400 border-pink-600/30';
       default: return 'bg-gray-600/20 text-gray-400 border-gray-600/30';
     }
   };
@@ -123,7 +141,7 @@ export default function LiveTVView() {
                 TV en Vivo
               </h1>
               <p className="text-gray-400 text-sm mt-1">
-                Canales en vivo de noticias, deportes, música y documentales
+                {channels.length} canales en vivo de Colombia, Latinoamérica y el mundo
               </p>
             </div>
           </div>
@@ -256,12 +274,13 @@ export default function LiveTVView() {
             <Volume2 className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
             <div>
               <h3 className="text-sm font-semibold text-white mb-1">
-                Canales en vivo con HLS
+                IPTV Colombia - TV en Vivo
               </h3>
               <p className="text-xs text-gray-400 leading-relaxed">
-                Los canales de TV en vivo utilizan tecnología HLS (HTTP Live Streaming) para transmitir contenido en tiempo real.
-                La reproducción puede tardar unos segundos en cargar. Si un canal no funciona, intenta con otro — la disponibilidad
-                de los streams puede variar según la región y el horario.
+                Canales de TV en vivo de Colombia y Latinoamérica con tecnología HLS. Incluye canales nacionales como Senal Colombia,
+                Canal Institucional, Citytv y Canal Uno; regionales como Teleantioquia, Telemedellin, Telecaribe y Telecafe; deportivos
+                como Win Sports; musicales como La Kalle y Parranda Vallenata; y mucho más. La disponibilidad de los streams puede variar
+                segun la region y el horario. Si un canal no carga, prueba con otro.
               </p>
             </div>
           </div>
