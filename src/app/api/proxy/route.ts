@@ -3,9 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 // Allowed streaming domains for the proxy
 const ALLOWED_DOMAINS = [
   'vidsrc.to', 'vidsrc.cc', 'vidsrc.xyz', 'vidsrc.rip',
+  'vidsrc.pm', 'vidsrc.dev', 'vidsrc.icu',
+  'vidsrc.pl', 'vidsrc.net',
   'embed.su', '2embed.cc', 'multiembed.mov',
-  'moviesapi.club', 'smashystream.com', 'vidsrc.icu',
-  'vidsrc.pl', 'autoembed.cc', 'playtube.ws',
+  'moviesapi.club', 'moviesapi.to',
+  'smashystream.com', 'autoembed.cc', 'playtube.ws',
+  'vsembed.ru',
 ];
 
 export async function GET(request: NextRequest) {

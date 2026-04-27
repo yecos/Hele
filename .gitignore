@@ -66,3 +66,4 @@ worklog.md
 .zscripts/
 dev.log
 dev.out.log
+.env.local
