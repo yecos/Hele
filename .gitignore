@@ -30,12 +30,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+!.env.example
 
 # vercel
 .vercel
-
 
 # typescript
 *.tsbuildinfo
@@ -44,14 +44,25 @@ local-*
 .claude
 .z-ai-config
 *.log
+server.log
+
+# Project-specific
+/skills/.env.local
+/db/
+/download/
+/xuper_apk_analysis.md
+/Plan_Estrategico_XuperStream.pdf
+search_*.json
+superembed_search.json
+streaming_apis.json
+tmdb_embed_search.json
+vidsrc_search.json
+xuper_*.json
+docs/
+examples/
+mini-services/
+upload/
+worklog.md
+.zscripts/
 dev.log
 dev.out.log
-test
-prompt
-
-server.log
-# Skills directory
-/skills/.env.local
-download/
-db/
-xuper_apk_analysis.md

@@ -1,6 +1,14 @@
 import { PrismaClient } from '@prisma/client';
+import { createHash, randomBytes } from 'crypto';
 
 const prisma = new PrismaClient();
+
+// Proper password hashing matching auth.ts
+function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString('hex');
+  const hash = createHash('sha256').update(salt + password).digest('hex');
+  return `${salt}:${hash}`;
+}
 
 const movies = [
   // Featured Movies
@@ -350,18 +358,33 @@ const movies = [
 async function main() {
   console.log('🌱 Seeding database...');
 
-  // Clear existing data
+  // Clear existing data (order matters due to foreign keys)
+  await prisma.playlistItem.deleteMany();
+  await prisma.playlist.deleteMany();
   await prisma.favorite.deleteMany();
+  await prisma.watchHistory.deleteMany();
+  await prisma.episode.deleteMany();
   await prisma.movie.deleteMany();
   await prisma.user.deleteMany();
 
-  // Create a demo user
+  // Create demo user with hashed password
   const demoUser = await prisma.user.create({
     data: {
       email: 'demo@xuperstream.com',
       name: 'Usuario Demo',
-      password: 'demo123',
+      passwordHash: hashPassword('demo123'),
       plan: 'vip',
+    },
+  });
+
+  // Create admin user with hashed password
+  const adminUser = await prisma.user.create({
+    data: {
+      email: 'admin@xuperstream.com',
+      name: 'Administrador',
+      passwordHash: hashPassword('admin123'),
+      role: 'admin',
+      plan: 'premium',
     },
   });
 
@@ -382,7 +405,8 @@ async function main() {
   }
 
   console.log(`✅ Seeded ${movies.length} movies`);
-  console.log(`✅ Created demo user: ${demoUser.email}`);
+  console.log(`✅ Created demo user: ${demoUser.email} (demo123)`);
+  console.log(`✅ Created admin user: ${adminUser.email} (admin123)`);
   console.log(`✅ Added ${firstMovies.length} favorites`);
 }
 
