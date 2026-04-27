@@ -36,26 +36,19 @@ export interface EpisodeInfo {
 
 const STREAM_SERVERS = [
   {
-    id: 'vidsrc-rip',
+    id: 'vidsrc-io',
     name: 'Servidor 1 (vidsrc)',
+    // No X-Frame-Options restrictions, works in direct iframe
     getMovieUrl: (tmdbId: number, _title?: string) =>
-      `https://vidsrc.rip/embed/movie/${tmdbId}`,
+      `https://vidsrc.io/embed/movie/${tmdbId}`,
     getTVUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://vidsrc.rip/embed/tv/${tmdbId}/${season}/${episode}`,
-    type: 'embed' as const,
-  },
-  {
-    id: 'vidsrc-pm',
-    name: 'Servidor 2 (vidsrc)',
-    getMovieUrl: (tmdbId: number, _title?: string) =>
-      `https://vidsrc.pm/embed/movie/${tmdbId}`,
-    getTVUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://vidsrc.pm/embed/tv/${tmdbId}/${season}/${episode}`,
+      `https://vidsrc.io/embed/tv/${tmdbId}/${season}/${episode}`,
     type: 'embed' as const,
   },
   {
     id: 'moviesapi',
-    name: 'Servidor 3 (moviesapi)',
+    name: 'Servidor 2 (moviesapi)',
+    // No X-Frame-Options restrictions
     getMovieUrl: (tmdbId: number, _title?: string) =>
       `https://moviesapi.to/movie/${tmdbId}`,
     getTVUrl: (tmdbId: number, season: number, episode: number) =>
@@ -63,21 +56,32 @@ const STREAM_SERVERS = [
     type: 'embed' as const,
   },
   {
-    id: 'vidsrc-dev',
-    name: 'Servidor 4 (vidsrc)',
+    id: 'vidsrc-pm',
+    name: 'Servidor 3 (vidsrc)',
+    // Has anti-iframe JS check but forwards to actual player
     getMovieUrl: (tmdbId: number, _title?: string) =>
-      `https://vidsrc.dev/embed/movie/${tmdbId}`,
+      `https://vidsrc.pm/embed/movie/${tmdbId}`,
     getTVUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://vidsrc.dev/embed/tv/${tmdbId}/${season}/${episode}`,
+      `https://vidsrc.pm/embed/tv/${tmdbId}/${season}/${episode}`,
     type: 'embed' as const,
   },
   {
-    id: 'vidsrc-cc',
-    name: 'Servidor 5 (vidsrc)',
+    id: 'vidsrc-rip',
+    name: 'Servidor 4 (vidsrc)',
     getMovieUrl: (tmdbId: number, _title?: string) =>
-      `https://vidsrc.cc/v2/embed/movie/${tmdbId}`,
+      `https://vidsrc.rip/embed/movie/${tmdbId}`,
     getTVUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}`,
+      `https://vidsrc.rip/embed/tv/${tmdbId}/${season}/${episode}`,
+    type: 'embed' as const,
+  },
+  {
+    id: 'vidsrc-in',
+    name: 'Servidor 5 (vidsrc)',
+    // Redirects to vsembed.ru
+    getMovieUrl: (tmdbId: number, _title?: string) =>
+      `https://vidsrc.in/embed/movie/${tmdbId}`,
+    getTVUrl: (tmdbId: number, season: number, episode: number) =>
+      `https://vidsrc.in/embed/tv/${tmdbId}/${season}/${episode}`,
     type: 'embed' as const,
   },
 ];

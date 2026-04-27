@@ -59,7 +59,7 @@ export default function VideoPlayer() {
   >([]);
   const [loadingEpisodes, setLoadingEpisodes] = useState(false);
   const [iframeError, setIframeError] = useState(false);
-  const [useProxy, setUseProxy] = useState(true);
+  const [useProxy, setUseProxy] = useState(false);
 
   const currentSource = playerState.currentSource;
   const isEmbed = currentSource?.type === 'embed';
@@ -347,13 +347,19 @@ export default function VideoPlayer() {
     }
   }, [currentSource?.url]);
 
+  // Retry with proxy (fallback)
+  const retryWithProxy = useCallback(() => {
+    setUseProxy(true);
+    setIframeError(false);
+  }, []);
+
   // Retry without proxy
   const retryWithoutProxy = useCallback(() => {
     setUseProxy(false);
     setIframeError(false);
   }, []);
 
-  // Get iframe src
+  // Get iframe src - try direct embed first, proxy as fallback
   const getIframeSrc = useCallback(() => {
     if (!currentSource?.url) return '';
     if (useProxy) {
@@ -423,18 +429,25 @@ export default function VideoPlayer() {
                 {iframeError && (
                   <div className="flex gap-2 mt-4 justify-center">
                     <Button
+                      onClick={retryWithProxy}
+                      className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-3 py-1.5"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                      Reintentar con proxy
+                    </Button>
+                    <Button
                       onClick={retryWithoutProxy}
                       className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-3 py-1.5"
                     >
                       <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                      Reintentar
+                      Reintentar directo
                     </Button>
                     <Button
                       onClick={openInNewTab}
                       className="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1.5"
                     >
                       <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                      Abrir en nueva pestaña
+                      Abrir externo
                     </Button>
                   </div>
                 )}
