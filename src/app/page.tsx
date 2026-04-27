@@ -19,6 +19,12 @@ import AdminView from '@/components/streaming/AdminView';
 import WatchHistoryView from '@/components/streaming/WatchHistoryView';
 import LiveTVView from '@/components/streaming/LiveTVView';
 import IPTVView from '@/components/streaming/IPTVView';
+import dynamic from 'next/dynamic';
+
+const TorrentPlayer = dynamic(
+  () => import('@/components/streaming/TorrentPlayer'),
+  { ssr: false }
+);
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2 } from 'lucide-react';
 
@@ -429,6 +435,9 @@ export default function Home() {
 
           {/* IPTV / Xtream Codes View */}
           {currentView === 'iptv' && <IPTVView key="iptv" />}
+
+          {/* Torrent Player View */}
+          {currentView === 'torrent' && <TorrentPlayer key="torrent" />}
         </AnimatePresence>
       </main>
 

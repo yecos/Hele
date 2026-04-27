@@ -21,7 +21,7 @@ export type Movie = {
   mediaType?: 'movie' | 'tv';
 };
 
-export type ViewType = 'home' | 'category' | 'search' | 'favorites' | 'movieDetail' | 'player' | 'auth' | 'pricing' | 'profile' | 'admin' | 'watchHistory' | 'iptv';
+export type ViewType = 'home' | 'category' | 'search' | 'favorites' | 'movieDetail' | 'player' | 'auth' | 'pricing' | 'profile' | 'admin' | 'watchHistory' | 'iptv' | 'torrent';
 
 export interface PlayerState {
   sources: VideoSourceGroup[];

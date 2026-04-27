@@ -17,6 +17,7 @@ import {
   Shield,
   LogOut,
   Server,
+  Magnet,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -174,6 +175,22 @@ export default function Sidebar() {
                     }`}
                   />
                   <span>IPTV / Xuper</span>
+                </button>
+
+                <button
+                  onClick={() => handleViewClick('torrent')}
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    currentView === 'torrent'
+                      ? 'bg-red-600/15 text-red-500'
+                      : 'text-gray-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Magnet
+                    className={`h-[18px] w-[18px] ${
+                      currentView === 'torrent' ? 'text-red-500' : 'text-gray-500'
+                    }`}
+                  />
+                  <span>Torrent</span>
                 </button>
 
                 <button
