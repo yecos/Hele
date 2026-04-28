@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
+import { parseM3U } from '@/lib/m3uParser';
 
 // Revalidate cached responses every 1 hour
 export const revalidate = 3600;
 
-interface M3UChannel {
+const IPTV_M3U_BASE = 'https://iptv-org.github.io/iptv';
+
+interface PlaylistChannel {
   id: string;
   tvgId: string;
   tvgName: string;
@@ -12,54 +15,26 @@ interface M3UChannel {
   name: string;
   url: string;
   country: string;
+  quality: string;
+  isHD: boolean;
 }
 
-function parseM3U(content: string, country: string): M3UChannel[] {
-  const channels: M3UChannel[] = [];
-  const lines = content.split('\n');
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-
-    if (!line.startsWith('#EXTINF:')) continue;
-
-    // Parse attributes from the #EXTINF line
-    const tvgIdMatch = line.match(/tvg-id="([^"]*)"/);
-    const tvgNameMatch = line.match(/tvg-name="([^"]*)"/);
-    const tvgLogoMatch = line.match(/tvg-logo="([^"]*)"/);
-    const groupTitleMatch = line.match(/group-title="([^"]*)"/);
-
-    // Channel name is the text after the last comma
-    const lastCommaIndex = line.lastIndexOf(',');
-    const rawName = lastCommaIndex !== -1 ? line.substring(lastCommaIndex + 1).trim() : 'Unknown';
-
-    // The next non-empty line should be the stream URL
-    let url = '';
-    for (let j = i + 1; j < lines.length; j++) {
-      const nextLine = lines[j].trim();
-      if (nextLine && !nextLine.startsWith('#')) {
-        url = nextLine;
-        break;
-      }
-    }
-
-    if (!url) continue;
-
-    const channel: M3UChannel = {
-      id: `${country}-${channels.length}`,
-      tvgId: tvgIdMatch?.[1] || '',
-      tvgName: tvgNameMatch?.[1] || rawName,
-      tvgLogo: tvgLogoMatch?.[1] || '',
-      groupTitle: groupTitleMatch?.[1] || 'Uncategorized',
-      name: rawName,
-      url,
-      country,
-    };
-
-    channels.push(channel);
-  }
-
-  return channels;
+/**
+ * Convierte los canales del M3U parser al formato de playlist de la app.
+ */
+function toPlaylistChannels(channels: ReturnType<typeof parseM3U>['channels'], country: string): PlaylistChannel[] {
+  return channels.map((ch, idx) => ({
+    id: `${country}-${idx}`,
+    tvgId: ch.tvgId,
+    tvgName: ch.tvgName,
+    tvgLogo: ch.logo,
+    groupTitle: ch.groupTitle,
+    name: ch.name,
+    url: ch.url,
+    country,
+    quality: ch.quality,
+    isHD: ch.isHD,
+  }));
 }
 
 export async function GET(request: Request) {
@@ -82,7 +57,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const m3uUrl = `https://raw.githubusercontent.com/iptv-org/iptv/master/streams/${country}.m3u`;
+    const m3uUrl = `https://iptv-org.github.io/iptv/countries/${country}.m3u`;
 
     const response = await fetch(m3uUrl);
 
@@ -108,17 +83,19 @@ export async function GET(request: Request) {
       );
     }
 
-    const channels = parseM3U(content, country);
+    // Usar el parser M3U compartido (soporta todos los formatos)
+    const parseResult = parseM3U(content);
+    const playlistChannels = toPlaylistChannels(parseResult.channels, country);
 
-    // Deduplicate channels by URL (same stream, different entries)
+    // Deduplicar por URL
     const seen = new Set<string>();
-    const uniqueChannels = channels.filter((ch) => {
+    const uniqueChannels = playlistChannels.filter((ch) => {
       if (seen.has(ch.url)) return false;
       seen.add(ch.url);
       return true;
     });
 
-    // Group channel counts
+    // Contar por grupo
     const groups: Record<string, number> = {};
     for (const ch of uniqueChannels) {
       groups[ch.groupTitle] = (groups[ch.groupTitle] || 0) + 1;
@@ -129,6 +106,8 @@ export async function GET(request: Request) {
       totalChannels: uniqueChannels.length,
       groups,
       channels: uniqueChannels,
+      parseErrors: parseResult.errors,
+      parseTime: Math.round(parseResult.parseTime),
     });
   } catch (error) {
     console.error('IPTV-Org playlist fetch error:', error);
