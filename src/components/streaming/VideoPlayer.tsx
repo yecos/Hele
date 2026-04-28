@@ -33,7 +33,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/lib/store';
-import { useChromecast } from '@/hooks/use-chromecast';
+import { useCastStore } from '@/lib/cast-store';
 import AudioManager from './AudioManager';
 
 // ─── Types for resolved sources ───────────────────────────────────────────
@@ -88,7 +88,7 @@ export default function VideoPlayer() {
   const [loadingEpisodes, setLoadingEpisodes] = useState(false);
   const [iframeError, setIframeError] = useState(false);
   const [useProxy, setUseProxy] = useState(false);
-  const [castLoading, setCastLoading] = useState(false);
+
   const [showAudioManager, setShowAudioManager] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [extractedSources, setExtractedSources] = useState<{ url: string; type: 'hls' | 'direct'; quality: string; label: string }[]>([]);
@@ -100,14 +100,31 @@ export default function VideoPlayer() {
   const [autoResolved, setAutoResolved] = useState(false);
   const [hlsError, setHlsError] = useState(false);
 
-  // Chromecast
-  const { available: castAvailable, connected: castConnected, deviceName: castDeviceName, casting: isCasting, castMedia, castEmbed, stopCasting } = useChromecast();
+  // Chromecast (global store)
+  const {
+    available: castAvailable,
+    connected: castConnected,
+    deviceName: castDeviceName,
+    casting: isCasting,
+    loading: castLoading,
+    castMedia,
+    castEmbed,
+    stopCasting,
+  } = useCastStore();
 
   const currentSource = playerState.currentSource;
   const isEmbed = currentSource?.type === 'embed';
   const isHLS = currentSource?.type === 'hls' || currentSource?.url?.includes('.m3u8');
   const isLiveTV = currentSource?.type === 'live';
   const isTVShow = playerState.isTVShow;
+
+  // ─── Auto-pause local video when Chromecast connects ─────────────────────
+  useEffect(() => {
+    if (castConnected && videoRef.current && !videoRef.current.paused) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, [castConnected]);
 
   // ─── Cleanup HLS on unmount ────────────────────────────────────────────
   useEffect(() => {
@@ -581,17 +598,12 @@ export default function VideoPlayer() {
   // Cast handler
   const handleCast = useCallback(async () => {
     if (!currentSource || !selectedMovie) return;
-    setCastLoading(true);
-    try {
-      if (isCasting) {
-        stopCasting();
-      } else if (isEmbed) {
-        await castEmbed(currentSource.url, selectedMovie.title);
-      } else {
-        await castMedia(currentSource.url, selectedMovie.title, selectedMovie.backdropUrl);
-      }
-    } finally {
-      setCastLoading(false);
+    if (isCasting) {
+      stopCasting();
+    } else if (isEmbed) {
+      await castEmbed(currentSource.url, selectedMovie.title);
+    } else {
+      await castMedia(currentSource.url, selectedMovie.title, selectedMovie.backdropUrl);
     }
   }, [currentSource, selectedMovie, isEmbed, isCasting, castMedia, castEmbed, stopCasting]);
 

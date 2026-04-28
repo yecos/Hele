@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Heart, Star } from 'lucide-react';
+import { Play, Heart, Star, Cast, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAppStore, Movie } from '@/lib/store';
+import { useCastStore } from '@/lib/cast-store';
 
 interface MovieCardProps {
   movie: Movie;
@@ -13,6 +14,7 @@ interface MovieCardProps {
 
 export default function MovieCard({ movie, showProgress = false }: MovieCardProps) {
   const { setCurrentView, setSelectedMovie, toggleFavorite, isFavorite, playMovie, setPlayerState } = useAppStore();
+  const { available: castAvailable, connected: castConnected, loading: castLoading, castMedia } = useCastStore();
   const [isHovered, setIsHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [favAnimating, setFavAnimating] = useState(false);
@@ -71,6 +73,17 @@ export default function MovieCard({ movie, showProgress = false }: MovieCardProp
     }
   };
 
+  const handleCast = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (movie.videoUrl) {
+      // Direct URL — cast immediately without opening player
+      await castMedia(movie.videoUrl, movie.title, movie.backdropUrl);
+    } else {
+      // TMDB content — open player first (sources need resolution)
+      handlePlay(e);
+    }
+  };
+
   return (
     <motion.div
       layout
@@ -102,12 +115,12 @@ export default function MovieCard({ movie, showProgress = false }: MovieCardProp
         {/* Bottom Gradient */}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
-        {/* Hover Overlay */}
+        {/* Hover Overlay with Play + Cast */}
         <motion.div
           initial={false}
           animate={{ opacity: isHovered ? 1 : 0 }}
           transition={{ duration: 0.2 }}
-          className="absolute inset-0 bg-black/40 flex items-center justify-center"
+          className="absolute inset-0 bg-black/40 flex items-center justify-center gap-3"
         >
           <motion.div
             initial={false}
@@ -118,6 +131,28 @@ export default function MovieCard({ movie, showProgress = false }: MovieCardProp
           >
             <Play className="h-5 w-5 text-white fill-white ml-0.5" />
           </motion.div>
+          {/* Cast button (only visible when devices available) */}
+          {(castAvailable || castConnected) && (
+            <motion.button
+              initial={false}
+              animate={{ scale: isHovered ? 1 : 0.7, opacity: isHovered ? 1 : 0 }}
+              transition={{ duration: 0.2, delay: 0.05 }}
+              className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                castConnected
+                  ? 'bg-blue-600 shadow-blue-600/40'
+                  : 'bg-white/20 backdrop-blur-sm hover:bg-white/30'
+              }`}
+              onClick={handleCast}
+              disabled={castLoading}
+              title="Enviar a Chromecast"
+            >
+              {castLoading ? (
+                <Loader2 className="h-4 w-4 text-white animate-spin" />
+              ) : (
+                <Cast className="h-4 w-4 text-white" />
+              )}
+            </motion.button>
+          )}
         </motion.div>
 
         {/* Live Badge */}

@@ -18,10 +18,12 @@ import {
   Wifi,
   WifiOff,
   ShieldCheck,
+  Cast,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/lib/store';
+import { useCastStore } from '@/lib/cast-store';
 import {
   LIVE_TV_CHANNELS,
   LIVE_TV_CATEGORIES,
@@ -83,6 +85,7 @@ const COUNTRY_GROUPS = [
 
 export default function IPTVOrgView() {
   const { setPlayerState, setCurrentView, setSelectedMovie } = useAppStore();
+  const { available: castAvailable, connected: castConnected, loading: castLoading, castMedia } = useCastStore();
 
   // ─── State ─────────────────────────────────────────────────
   const [selectedCountry, setSelectedCountry] = useState<string>('co');
@@ -311,6 +314,17 @@ export default function IPTVOrgView() {
       setCurrentView('player');
     },
     [setPlayerState, setCurrentView, setSelectedMovie]
+  );
+
+  // ─── Cast channel directly to Chromecast ──────────────────
+  const castChannel = useCallback(
+    async (e: React.MouseEvent, channel: LiveTVChannel) => {
+      e.stopPropagation();
+      if (channel.url) {
+        await castMedia(channel.url, channel.name, channel.logo);
+      }
+    },
+    [castMedia]
   );
 
   const getCountryFlag = (code: string) => {
@@ -710,11 +724,32 @@ export default function IPTVOrgView() {
                     </div>
                   )}
 
-                  {/* Play overlay */}
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-14 h-14 rounded-full bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-600/40 group-hover:scale-110 transition-transform">
+                  {/* Play + Cast overlay */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                    <div
+                      className="w-14 h-14 rounded-full bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-600/40 group-hover:scale-110 transition-transform"
+                      onClick={(e) => { e.stopPropagation(); playChannel(channel); }}
+                    >
                       <Play className="h-6 w-6 text-white ml-1 fill-white" />
                     </div>
+                    {/* Cast button for live channels */}
+                    {(castAvailable || castConnected) && channel.url && (
+                      <div
+                        className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${
+                          castConnected
+                            ? 'bg-blue-600 shadow-blue-600/40'
+                            : 'bg-white/20 backdrop-blur-sm'
+                        }`}
+                        onClick={(e) => castChannel(e, channel)}
+                        title="Enviar a Chromecast"
+                      >
+                        {castLoading ? (
+                          <Loader2 className="h-5 w-5 text-white animate-spin" />
+                        ) : (
+                          <Cast className="h-5 w-5 text-white" />
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 

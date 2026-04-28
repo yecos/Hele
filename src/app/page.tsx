@@ -20,6 +20,8 @@ import WatchHistoryView from '@/components/streaming/WatchHistoryView';
 import LiveTVView from '@/components/streaming/LiveTVView';
 import IPTVView from '@/components/streaming/IPTVView';
 import IPTVOrgView from '@/components/streaming/IPTVOrgView';
+import CastInitializer from '@/components/streaming/CastInitializer';
+import MiniCastControls from '@/components/streaming/MiniCastControls';
 import dynamic from 'next/dynamic';
 
 const TorrentPlayer = dynamic(
@@ -450,6 +452,12 @@ export default function Home() {
 
       {/* Video Player (always mounted, visibility controlled internally) */}
       <VideoPlayer />
+
+      {/* Global Cast SDK initializer (no UI) */}
+      <CastInitializer />
+
+      {/* Global Mini Cast Controls (visible when casting) */}
+      <MiniCastControls />
     </div>
   );
 }
