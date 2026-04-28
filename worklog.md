@@ -151,3 +151,30 @@ Work Log:
 
 Stage Summary:
 - Flujo completo: Película → Botón Torrent → Búsqueda → Selección → Streaming P2P
+
+---
+Task ID: 5
+Agent: Super Z (Main)
+Task: Integracion IPTV M3U Tools - Parser, validador, zapping y M3U import
+
+Work Log:
+- Leidos protocol files: LEE_PRIMERO.txt, INSTRUCTIVO_BITACORA.txt, worklog.md
+- Clonado repositorio y analizada arquitectura existente
+- Creada rama feature/iptv-m3u-tools con tag de respaldo
+- Creados 3 servicios core: m3uParser.ts, channelValidator.ts, channelInfo.ts
+- Creados 2 hooks: useChannelSurfing.ts, useChannelValidation.ts
+- Creada API route: /api/iptv-proxy/route.ts (proxy CORS + SSRF protection)
+- Actualizado IPTVView.tsx con modo dual Xtream/M3U (importar URL o archivo)
+- Creado ChannelSurfingOverlay.tsx (overlay zapping tipo TV)
+- Instalada dependencia hls.js (falta pre-existente)
+- Build exitoso, ESLint limpio
+- Actualizada bitacora en INSTRUCTIVO_BITACORA.txt
+
+Stage Summary:
+- 7 archivos nuevos, 2 modificados
+- IPTVView ahora soporta playlists M3U ademas de Xtream Codes
+- Parser M3U compatible con iptv-org, Xtream Codes y M3U generico
+- Validador de canales con batch concurrente y progreso reactivo
+- Channel surfing con keyboard, touch/swipe, auto-hide, EPG placeholder
+- Rama: feature/iptv-m3u-tools | Commits: ceab68b, 258b0d5
+---

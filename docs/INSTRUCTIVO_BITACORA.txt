@@ -330,3 +330,97 @@ Si se necesita corregir algo, agregar nota aclaratoria.
     src/components/streaming/* (15 archivos)
 
 --- FIN DE SESION 2026-04-27 -------------------------------------------
+
+2026-04-28 | SESION — Integracion IPTV M3U Tools (feature/iptv-m3u-tools)
+  Estado: COMPLETADO
+  Rama: feature/iptv-m3u-tools
+  Tag respaldo: backup-pre-iptv-m3u-tools-20260428
+  Commits: ceab68b, 258b0d5
+
+  Contexto: Sesion para agregar herramientas IPTV avanzadas al proyecto.
+    Se crearon servicios de parsing M3U, validacion de canales, info de canales
+    y hooks reactivos. Se actualizo IPTVView con soporte de importar playlists
+    M3U y se creo un overlay de zapping tipo TV.
+
+  PASO 1 — Analisis y Planificacion:
+    * Lectura de LEE_PRIMERO.txt, INSTRUCTIVO_BITACORA.txt, worklog.md
+    * Analisis de la arquitectura existente (IPTVView, xtream.ts, live-tv.ts)
+    * Se identificaron modulos faltantes: parser M3U, validador, zapping
+    * Alcance estimado: [MEDIANO]
+
+  PASO 2 — Respaldo:
+    * Tag: backup-pre-iptv-m3u-tools-20260428
+    * Rama: feature/iptv-m3u-tools
+
+  PASO 3 — Desarrollo Incremental:
+
+  Tarea 1 — Servicios Core (commit ceab68b):
+    * src/lib/m3uParser.ts — Parser completo M3U/M3U8 con soporte Xtream Codes,
+      iptv-org, M3U generico. Funciones: parseM3U(), parseM3UFromUrl(),
+      filterChannels(), m3uToMovie()
+    * src/lib/channelValidator.ts — Health check de streams con HEAD requests
+      via proxy. Batch con concurrencia controlada (default 8). Funciones:
+      validateChannel(), validateChannelsBatch(), quickValidatePlaylist(),
+      getOnlineChannels(), getValidationStats()
+    * src/lib/channelInfo.ts — Metadata y EPG placeholder. Deteccion de calidad,
+      genero, tipo de stream, bandera de pais, idioma, EPG placeholder.
+      Funciones: detectChannelQuality(), classifyGenre(), getChannelExtendedInfo()
+    * src/app/api/iptv-proxy/route.ts — Proxy API para fetch de playlists M3U
+      y HEAD checks. Proteccion contra SSRF (bloquea IPs privadas)
+
+  Tarea 2 — Hooks Reactivos (commit ceab68b):
+    * src/hooks/useChannelSurfing.ts — Hook de navegacion tipo TV (zapping).
+      Soporta keyboard (arriba/abajo/escape), touch/swipe, auto-hide de overlay,
+      wrap-around circular. API: startSurfing(), stopSurfing(), navigate(),
+      goToChannel(), toggleOverlay()
+    * src/hooks/useChannelValidation.ts — Hook de validacion reactiva con
+      progreso en tiempo real. Soporta cancelacion via AbortController.
+      API: startValidation(), quickCheck(), stopValidation(), reset()
+
+  Tarea 3 — Componentes UI (commit 258b0d5):
+    * src/components/streaming/IPTVView.tsx — Actualizado con modo dual:
+      Xtream Codes + M3U Playlist. Nuevas funcionalidades: importar M3U por
+      URL o archivo local, parser con stats, validacion de canales con
+      progreso, filtrado por grupos M3U, badges HD/HLS, persistencia en
+      localStorage. 1080 lineas (de 559 originales)
+    * src/components/streaming/ChannelSurfingOverlay.tsx — Overlay zapping
+      tipo TV que se muestra sobre el VideoPlayer. Incluye: info de canal
+      (logo, nombre, grupo, calidad), EPG placeholder (ahora/siguiente),
+      navegacion keyboard/touch, auto-hide con mini indicador, preview
+      prev/next channel
+
+  Tarea 4 — Dependencias:
+    * hls.js instalado (falta pre-existente detectada en build)
+    * package-lock.json actualizado
+
+  PASO 4 — Verificacion:
+    * ESLint: 0 errores en archivos nuevos
+    * Build: exitoso (next build completa sin errores)
+    * No se modifico el schema de Prisma ni la base de datos
+
+  Estado actual del proyecto:
+    * IPTVView soporta dos modos: Xtream Codes API y M3U Playlist
+    * M3U parser maneja playlists de iptv-org, Xtream, y M3U genericos
+    * Validador de canales permite verificar la salud de los streams en batch
+    * Channel surfing overlay listo para integrarse con el VideoPlayer
+    * Componente ChannelSurfingOverlay exportado pero aun no integrado
+      en page.tsx (requiere decision de UX para activacion)
+
+  Archivos creados/modificados:
+    NUEVOS (8):
+    - src/lib/m3uParser.ts
+    - src/lib/channelValidator.ts
+    - src/lib/channelInfo.ts
+    - src/hooks/useChannelSurfing.ts
+    - src/hooks/useChannelValidation.ts
+    - src/app/api/iptv-proxy/route.ts
+    - src/components/streaming/ChannelSurfingOverlay.tsx
+    MODIFICADOS (2):
+    - src/components/streaming/IPTVView.tsx (+521 lineas, modo dual M3U/Xtream)
+    - package-lock.json (hls.js dependency)
+
+  NOTA: El ChannelSurfingOverlay esta listo pero requiere integracion manual
+  en page.tsx para conectarlo con el reproductor. Se recomienda activar el
+  zapping solo cuando se reproduce un canal IPTV.
+
+--- FIN DE SESION 2026-04-28 -------------------------------------------
