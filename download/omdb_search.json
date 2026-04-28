@@ -1,0 +1,92 @@
+[
+  {
+    "url": "http://www.omdbapi.com",
+    "name": "OMDb API - The Open Movie Database",
+    "snippet": "The OMDb API is a RESTful web service to obtain movie information, all content and images on the site are contributed and maintained by our users. If you find ... Missing: features 2024 2025",
+    "host_name": "www.omdbapi.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/nerd-for-tech/the-open-movie-database-omdb-for-fetch-movie-data-bc5ff46bec8",
+    "name": "The Open Movie Database(OMDb) for fetching movie data - Medium",
+    "snippet": "This article is about making your own portal for the OMDb. OMDB API is a RESTful web service to retrieve movie or series information (title, plot, actors, year ...",
+    "host_name": "medium.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/topics/omdb-api?l=c%23&o=desc&s=updated",
+    "name": "omdb-api · GitHub Topics",
+    "snippet": "The Movie API App is a Windows Forms (WinForms) application developed to interact with the OMDB API for movie search functionality.",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://info5001.infosci.cornell.edu/ae/ae-11-omdb-api.html",
+    "name": "AE 11: Querying the OMDB API with {httr2} - INFO 5001",
+    "snippet": "In this application exercise, we will write a function to query the Open Movie Database. Create a request. The first step in querying an API is ... Missing: 2024 | Show results with: 2024",
+    "host_name": "info5001.infosci.cornell.edu",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://omdbpy.readthedocs.io/_/downloads/en/latest/pdf",
+    "name": "[PDF] omdb Documentation",
+    "snippet": "NOTE: By default all OMDb API responses are formatted as JSON. However, OMDb API also supports responses formatted as XML. Missing: review 2024 2025",
+    "host_name": "omdbpy.readthedocs.io",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.omdbapi.com/apikey.aspx",
+    "name": "API Key - OMDb API - The Open Movie Database",
+    "snippet": "If your requested key doesn't show up within an hour, please contact me directly. Generate API Key. Account Type. Patreon. Missing: review features 2024 2025",
+    "host_name": "www.omdbapi.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://attendance.sindhhealth.gov.pk/free-area/unlocking-the-movieverse-a-guide-to-the-omdb-api-1764798106",
+    "name": "Unlocking The Movieverse: A Guide To The OMDb API - Sindhhealth",
+    "snippet": "One of the best things about the OMDb API is that it's free to use. You don't need to pay any fees or sign up for a subscription to access the ...",
+    "host_name": "attendance.sindhhealth.gov.pk",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/omdbapi/OMDb-API/issues",
+    "name": "Issues · omdbapi/OMDb-API - GitHub",
+    "snippet": "Feature Request: Search by Actor, Director, or Writer in OMDb API #319 In omdbapi/OMDb-API; RenegadeFox opened on Aug 6, 2024",
+    "host_name": "github.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://omdbpy.readthedocs.io",
+    "name": "omdb.py — omdb 0.10.1 documentation",
+    "snippet": "API data returned from the OMDb API is returned as a dictionary with their fields converted from CamelCase to underscore_case . Search Model Fields¶. OMDb API ... Missing: review 2024 2025",
+    "host_name": "omdbpy.readthedocs.io",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/omdbapi/OMDb-API/issues/320",
+    "name": "Latest movies and tv series list #320 - omdbapi/OMDb-API - GitHub",
+    "snippet": "How to get a list of latest movies and tv series?",
+    "host_name": "github.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
