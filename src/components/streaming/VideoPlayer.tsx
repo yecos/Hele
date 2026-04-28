@@ -196,8 +196,9 @@ export function VideoPlayer() {
             src={currentServerUrl}
             className="w-full h-full border-0"
             allowFullScreen
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture; autoplay; encrypted-media"
+            allowTransparency
+            referrerPolicy="no-referrer"
             onLoad={() => setLoadingProgress(false)}
             onError={() => { setIframeError(true); setLoadingProgress(false); }}
           />

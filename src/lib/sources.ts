@@ -31,14 +31,6 @@ interface TMDBServer {
 
 export const TMDB_SERVERS: TMDBServer[] = [
   {
-    id: 'moviesapi',
-    name: 'MoviesAPI',
-    getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'movie') return `https://moviesapi.to/movie/${tmdbId}`;
-      return `https://moviesapi.to/tv/${tmdbId}-${season}-${episode}`;
-    },
-  },
-  {
     id: 'vidsrc-pm',
     name: 'VidSrc PM',
     getUrl: (tmdbId, type, season, episode) => {
@@ -55,11 +47,11 @@ export const TMDB_SERVERS: TMDBServer[] = [
     },
   },
   {
-    id: 'vidsrc-dev',
-    name: 'VidSrc Dev',
+    id: 'moviesapi',
+    name: 'MoviesAPI',
     getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'movie') return `https://vidsrc.dev/embed/movie/${tmdbId}`;
-      return `https://vidsrc.dev/embed/tv/${tmdbId}/${season}/${episode}`;
+      if (type === 'movie') return `https://moviesapi.to/movie/${tmdbId}`;
+      return `https://moviesapi.to/tv/${tmdbId}-${season}-${episode}`;
     },
   },
   {
@@ -68,14 +60,6 @@ export const TMDB_SERVERS: TMDBServer[] = [
     getUrl: (tmdbId, type, season, episode) => {
       if (type === 'movie') return `https://vidlink.pro/movie/${tmdbId}`;
       return `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`;
-    },
-  },
-  {
-    id: 'embedstream',
-    name: 'EmbedStream',
-    getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'movie') return `https://embedstream.me/movie/${tmdbId}`;
-      return `https://embedstream.me/tv/${tmdbId}/${season}/${episode}`;
     },
   },
 ];
@@ -115,9 +99,7 @@ export const SERVER_ICONS: Record<string, string> = {
   moviesapi: '🎥',
   'vidsrc-pm': '📺',
   'vidsrc-io': '📺',
-  'vidsrc-dev': '📺',
   vidlink: '🔗',
-  embedstream: '▶️',
   default: '🖥️',
 };
 

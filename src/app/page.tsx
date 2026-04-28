@@ -33,7 +33,7 @@ export default function Page() {
               <div>
                 <h3 className="text-white font-semibold text-sm">Servidores</h3>
                 <p className="text-gray-400 text-sm mt-1">
-                  MoviesAPI, VidSrc PM, VidSrc IO, VidSrc Dev, VidLink, EmbedStream
+                  MoviesAPI, VidSrc PM, VidSrc IO, VidLink
                 </p>
                 <p className="text-gray-500 text-xs mt-1">
                   Los servidores se cargan automáticamente al reproducir contenido.
