@@ -2,8 +2,65 @@ import { create } from 'zustand';
 import type { MovieItem, TMDBMovieDetail } from './tmdb';
 import type { StreamSource, ServerGroup, AudioLang } from './sources';
 
+// ==================== AUTH STATE ====================
+interface AuthState {
+  isLoggedIn: boolean;
+  username: string;
+  isLoading: boolean;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  checkAuth: () => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  isLoggedIn: false,
+  username: '',
+  isLoading: false,
+
+  login: async (username, password) => {
+    set({ isLoading: true });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem('xs-auth', JSON.stringify({ username: data.username, token: data.token }));
+        set({ isLoggedIn: true, username: data.username, isLoading: false });
+        return true;
+      }
+      set({ isLoading: false });
+      return false;
+    } catch {
+      set({ isLoading: false });
+      return false;
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem('xs-auth');
+    set({ isLoggedIn: false, username: '' });
+  },
+
+  checkAuth: () => {
+    try {
+      const stored = localStorage.getItem('xs-auth');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.username) {
+          set({ isLoggedIn: true, username: parsed.username });
+          return;
+        }
+      }
+    } catch {}
+    set({ isLoggedIn: false, username: '' });
+  },
+}));
+
 // ==================== VIEW STATE ====================
-export type ViewType = 'home' | 'search' | 'favorites' | 'settings';
+export type ViewType = 'home' | 'movies' | 'series' | 'iptv' | 'search' | 'favorites' | 'settings';
 
 interface ViewState {
   currentView: ViewType;

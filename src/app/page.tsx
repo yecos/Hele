@@ -1,16 +1,31 @@
 'use client';
 
-import { useViewStore, usePlayerStore } from '@/lib/store';
+import { useEffect } from 'react';
+import { useViewStore, usePlayerStore, useAuthStore } from '@/lib/store';
 import { Navbar } from '@/components/streaming/Navbar';
 import { VideoPlayer } from '@/components/streaming/VideoPlayer';
-import { MovieDetailModal } from '@/components/streaming/MovieDetailModal';
+import { LoginView } from '@/components/views/LoginView';
 import { HomeView } from '@/components/views/HomeView';
+import { MoviesView } from '@/components/views/MoviesView';
+import { SeriesView } from '@/components/views/SeriesView';
+import { IPTVView } from '@/components/views/IPTVView';
 import { SearchView } from '@/components/views/SearchView';
 import { FavoritesView } from '@/components/views/FavoritesView';
 
 export default function Page() {
   const { currentView } = useViewStore();
   const { isPlaying } = usePlayerStore();
+  const { isLoggedIn, checkAuth } = useAuthStore();
+
+  // Check auth on mount
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  // Show login screen if not authenticated
+  if (!isLoggedIn) {
+    return <LoginView />;
+  }
 
   return (
     <main className="min-h-screen bg-[#0a0a0a]">
@@ -20,6 +35,9 @@ export default function Page() {
       {/* Main content */}
       <div className={isPlaying ? 'pointer-events-none opacity-30' : ''}>
         {currentView === 'home' && <HomeView />}
+        {currentView === 'movies' && <MoviesView />}
+        {currentView === 'series' && <SeriesView />}
+        {currentView === 'iptv' && <IPTVView />}
         {currentView === 'search' && <SearchView />}
         {currentView === 'favorites' && <FavoritesView />}
         {currentView === 'settings' && (
@@ -33,10 +51,17 @@ export default function Page() {
               <div>
                 <h3 className="text-white font-semibold text-sm">Servidores</h3>
                 <p className="text-gray-400 text-sm mt-1">
-                  MoviesAPI, VidSrc PM, VidSrc IO, VidLink
+                  SmashyStream, VidSrc IO, MoviesAPI, VidLink
                 </p>
                 <p className="text-gray-500 text-xs mt-1">
                   Los servidores se cargan automáticamente al reproducir contenido.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-white font-semibold text-sm">IPTV</h3>
+                <p className="text-gray-400 text-sm mt-1">Canales en vivo de Colombia y el mundo</p>
+                <p className="text-gray-500 text-xs mt-1">
+                  Canales nacionales, noticias, deportes, música y más.
                 </p>
               </div>
               <div>
