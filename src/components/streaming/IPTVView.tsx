@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Radio,
@@ -19,13 +19,22 @@ import {
   Server,
   X,
   Info,
+  FileText,
+  CheckCircle,
+  Upload,
+  RadioTower,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useAppStore } from '@/lib/store';
+import { parseM3U, parseM3UFromUrl, filterChannels, m3uToMovie, type M3UChannel, type M3UParseResult } from '@/lib/m3uParser';
+import { useChannelValidation } from '@/hooks/useChannelValidation';
+import { getChannelExtendedInfo } from '@/lib/channelInfo';
 
 // ─── Types ──────────────────────────────────────────────────
+
+type SourceMode = 'xtream' | 'm3u';
 
 interface XtreamConfig {
   serverUrl: string;
@@ -52,6 +61,11 @@ interface Category {
 
 export default function IPTVView() {
   const { setPlayerState, setCurrentView, setSelectedMovie } = useAppStore();
+
+  // Source mode
+  const [sourceMode, setSourceMode] = useState<SourceMode>('xtream');
+
+  // Xtream state
   const [config, setConfig] = useState<XtreamConfig | null>(null);
   const [showSetup, setShowSetup] = useState(true);
   const [connected, setConnected] = useState(false);
@@ -65,9 +79,41 @@ export default function IPTVView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [userInfo, setUserInfo] = useState<{ username: string; status: string; exp_date: string; max_connections: string; active_cons: string } | null>(null);
 
-  // Load saved config
+  // M3U state
+  const [m3uUrl, setM3uUrl] = useState('');
+  const [m3uChannels, setM3uChannels] = useState<M3UChannel[]>([]);
+  const [m3uGroups, setM3uGroups] = useState<{ id: string; name: string; count: number }[]>([]);
+  const [loadingM3U, setLoadingM3U] = useState(false);
+  const [m3uError, setM3uError] = useState('');
+  const [m3uConnected, setM3uConnected] = useState(false);
+  const [m3uParseInfo, setM3uParseInfo] = useState<M3UParseResult | null>(null);
+  const [selectedM3uCat, setSelectedM3uCat] = useState('all');
+  const [m3uSearchQuery, setM3uSearchQuery] = useState('');
+  const validation = useChannelValidation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Build a quick lookup map from validation results
+  const validationResultMap = new Map<string, string>();
+  for (const r of validation.results) {
+    validationResultMap.set(r.channel.url, r.status);
+  }
+
+  // ─── Load saved config ────────────────────────────────────
+
   useEffect(() => {
     try {
+      const savedMode = localStorage.getItem('iptv_source_mode') as SourceMode | null;
+      if (savedMode === 'm3u') {
+        const savedUrl = localStorage.getItem('m3u_url');
+        if (savedUrl) {
+          setSourceMode('m3u');
+          setM3uUrl(savedUrl);
+          // Re-parse the playlist
+          loadM3UPlaylist(savedUrl);
+          return;
+        }
+      }
+
       const saved = localStorage.getItem('xtream_config');
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -77,6 +123,8 @@ export default function IPTVView() {
       }
     } catch { /* ignore */ }
   }, []);
+
+  // ─── Xtream Connection Logic ──────────────────────────────
 
   const connectToServer = async (cfg: XtreamConfig) => {
     setConnecting(true);
@@ -98,9 +146,11 @@ export default function IPTVView() {
       if (data.user_info && data.user_info.auth === 1) {
         setConfig({ ...cfg, serverUrl });
         setConnected(true);
+        setSourceMode('xtream');
         setShowSetup(false);
         setUserInfo(data.user_info);
         localStorage.setItem('xtream_config', JSON.stringify({ ...cfg, serverUrl }));
+        localStorage.setItem('iptv_source_mode', 'xtream');
         setError('');
         // Load default tab (live categories)
         loadCategories({ ...cfg, serverUrl }, 'live');
@@ -239,32 +289,110 @@ export default function IPTVView() {
     };
 
     setSelectedMovie(movieObj);
+    const sourceType = channel.streamUrl.includes('.m3u8') ? 'hls' as const : 'direct' as const;
+    const videoSource = {
+      id: String(channel.id),
+      name: 'Servidor IPTV',
+      type: sourceType,
+      mode: 'native' as const,
+      url: channel.streamUrl,
+      quality: 'Auto',
+      server: 'iptv',
+    };
     setPlayerState({
       sources: [{
         server: 'IPTV',
-        sources: [{
-          id: String(channel.id),
-          name: 'Servidor IPTV',
-          type: channel.streamUrl.includes('.m3u8') ? 'hls' as const : 'direct' as const,
-          url: channel.streamUrl,
-          quality: 'Auto',
-          server: 'iptv',
-        }],
+        sources: [videoSource],
       }],
-      currentSource: {
-        id: String(channel.id),
-        name: 'Servidor IPTV',
-        type: channel.streamUrl.includes('.m3u8') ? 'hls' as const : 'direct' as const,
-        url: channel.streamUrl,
-        quality: 'Auto',
-        server: 'iptv',
-      },
+      currentSource: videoSource,
       isTVShow: false,
       selectedSeason: 1,
       selectedEpisode: 1,
     });
     setCurrentView('player');
   };
+
+  // ─── M3U Connection Logic ─────────────────────────────────
+
+  const loadM3UPlaylist = async (url: string) => {
+    setLoadingM3U(true);
+    setM3uError('');
+    try {
+      const result = await parseM3UFromUrl(url);
+      setM3uChannels(result.channels);
+      setM3uGroups(result.groups);
+      setM3uParseInfo(result);
+      if (result.channels.length > 0) {
+        setM3uConnected(true);
+        setShowSetup(false);
+        setSourceMode('m3u');
+        localStorage.setItem('m3u_url', url);
+        localStorage.setItem('iptv_source_mode', 'm3u');
+      } else {
+        setM3uError(result.errors[0] || 'No se encontraron canales en la playlist');
+      }
+    } catch (err) {
+      setM3uError(err instanceof Error ? err.message : 'Error al cargar la playlist');
+    } finally {
+      setLoadingM3U(false);
+    }
+  };
+
+  const loadM3UFromFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      try {
+        const result = parseM3U(content);
+        setM3uChannels(result.channels);
+        setM3uGroups(result.groups);
+        setM3uParseInfo(result);
+        if (result.channels.length > 0) {
+          setM3uConnected(true);
+          setShowSetup(false);
+          setSourceMode('m3u');
+          localStorage.setItem('iptv_source_mode', 'm3u');
+          setM3uError('');
+        } else {
+          setM3uError(result.errors[0] || 'No se encontraron canales en el archivo');
+        }
+      } catch (err) {
+        setM3uError(err instanceof Error ? err.message : 'Error al procesar el archivo M3U');
+      }
+    };
+    reader.onerror = () => {
+      setM3uError('Error al leer el archivo');
+    };
+    reader.readAsText(file);
+  };
+
+  const playM3UChannel = (ch: M3UChannel) => {
+    const movie = m3uToMovie(ch);
+    setSelectedMovie(movie);
+    const sourceType = ch.url.includes('.m3u8') ? 'hls' as const : 'direct' as const;
+    const videoSource = {
+      id: ch.id,
+      name: ch.name,
+      type: sourceType,
+      mode: 'native' as const,
+      url: ch.url,
+      quality: ch.quality || 'Auto',
+      server: 'm3u',
+    };
+    setPlayerState({
+      sources: [{
+        server: 'M3U',
+        sources: [videoSource],
+      }],
+      currentSource: videoSource,
+      isTVShow: false,
+      selectedSeason: 1,
+      selectedEpisode: 1,
+    });
+    setCurrentView('player');
+  };
+
+  // ─── Disconnect / Switch ──────────────────────────────────
 
   const disconnect = () => {
     setConfig(null);
@@ -273,15 +401,55 @@ export default function IPTVView() {
     setChannels([]);
     setUserInfo(null);
     localStorage.removeItem('xtream_config');
+    localStorage.removeItem('iptv_source_mode');
     setShowSetup(true);
   };
 
-  // Filter channels by search
+  const disconnectM3U = () => {
+    setM3uUrl('');
+    setM3uChannels([]);
+    setM3uGroups([]);
+    setM3uConnected(false);
+    setM3uParseInfo(null);
+    setSelectedM3uCat('all');
+    setM3uSearchQuery('');
+    localStorage.removeItem('m3u_url');
+    localStorage.removeItem('iptv_source_mode');
+    setShowSetup(true);
+  };
+
+  const switchToXtream = () => {
+    if (connected && config) {
+      setSourceMode('xtream');
+      localStorage.setItem('iptv_source_mode', 'xtream');
+    } else {
+      setSourceMode('xtream');
+      setShowSetup(true);
+    }
+  };
+
+  const switchToM3U = () => {
+    if (m3uConnected) {
+      setSourceMode('m3u');
+      localStorage.setItem('iptv_source_mode', 'm3u');
+    } else {
+      setSourceMode('m3u');
+      setShowSetup(true);
+    }
+  };
+
+  // ─── Filter channels by search ────────────────────────────
   const filteredChannels = searchQuery
     ? channels.filter((ch) => ch.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : channels;
 
-  // ─── Setup Form ─────────────────────────────────────────────
+  const filteredM3UChannels = m3uChannels.filter((ch) => {
+    const matchesSearch = !m3uSearchQuery || ch.name.toLowerCase().includes(m3uSearchQuery.toLowerCase());
+    const matchesGroup = selectedM3uCat === 'all' || ch.group === selectedM3uCat;
+    return matchesSearch && matchesGroup;
+  });
+
+  // ─── Setup Form ───────────────────────────────────────────
   if (showSetup) {
     return (
       <div className="min-h-screen bg-black pt-20 pb-16 flex items-center justify-center px-4">
@@ -296,77 +464,419 @@ export default function IPTVView() {
             </div>
             <h1 className="text-2xl font-bold text-white">Conectar IPTV</h1>
             <p className="text-gray-400 text-sm mt-2">
-              Ingresa los datos de tu servidor Xtream Codes para acceder a todos los canales, películas y series
+              Elige tu fuente de contenido IPTV para acceder a todos los canales, películas y series
             </p>
           </div>
 
-          <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-6 space-y-4">
-            <div>
-              <label className="text-sm text-gray-400 mb-1 block">URL del Servidor</label>
-              <Input
-                placeholder="http://servidor.com:8080"
-                id="xtream-url"
-                defaultValue=""
-                className="bg-gray-800 border-gray-700 text-white h-11"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-gray-400 mb-1 block">Usuario</label>
-              <Input
-                placeholder="tu_usuario"
-                id="xtream-user"
-                defaultValue=""
-                className="bg-gray-800 border-gray-700 text-white h-11"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-gray-400 mb-1 block">Contraseña</label>
-              <Input
-                type="password"
-                placeholder="tu_contraseña"
-                id="xtream-pass"
-                defaultValue=""
-                className="bg-gray-800 border-gray-700 text-white h-11"
-              />
-            </div>
-
-            {error && (
-              <div className="flex items-center gap-2 bg-red-600/10 border border-red-600/30 rounded-lg p-3">
-                <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                <span className="text-red-400 text-sm">{error}</span>
-              </div>
-            )}
-
-            <Button
-              onClick={() => {
-                const serverUrl = (document.getElementById('xtream-url') as HTMLInputElement)?.value || '';
-                const username = (document.getElementById('xtream-user') as HTMLInputElement)?.value || '';
-                const password = (document.getElementById('xtream-pass') as HTMLInputElement)?.value || '';
-                connectToServer({ serverUrl, username, password });
-              }}
-              disabled={connecting}
-              className="w-full h-11 bg-red-600 hover:bg-red-700 text-white font-semibold"
+          {/* Source Mode Tabs */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setSourceMode('xtream')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                sourceMode === 'xtream'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-900 text-gray-300 hover:bg-gray-800 hover:text-white'
+              }`}
             >
-              {connecting ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Conectando...</>
-              ) : (
-                <><Wifi className="h-4 w-4 mr-2" /> Conectar</>
-              )}
-            </Button>
-
-            <div className="bg-gray-800/50 rounded-lg p-3 mt-2">
-              <p className="text-xs text-gray-500 flex items-start gap-2">
-                <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                Compatible con cualquier proveedor IPTV que use Xtream Codes Panel (Xuper TV, Magis TV, etc.)
-              </p>
-            </div>
+              <Server className="h-4 w-4" />
+              Xtream Codes
+            </button>
+            <button
+              onClick={() => setSourceMode('m3u')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                sourceMode === 'm3u'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-900 text-gray-300 hover:bg-gray-800 hover:text-white'
+              }`}
+            >
+              <FileText className="h-4 w-4" />
+              M3U Playlist
+            </button>
           </div>
+
+          <AnimatePresence mode="wait">
+            {sourceMode === 'xtream' ? (
+              <motion.div
+                key="xtream-setup"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="bg-gray-900/80 border border-gray-800 rounded-xl p-6 space-y-4"
+              >
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">URL del Servidor</label>
+                  <Input
+                    placeholder="http://servidor.com:8080"
+                    id="xtream-url"
+                    defaultValue=""
+                    className="bg-gray-800 border-gray-700 text-white h-11"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">Usuario</label>
+                  <Input
+                    placeholder="tu_usuario"
+                    id="xtream-user"
+                    defaultValue=""
+                    className="bg-gray-800 border-gray-700 text-white h-11"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">Contraseña</label>
+                  <Input
+                    type="password"
+                    placeholder="tu_contraseña"
+                    id="xtream-pass"
+                    defaultValue=""
+                    className="bg-gray-800 border-gray-700 text-white h-11"
+                  />
+                </div>
+
+                {error && (
+                  <div className="flex items-center gap-2 bg-red-600/10 border border-red-600/30 rounded-lg p-3">
+                    <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                    <span className="text-red-400 text-sm">{error}</span>
+                  </div>
+                )}
+
+                <Button
+                  onClick={() => {
+                    const serverUrl = (document.getElementById('xtream-url') as HTMLInputElement)?.value || '';
+                    const username = (document.getElementById('xtream-user') as HTMLInputElement)?.value || '';
+                    const password = (document.getElementById('xtream-pass') as HTMLInputElement)?.value || '';
+                    connectToServer({ serverUrl, username, password });
+                  }}
+                  disabled={connecting}
+                  className="w-full h-11 bg-red-600 hover:bg-red-700 text-white font-semibold"
+                >
+                  {connecting ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Conectando...</>
+                  ) : (
+                    <><Wifi className="h-4 w-4 mr-2" /> Conectar</>
+                  )}
+                </Button>
+
+                <div className="bg-gray-800/50 rounded-lg p-3 mt-2">
+                  <p className="text-xs text-gray-500 flex items-start gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    Compatible con cualquier proveedor IPTV que use Xtream Codes Panel (Xuper TV, Magis TV, etc.)
+                  </p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="m3u-setup"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="bg-gray-900/80 border border-gray-800 rounded-xl p-6 space-y-4"
+              >
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">URL de la Playlist M3U</label>
+                  <Input
+                    placeholder="https://ejemplo.com/playlist.m3u"
+                    value={m3uUrl}
+                    onChange={(e) => setM3uUrl(e.target.value)}
+                    className="bg-gray-800 border-gray-700 text-white h-11"
+                  />
+                </div>
+
+                {/* File Upload */}
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">o sube un archivo .m3u</label>
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center justify-center gap-2 h-20 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-red-600/50 hover:bg-gray-800/50 transition-all"
+                  >
+                    <Upload className="h-5 w-5 text-gray-500" />
+                    <span className="text-sm text-gray-400">
+                      Haz clic para seleccionar archivo .m3u
+                    </span>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".m3u,.m3u8"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) loadM3UFromFile(file);
+                    }}
+                  />
+                </div>
+
+                {m3uError && (
+                  <div className="flex items-center gap-2 bg-red-600/10 border border-red-600/30 rounded-lg p-3">
+                    <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                    <span className="text-red-400 text-sm">{m3uError}</span>
+                  </div>
+                )}
+
+                {/* Parse Info */}
+                {m3uParseInfo && m3uParseInfo.channels.length > 0 && !m3uConnected && (
+                  <div className="flex items-center gap-2 bg-green-600/10 border border-green-600/30 rounded-lg p-3">
+                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <span className="text-green-400 text-sm">
+                      {m3uParseInfo.channels.length} canales encontrados en {m3uParseInfo.groups.length} grupos
+                      {m3uParseInfo.errors.length > 0 && ` (${m3uParseInfo.errors.length} errores)`}
+                    </span>
+                  </div>
+                )}
+
+                <Button
+                  onClick={() => {
+                    if (m3uUrl.trim()) {
+                      loadM3UPlaylist(m3uUrl.trim());
+                    }
+                  }}
+                  disabled={loadingM3U || !m3uUrl.trim()}
+                  className="w-full h-11 bg-red-600 hover:bg-red-700 text-white font-semibold"
+                >
+                  {loadingM3U ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Cargando playlist...</>
+                  ) : (
+                    <><Wifi className="h-4 w-4 mr-2" /> Conectar</>
+                  )}
+                </Button>
+
+                <div className="bg-gray-800/50 rounded-lg p-3 mt-2">
+                  <p className="text-xs text-gray-500 flex items-start gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    Compatible con playlists M3U/M3U8 de cualquier proveedor IPTV. También puedes usar archivos locales con extensión .m3u o .m3u8.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </div>
     );
   }
 
-  // ─── Main IPTV Browser ──────────────────────────────────────
+  // ─── M3U Main Browser ─────────────────────────────────────
+  if (sourceMode === 'm3u' && m3uConnected) {
+    return (
+      <div className="min-h-screen bg-black pt-20 pb-16">
+        {/* Header */}
+        <div className="px-4 sm:px-8 md:px-12 lg:px-16 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-600/20 flex items-center justify-center">
+                <Radio className="h-5 w-5 text-green-500 animate-pulse" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">IPTV — M3U</h1>
+                <p className="text-gray-500 text-xs mt-0.5">
+                  Playlist M3U · {m3uChannels.length} canales · {m3uGroups.length} grupos
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Source mode switcher */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToXtream}
+                className="text-gray-500 hover:text-white text-xs"
+                disabled={!connected}
+              >
+                <Server className="h-3.5 w-3.5 mr-1" />
+                Xtream
+              </Button>
+              <Badge className="bg-green-600/20 text-green-400 border-green-600/30 text-xs">
+                <Wifi className="h-3 w-3 mr-1" />
+                Online
+              </Badge>
+              <Button variant="ghost" size="sm" onClick={disconnectM3U} className="text-gray-400 hover:text-white">
+                <WifiOff className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* M3U Groups as filter buttons */}
+        {m3uGroups.length > 0 && (
+          <div className="px-4 sm:px-8 md:px-12 lg:px-16 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <ChevronDown className="h-4 w-4 text-gray-500" />
+              <span className="text-sm text-gray-400 font-medium">Grupos</span>
+              <span className="text-xs text-gray-600">({m3uGroups.length})</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+              <button
+                onClick={() => setSelectedM3uCat('all')}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                  selectedM3uCat === 'all'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
+                }`}
+              >
+                Todos ({m3uChannels.length})
+              </button>
+              {m3uGroups.map((group) => (
+                <button
+                  key={group.id}
+                  onClick={() => setSelectedM3uCat(group.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                    selectedM3uCat === group.id
+                      ? 'bg-red-600 text-white'
+                      : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
+                  }`}
+                >
+                  {group.name} ({group.count})
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Search + Actions */}
+        <div className="px-4 sm:px-8 md:px-12 lg:px-16 mb-4">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Buscar canales..."
+                value={m3uSearchQuery}
+                onChange={(e) => setM3uSearchQuery(e.target.value)}
+                className="pl-10 bg-gray-900 border-gray-800 text-white h-10"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => validation.startValidation(filteredM3UChannels)}
+              disabled={validation.isRunning}
+              className="border-gray-800 text-gray-400 hover:text-white h-10"
+            >
+              {validation.isRunning ? (
+                <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> {validation.progress.percentage}%</>
+              ) : (
+                <><CheckCircle className="h-4 w-4 mr-1" /> Validar</>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Validation Progress */}
+        {validation.isRunning && (
+          <div className="px-4 sm:px-8 md:px-12 lg:px-16 mb-4">
+            <div className="bg-gray-900/80 border border-gray-800 rounded-lg p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-400">Validando canales...</span>
+                <span className="text-xs text-gray-500">
+                  {validation.progress.checked}/{validation.progress.total} · {validation.progress.online} válidos · {validation.progress.offline} inválidos
+                </span>
+              </div>
+              <div className="w-full bg-gray-800 rounded-full h-1.5">
+                <motion.div
+                  className="bg-green-500 h-1.5 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${validation.progress.percentage}%` }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* M3U Channel Grid */}
+        <div className="px-4 sm:px-8 md:px-12 lg:px-16">
+          {filteredM3UChannels.length === 0 ? (
+            <div className="text-center py-20">
+              <Tv className="h-12 w-12 text-gray-700 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg mb-2">No hay contenido</p>
+              <p className="text-gray-600 text-sm">
+                {m3uSearchQuery ? 'Sin resultados para tu búsqueda' : 'No se encontraron canales en este grupo'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-16">
+              {filteredM3UChannels.slice(0, 100).map((channel, index) => {
+                const channelStatus = validationResultMap.get(channel.url);
+                const isValid = channelStatus === 'online';
+                const isInvalid = channelStatus === 'offline' || channelStatus === 'timeout' || channelStatus === 'error';
+
+                return (
+                  <motion.div
+                    key={channel.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(index * 0.03, 0.5) }}
+                    className={`group bg-gray-900/80 border rounded-lg overflow-hidden hover:border-red-600/50 transition-all cursor-pointer ${
+                      isInvalid ? 'border-red-900/40 opacity-60' : isValid ? 'border-green-900/40' : 'border-gray-800'
+                    }`}
+                    onClick={() => playM3UChannel(channel)}
+                  >
+                    <div className="flex items-center gap-3 p-3">
+                      <div className="w-12 h-12 rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {channel.logo ? (
+                          <img
+                            src={channel.logo}
+                            alt={channel.name}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).parentElement!.innerHTML = `<span class="text-gray-600 text-lg">${channel.name.charAt(0)}</span>`;
+                            }}
+                          />
+                        ) : (
+                          <span className="text-gray-600 text-lg">{channel.name.charAt(0)}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate group-hover:text-red-400 transition-colors">
+                          {channel.name}
+                        </p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          {channel.group && (
+                            <span className="text-xs text-gray-600 truncate max-w-[120px]">
+                              {channel.group}
+                            </span>
+                          )}
+                          {channel.url.includes('.m3u8') && (
+                            <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30 text-[10px] px-1 py-0">
+                              HLS
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      {/* Validation indicator */}
+                      {isValid && (
+                        <div className="flex-shrink-0">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        </div>
+                      )}
+                      {isInvalid && (
+                        <div className="flex-shrink-0">
+                          <X className="h-4 w-4 text-red-500" />
+                        </div>
+                      )}
+                      {/* Play button */}
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center">
+                          <Play className="h-3.5 w-3.5 text-white ml-0.5 fill-white" />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+              {filteredM3UChannels.length > 100 && (
+                <div className="text-center py-8 col-span-full">
+                  <p className="text-gray-500 text-sm">
+                    Mostrando 100 de {filteredM3UChannels.length} resultados. Usa la búsqueda para filtrar.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Main IPTV Browser (Xtream) ───────────────────────────
   return (
     <div className="min-h-screen bg-black pt-20 pb-16">
       {/* Header */}
@@ -386,6 +896,17 @@ export default function IPTVView() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Source mode switcher */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={switchToM3U}
+              className="text-gray-500 hover:text-white text-xs"
+              disabled={!m3uConnected}
+            >
+              <FileText className="h-3.5 w-3.5 mr-1" />
+              M3U
+            </Button>
             <Badge className="bg-green-600/20 text-green-400 border-green-600/30 text-xs">
               <Wifi className="h-3 w-3 mr-1" />
               Online
