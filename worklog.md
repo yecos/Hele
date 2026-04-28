@@ -34,3 +34,32 @@ Stage Summary:
 - Responsive design with mobile-first approach
 - Favorites stored in localStorage
 - Lint passes with 0 errors
+
+---
+Task ID: 2
+Agent: Main
+Task: Diagnosticar y arreglar servidores de streaming caídos
+
+Work Log:
+- Tested all 5 existing TMDB servers with curl HEAD requests
+- Found vidsrc.xyz redirects to vsembed.ru (403 - X-Frame-Options blocked)
+- Found vidsrc.cc returns 403 Cloudflare challenge
+- Tested 15+ additional embed servers (vidsrc.dev, vidlink.pro, embedstream.me, etc.)
+- Confirmed moviesapi.to, vidsrc.pm, vidsrc.io still working (200)
+- Confirmed new servers: vidsrc.dev (200), vidlink.pro (200), embedstream.me (200)
+- Fixed /src/lib/sources.ts: removed broken servers, added 3 new working servers
+- Fixed /src/components/streaming/VideoPlayer.tsx: critical bug with double response.json() read
+- Added subtitulada language group with VidLink, VidSrc IO, VidSrc PM
+- Rewrote /api/sources/pelisjuanita/route.ts to use search API (movies.php?s=) instead of broken scraper
+- Discovered pelisjuanita loads embed servers via JavaScript (not static HTML) - can't scrape from server-side
+- Updated settings page to show correct server list
+- All APIs tested and returning 200
+
+Stage Summary:
+- Removed broken servers: vidsrc.xyz, vidsrc.cc
+- Added working servers: vidsrc.dev, vidlink.pro, embedstream.me
+- Total working servers: 6 (MoviesAPI, VidSrc PM, VidSrc IO, VidSrc Dev, VidLink, EmbedStream)
+- Fixed VideoPlayer double-read bug
+- Added subtitulada language group (3 servers)
+- Pelisjuanita search API working (returns slugs and titles)
+- App compiles and runs without errors

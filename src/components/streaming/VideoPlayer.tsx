@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/lib/store';
 import { getTMDBFallbackSources, LANG_LABELS, SERVER_ICONS, type StreamSource, type ServerGroup } from '@/lib/sources';
 import type { AudioLang } from '@/lib/sources';
-import { X, Loader2, MonitorPlay, AlertTriangle, ChevronDown, Globe, Download } from 'lucide-react';
+import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function VideoPlayer() {
   const {
@@ -18,76 +18,103 @@ export function VideoPlayer() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeKey, setIframeKey] = useState(0);
   const [iframeError, setIframeError] = useState(false);
-  const [showLangMenu, setShowLangMenu] = useState(false);
   const [availableLangs, setAvailableLangs] = useState<AudioLang[]>(['latino']);
   const [loadingProgress, setLoadingProgress] = useState(true);
 
   // Fetch servers when movie changes
-  useEffect(() => {
+  const fetchServers = useCallback(async () => {
     if (!isPlaying || !currentMovie) return;
 
-    const fetchServers = async () => {
-      setLoadingProgress(true);
-      setIframeError(false);
+    setLoadingProgress(true);
+    setIframeError(false);
 
+    try {
+      const type = currentMovie.mediaType as 'movie' | 'tv';
+
+      // 1. Fetch movie detail for metadata
+      let detailData: any = null;
       try {
-        // Fetch movie detail
-        const type = currentMovie.mediaType;
         const detailRes = await fetch(`/api/tmdb?endpoint=/${type}/${currentMovie.tmdbId}&append_to_response=videos,similar,credits`);
         if (detailRes.ok) {
-          const detail = await detailRes.json();
-          setDetail(detail);
+          detailData = await detailRes.json();
+          setDetail(detailData);
         }
-
-        // Try to get pelisjuanita servers
-        // For series, we need the slug from TMDB external IDs
-        let pjSources: ServerGroup[] = [];
-        try {
-          const detailData = currentDetail || (detailRes.ok ? await detailRes.json() : null);
-          // We use TMDB ID as slug lookup - pelisjuanita may not have all content
-          // So we also add TMDB fallback servers
-        } catch {}
-
-        // Build final server groups
-        const groups: ServerGroup[] = [];
-        const seenLangs = new Set<AudioLang>();
-
-        // Add pelisjuanita sources if any
-        if (pjSources.length > 0) {
-          groups.push(...pjSources);
-          pjSources.forEach(g => seenLangs.add(g.lang));
-        }
-
-        // Always add TMDB fallback servers
-        const fallback = getTMDBFallbackSources(
-          currentMovie.tmdbId,
-          type as 'movie' | 'tv',
-          type === 'tv' ? currentSeason : undefined,
-          type === 'tv' ? currentEpisode : undefined
-        );
-        groups.push(fallback);
-        seenLangs.add('latino');
-
-        setAvailableLangs([...seenLangs]);
-        setServerGroups(groups);
       } catch (err) {
-        console.error('Error fetching servers:', err);
-        // Fallback to TMDB servers only
-        const fallback = getTMDBFallbackSources(
-          currentMovie.tmdbId,
-          currentMovie.mediaType as 'movie' | 'tv',
-          currentMovie.mediaType === 'tv' ? currentSeason : undefined,
-          currentMovie.mediaType === 'tv' ? currentEpisode : undefined
-        );
-        setServerGroups([fallback]);
-        setAvailableLangs(['latino']);
-      } finally {
-        setLoadingProgress(false);
+        console.error('Error fetching detail:', err);
       }
-    };
 
-    fetchServers();
+      // 2. Build server groups with working TMDB servers
+      const groups: ServerGroup[] = [];
+      const seenLangs = new Set<AudioLang>();
+
+      // Always add TMDB servers as primary source
+      const fallback = getTMDBFallbackSources(
+        currentMovie.tmdbId,
+        type,
+        type === 'tv' ? currentSeason : undefined,
+        type === 'tv' ? currentEpisode : undefined
+      );
+      groups.push(fallback);
+      seenLangs.add('latino');
+
+      // Also add English/subbed servers
+      const subbedGroup: ServerGroup = {
+        lang: 'subtitulada',
+        label: 'Servidores Subtitulados',
+        sources: [
+          {
+            id: 'vidlink-sub',
+            name: 'VidLink',
+            server: 'vidlink',
+            url: type === 'movie'
+              ? `https://vidlink.pro/movie/${currentMovie.tmdbId}`
+              : `https://vidlink.pro/tv/${currentMovie.tmdbId}/${currentSeason}/${currentEpisode}`,
+            lang: 'subtitulada' as AudioLang,
+            quality: 'Auto',
+            type: 'stream' as const,
+            mode: 'embed' as const,
+          },
+          {
+            id: 'vidsrc-io-sub',
+            name: 'VidSrc IO',
+            server: 'vidsrc-io',
+            url: type === 'movie'
+              ? `https://vidsrc.io/embed/movie/${currentMovie.tmdbId}`
+              : `https://vidsrc.io/embed/tv/${currentMovie.tmdbId}/${currentSeason}/${currentEpisode}`,
+            lang: 'subtitulada' as AudioLang,
+            quality: 'Auto',
+            type: 'stream' as const,
+            mode: 'embed' as const,
+          },
+          {
+            id: 'vidsrc-pm-sub',
+            name: 'VidSrc PM',
+            server: 'vidsrc-pm',
+            url: type === 'movie'
+              ? `https://vidsrc.pm/embed/movie/${currentMovie.tmdbId}`
+              : `https://vidsrc.pm/embed/tv/${currentMovie.tmdbId}/${currentSeason}/${currentEpisode}`,
+            lang: 'subtitulada' as AudioLang,
+            quality: 'Auto',
+            type: 'stream' as const,
+            mode: 'embed' as const,
+          },
+        ],
+      };
+      groups.push(subbedGroup);
+      seenLangs.add('subtitulada');
+
+      setAvailableLangs([...seenLangs]);
+      setServerGroups(groups);
+    } catch (err) {
+      console.error('Error fetching servers:', err);
+    } finally {
+      setLoadingProgress(false);
+    }
   }, [isPlaying, currentMovie?.id, currentSeason, currentEpisode]);
+
+  useEffect(() => {
+    fetchServers();
+  }, [fetchServers]);
 
   // Change iframe when server URL changes
   useEffect(() => {
@@ -104,21 +131,12 @@ export function VideoPlayer() {
     }
   }, [currentServerUrl, currentMovie?.id]);
 
-  // Re-fetch servers for new episode
-  useEffect(() => {
-    if (currentMovie?.mediaType === 'tv' && isPlaying) {
-      setLoadingProgress(true);
-      setIframeError(false);
-      const type = currentMovie.mediaType as 'movie' | 'tv';
-      const fallback = getTMDBFallbackSources(currentMovie.tmdbId, type, currentSeason, currentEpisode);
-      setServerGroups([fallback]);
-    }
-  }, [currentSeason, currentEpisode]);
-
   const currentGroupSources = serverGroups.find(g => g.lang === currentLang)?.sources || [];
   const hasMultipleLangs = availableLangs.length > 1;
 
   if (!isPlaying || !currentMovie) return null;
+
+  const type = currentMovie.mediaType as 'movie' | 'tv';
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col">
@@ -135,7 +153,7 @@ export function VideoPlayer() {
             <h2 className="text-sm font-semibold truncate max-w-[200px] sm:max-w-[400px]">{currentMovie.title}</h2>
             <p className="text-xs text-gray-400">
               {currentServerName || 'Cargando servidor...'}
-              {currentMovie.mediaType === 'tv' && ` • T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}`}
+              {currentMovie.mediaType === 'tv' && ` - T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}`}
             </p>
           </div>
         </div>
@@ -156,8 +174,8 @@ export function VideoPlayer() {
           <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/90">
             <div className="flex flex-col items-center gap-3 text-center px-4">
               <AlertTriangle size={40} className="text-yellow-500" />
-              <p className="text-white font-semibold">Este servidor no está disponible</p>
-              <p className="text-gray-400 text-sm">Intenta con otro servidor</p>
+              <p className="text-white font-semibold">Este servidor no esta disponible</p>
+              <p className="text-gray-400 text-sm">Intenta con otro servidor de la lista</p>
             </div>
           </div>
         )}
@@ -252,7 +270,8 @@ export function VideoPlayer() {
               disabled={currentEpisode <= 1}
               className="px-4 py-2 rounded-lg bg-white/5 text-sm text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
-              ← Episodio anterior
+              <ChevronLeft size={16} className="inline mr-1" />
+              Anterior
             </button>
             <span className="text-white text-sm font-semibold px-4">
               T{String(currentSeason).padStart(2,'0')}E{String(currentEpisode).padStart(2,'0')}
@@ -264,7 +283,8 @@ export function VideoPlayer() {
               }}
               className="px-4 py-2 rounded-lg bg-white/5 text-sm text-gray-400 hover:bg-white/10 hover:text-white transition-all"
             >
-              Episodio siguiente →
+              Siguiente
+              <ChevronRight size={16} className="inline ml-1" />
             </button>
           </div>
         )}
