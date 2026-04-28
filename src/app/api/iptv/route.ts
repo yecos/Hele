@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Cache parsed playlists
-const cache: Record<string, { data: any[]; timestamp: number }> = {};
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-
 interface IPTVChannel {
   id: string;
   name: string;
@@ -15,7 +11,9 @@ interface IPTVChannel {
   status: string;
 }
 
-// Custom channels - these get prepended to Colombia playlist
+const cache: Record<string, { data: IPTVChannel[]; timestamp: number }> = {};
+const CACHE_TTL = 30 * 60 * 1000;
+
 const CUSTOM_CHANNELS_CO: IPTVChannel[] = [
   {
     id: 'ch-custom-winsports-hd',
@@ -44,6 +42,7 @@ function parseM3U(content: string, countryCode: string): IPTVChannel[] {
   const channels: IPTVChannel[] = [];
   let current: Partial<IPTVChannel> | null = null;
   let idCounter = 0;
+  const seenNames = new Map<string, number>();
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -51,65 +50,80 @@ function parseM3U(content: string, countryCode: string): IPTVChannel[] {
     if (line.startsWith('#EXTINF')) {
       current = {};
 
-      // Parse tvg-logo
       const logoMatch = line.match(/tvg-logo="([^"]*)"/);
       if (logoMatch) current.logo = logoMatch[1];
 
-      // Parse tvg-id
       const idMatch = line.match(/tvg-id="([^"]*)"/);
       if (idMatch) {
-        // Extract country from tvg-id like "CanalTRO.co@SD"
         const parts = idMatch[1].split('.');
         if (parts.length > 1) {
           current.country = parts[parts.length - 1].split('@')[0].toUpperCase();
         }
       }
 
-      // Parse group-title
       const groupMatch = line.match(/group-title="([^"]*)"/);
       if (groupMatch) current.group = groupMatch[1];
 
-      // Parse display name (after the last comma)
       const commaIdx = line.lastIndexOf(',');
       if (commaIdx !== -1) {
         current.name = line.substring(commaIdx + 1).trim();
       }
     } else if (line.startsWith('#EXTVLCOPT')) {
-      // Skip VLC options
       continue;
     } else if (line && !line.startsWith('#') && current) {
-      // This is the stream URL
       const url = line;
+      const rawName = current.name || 'Unknown';
+      const isGeo = /\bGEO\b/i.test(rawName);
 
-      // Determine status from name
+      let cleanName = rawName;
+      cleanName = cleanName.replace(/\s*\bGEO\b\s*/gi, '').trim();
+      cleanName = cleanName.replace(/\s*\[(Geo-blocked|Not 24\/7|Offline)\]\s*/g, '').trim();
+      cleanName = cleanName.replace(/\s*\(\d{3,4}p\)\s*/g, '').trim();
+      cleanName = cleanName.replace(/\s+[A-Z]{2}\s*$/, '').trim();
+
       let status = 'online';
       if (current.name?.includes('[Offline]')) status = 'offline';
       else if (current.name?.includes('[Geo-blocked]')) status = 'geo-blocked';
       else if (current.name?.includes('[Not 24/7]')) status = 'partial';
 
-      // Determine quality from name
       let quality = 'SD';
-      if (current.name?.includes('(1080p)') || current.name?.includes('(4K)')) quality = 'HD';
-      else if (current.name?.includes('(720p)')) quality = 'HD';
-      else if (current.name?.includes('(540p)') || current.name?.includes('(480p)')) quality = 'SD';
-      else if (current.name?.includes('(360p)')) quality = 'LD';
+      if (rawName.includes('(1080p)') || rawName.includes('(4K)')) quality = 'HD';
+      else if (rawName.includes('(720p)')) quality = 'HD';
+      else if (rawName.includes('(540p)') || rawName.includes('(480p)')) quality = 'SD';
+      else if (rawName.includes('(360p)')) quality = 'LD';
+      else if (/hd[\s/_.-]|high/i.test(url)) quality = 'HD';
 
-      // Clean name
-      let cleanName = current.name || 'Unknown';
-      cleanName = cleanName.replace(/\s*\[(Geo-blocked|Not 24\/7|Offline)\]\s*/g, '').trim();
-      cleanName = cleanName.replace(/\s*\(\d{3,4}p\)\s*/g, '').trim();
+      const existingIdx = seenNames.get(cleanName.toLowerCase());
+      if (existingIdx !== undefined) {
+        const existing = channels[existingIdx];
+        if (existing.status === 'geo-blocked' && !isGeo && status !== 'offline') {
+          channels[existingIdx] = {
+            id: 'ch-' + countryCode + '-' + existingIdx,
+            name: cleanName,
+            logo: current.logo || existing.logo,
+            group: current.group || existing.group,
+            url,
+            country: current.country || countryCode.toUpperCase(),
+            quality,
+            status,
+          };
+        }
+        current = null;
+        continue;
+      }
 
+      const channelIdx = channels.length;
       channels.push({
-        id: `ch-${countryCode}-${idCounter++}`,
+        id: 'ch-' + countryCode + '-' + idCounter++,
         name: cleanName,
         logo: current.logo || '',
         group: current.group || 'General',
-        url: url,
+        url,
         country: current.country || countryCode.toUpperCase(),
         quality,
         status,
       });
-
+      seenNames.set(cleanName.toLowerCase(), channelIdx);
       current = null;
     }
   }
@@ -120,7 +134,7 @@ function parseM3U(content: string, countryCode: string): IPTVChannel[] {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const playlist = searchParams.get('playlist') || 'co'; // Default to Colombia
+    const playlist = searchParams.get('playlist') || 'co';
 
     const playlistUrls: Record<string, string> = {
       co: 'https://iptv-org.github.io/iptv/countries/co.m3u',
@@ -134,18 +148,17 @@ export async function GET(request: NextRequest) {
       news: 'https://iptv-org.github.io/iptv/categories/news.m3u',
       sports: 'https://iptv-org.github.io/iptv/categories/sports.m3u',
       music: 'https://iptv-org.github.io/iptv/categories/music.m3u',
+      tdt: 'https://www.tdtchannels.com/lists/tv.m3u',
+      'tdt-radio': 'https://www.tdtchannels.com/lists/radio.m3u',
     };
 
-    // Support multiple playlists comma-separated
     const playlists = playlist.split(',').map(p => p.trim().toLowerCase());
-
     const allChannels: IPTVChannel[] = [];
 
     for (const pl of playlists) {
       const url = playlistUrls[pl];
       if (!url) continue;
 
-      // Check cache
       const cached = cache[pl];
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
         allChannels.push(...cached.data);
@@ -154,7 +167,7 @@ export async function GET(request: NextRequest) {
 
       try {
         const res = await fetch(url, {
-          next: { revalidate: 1800 }, // 30 min
+          next: { revalidate: 1800 },
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           },
@@ -163,22 +176,21 @@ export async function GET(request: NextRequest) {
         if (!res.ok) continue;
 
         const content = await res.text();
-        const channels = parseM3U(content, pl);
-
-        // Cache
-        cache[pl] = { data: channels, timestamp: Date.now() };
-        allChannels.push(...channels);
+        const parsed = parseM3U(content, pl);
+        cache[pl] = { data: parsed, timestamp: Date.now() };
+        allChannels.push(...parsed);
       } catch (err) {
-        console.error(`Error fetching playlist ${pl}:`, err);
+        console.error('Error fetching playlist ' + pl + ':', err);
       }
     }
 
-    // Prepend custom channels for Colombia playlist
     if (playlists.includes('co')) {
       allChannels.unshift(...CUSTOM_CHANNELS_CO);
     }
-    // Also add to Deportes and sports playlists
     if (playlists.includes('sports') || playlists.includes('spa')) {
+      allChannels.unshift(...CUSTOM_CHANNELS_CO);
+    }
+    if (playlists.includes('tdt')) {
       allChannels.unshift(...CUSTOM_CHANNELS_CO);
     }
 

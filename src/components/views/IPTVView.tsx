@@ -21,6 +21,8 @@ const PLAYLISTS = [
   { id: 'mx', label: 'México', flag: '🇲🇽' },
   { id: 'ar', label: 'Argentina', flag: '🇦🇷' },
   { id: 'es', label: 'España', flag: '🇪🇸' },
+  { id: 'tdt', label: 'TDT España', flag: '📺' },
+  { id: 'tdt-radio', label: 'TDT Radio', flag: '📻' },
   { id: 'cl', label: 'Chile', flag: '🇨🇱' },
   { id: 've', label: 'Venezuela', flag: '🇻🇪' },
   { id: 'pe', label: 'Perú', flag: '🇵🇪' },
