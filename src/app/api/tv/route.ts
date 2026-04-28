@@ -33,6 +33,34 @@ async function getSeasonDetailsFromApi(
   return res.json();
 }
 
+// FIX #1: Cache basico para detalles del show (evita fetch duplicado en Edge)
+const tvShowCache = new Map<number, {
+  data: {
+    id: number;
+    name: string;
+    number_of_seasons: number;
+    number_of_episodes: number;
+  };
+  timestamp: number;
+}>();
+const CACHE_TTL = 3600000; // 1 hora
+
+async function getTvShowBasicInfo(tvId: number) {
+  const cached = tvShowCache.get(tvId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  const details = await getTVDetails(tvId);
+  const info = {
+    id: details.id,
+    name: details.name,
+    number_of_seasons: details.number_of_seasons,
+    number_of_episodes: details.number_of_episodes,
+  };
+  tvShowCache.set(tvId, { data: info, timestamp: Date.now() });
+  return info;
+}
+
 export async function GET(request: NextRequest) {
   if (!isTmdbConfigured()) {
     return NextResponse.json(
@@ -56,11 +84,16 @@ export async function GET(request: NextRequest) {
     const tvId = parseInt(id);
 
     if (season) {
-      // Get specific season details with episodes
+      // FIX #1: Incluir tvShow en respuesta con season param
       const seasonNumber = parseInt(season);
-      const seasonData = await getSeasonDetailsFromApi(tvId, seasonNumber);
+
+      const [seasonData, tvShowInfo] = await Promise.all([
+        getSeasonDetailsFromApi(tvId, seasonNumber),
+        getTvShowBasicInfo(tvId).catch(() => null),
+      ]);
 
       return NextResponse.json({
+        tvShow: tvShowInfo,
         season: {
           season_number: seasonData.season_number,
           name: seasonData.name,
@@ -101,16 +134,22 @@ export async function GET(request: NextRequest) {
       // Season 1 might not exist
     }
 
+    // FIX #5: Incluir temporada 0 (Especiales) en la lista
+    const hasSeasonZero = (details.seasons || []).some(s => s.season_number === 0);
     const seasons = (details.seasons || [])
-      .filter((s) => s.season_number > 0)
       .map((s) => ({
         season_number: s.season_number,
-        name: s.name,
+        name: s.season_number === 0 ? 'Especiales' : s.name,
         episode_count: s.episode_count || 0,
         air_date: s.air_date || '',
         overview: s.overview || '',
         poster_path: s.poster_path,
       }));
+
+    // Ajustar number_of_seasons para incluir temporada 0
+    const adjustedSeasonCount = hasSeasonZero
+      ? details.number_of_seasons + 1
+      : details.number_of_seasons;
 
     return NextResponse.json({
       tvShow: {
@@ -121,7 +160,7 @@ export async function GET(request: NextRequest) {
         poster_path: details.poster_path,
         vote_average: details.vote_average,
         first_air_date: details.first_air_date,
-        number_of_seasons: details.number_of_seasons,
+        number_of_seasons: adjustedSeasonCount,
         number_of_episodes: details.number_of_episodes,
         status: details.status,
         genres: details.genres,

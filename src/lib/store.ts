@@ -197,6 +197,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((prev) => ({ playerState: { ...prev.playerState, ...state } })),
   playMovie: (tmdbId, mediaType, title, season, episode) => {
     const isTV = mediaType === 'tv';
+    const prevState = get().playerState;
     const sources = isTV
       ? getTVSources(tmdbId, season || 1, episode || 1)
       : getMovieSources(tmdbId, title);
@@ -206,10 +207,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         currentSource: sources[0]?.sources[0] || null,
         selectedSeason: season || 1,
         selectedEpisode: episode || 1,
-        seasons: [],
-        episodes: [],
+        seasons: isTV ? prevState.seasons : [],
+        episodes: isTV ? [] : [],
         isTVShow: isTV,
-        tvDetails: null,
+        // FIX #2: Preservar tvDetails si ya existe (misma serie)
+        tvDetails: (isTV && prevState.tvDetails) ? prevState.tvDetails : null,
       },
       currentView: 'player',
     });
@@ -231,6 +233,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         currentSource: sources[0]?.sources[0] || null,
         selectedSeason: season,
         selectedEpisode: episode,
+        episodes: [], // FIX #4: Limpiar episodios viejos
       },
     });
   },

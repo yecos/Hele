@@ -62,11 +62,16 @@ export default function MovieDetailModal() {
     toggleFavorite,
     isFavorite,
     playTorrent,
+    playerState,
+    setPlayerState,
   } = useAppStore();
 
   const [tvDetails, setTvDetails] = useState<TVShowDetails | null>(null);
   const [episodes, setEpisodes] = useState<EpisodeData[]>([]);
-  const [selectedSeason, setSelectedSeason] = useState(1);
+  // FIX #3: Inicializar selectedSeason desde el store
+  const [selectedSeason, setSelectedSeason] = useState(
+    () => playerState?.selectedSeason || 1
+  );
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [loadingEpisodes, setLoadingEpisodes] = useState(false);
   const [showEpisodeList, setShowEpisodeList] = useState(false);
@@ -82,7 +87,7 @@ export default function MovieDetailModal() {
     if (selectedMovie) {
       setTvDetails(null);
       setEpisodes([]);
-      setSelectedSeason(1);
+      setSelectedSeason(playerState?.selectedSeason || 1); // FIX #3: Del store
       setShowEpisodeList(false);
       setGenres([]);
     }
@@ -420,19 +425,22 @@ export default function MovieDetailModal() {
             <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
               {Array.from(
                 { length: tvDetails.number_of_seasons },
-                (_, i) => i + 1
+                (_, i) => i  // FIX #5: Start from 0 to include Especiales
               ).map((s) => (
                 <Button
                   key={s}
                   variant={selectedSeason === s ? 'default' : 'outline'}
-                  onClick={() => setSelectedSeason(s)}
+                  onClick={() => {
+                    setSelectedSeason(s);
+                    setPlayerState({ selectedSeason: s }); // FIX #3: Sincronizar store
+                  }}
                   className={
                     selectedSeason === s
                       ? 'bg-red-600 hover:bg-red-700 text-white rounded-lg px-4 flex-shrink-0'
                       : 'border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg px-4 flex-shrink-0'
                   }
                 >
-                  T{s}
+                  {s === 0 ? 'Especiales' : `T${s}`}
                 </Button>
               ))}
             </div>

@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
+import { useCastStore } from '@/lib/cast-store';
 import CastButton from './CastButton';
 
 const navLinks = [
@@ -152,8 +153,18 @@ export default function Navbar() {
 
           {/* Right Side */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Chromecast Button (visible when devices available) */}
-            <CastButton size="md" />
+            {/* Chromecast Button (connect from home screen) */}
+            <CastButton
+              size="md"
+              onClick={() => {
+                const store = useCastStore.getState();
+                if (store.connected) {
+                  store.stopCasting();
+                } else {
+                  store.requestSession();
+                }
+              }}
+            />
 
             {/* Search Button */}
             {isAuthenticated && (

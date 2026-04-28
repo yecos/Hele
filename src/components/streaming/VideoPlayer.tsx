@@ -118,6 +118,34 @@ export default function VideoPlayer() {
   const isLiveTV = currentSource?.type === 'live';
   const isTVShow = playerState.isTVShow;
 
+  // ─── Auto-cast to Chromecast when connected ──────────────────────────
+  // When user is connected to Chromecast and a new source is resolved,
+  // automatically send the media to the TV instead of playing locally.
+  const autoCastDoneRef = useRef(false);
+
+  useEffect(() => {
+    if (!castConnected || !currentSource?.url || !selectedMovie) return;
+    if (!autoResolved || autoCastDoneRef.current) return;
+
+    // Don't auto-cast if already casting this exact URL
+    const castStore = useCastStore.getState();
+    if (castStore.currentMedia?.url === currentSource.url) return;
+
+    autoCastDoneRef.current = true;
+    console.log('[AutoCast] Sending to Chromecast:', selectedMovie.title);
+
+    if (isEmbed) {
+      castEmbed(currentSource.url, selectedMovie.title);
+    } else {
+      castMedia(currentSource.url, selectedMovie.title, selectedMovie.backdropUrl);
+    }
+  }, [autoResolved, castConnected, currentSource?.url, selectedMovie, isEmbed, castMedia, castEmbed]);
+
+  // Reset auto-cast flag when content changes
+  useEffect(() => {
+    autoCastDoneRef.current = false;
+  }, [selectedMovie?.id, playerState.selectedSeason, playerState.selectedEpisode]);
+
   // ─── Auto-pause local video when Chromecast connects ─────────────────────
   useEffect(() => {
     if (castConnected && videoRef.current && !videoRef.current.paused) {
@@ -973,10 +1001,10 @@ export default function VideoPlayer() {
                   >
                     {Array.from(
                       { length: playerState.tvDetails.numberOfSeasons },
-                      (_, i) => i + 1
+                      (_, i) => i  // FIX #5: Start from 0 to include Especiales
                     ).map((s) => (
                       <option key={s} value={s}>
-                        Temporada {s}
+                        {s === 0 ? 'Especiales' : `Temporada ${s}`}
                       </option>
                     ))}
                   </select>
