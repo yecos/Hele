@@ -22,6 +22,10 @@ import {
   Theater,
   Sparkles,
   SlidersHorizontal,
+  ShieldAlert,
+  Eye,
+  EyeOff,
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +66,12 @@ const CATEGORY_GROUPS = [
     icon: '🌐',
     categories: ['news', 'documentary', 'sports', 'music'],
   },
+  {
+    id: 'adultos',
+    label: '+18 Adultos',
+    icon: '🔞',
+    categories: ['adultos'],
+  },
 ];
 
 export default function LiveTVView() {
@@ -71,10 +81,35 @@ export default function LiveTVView() {
   const [loadingChannel, setLoadingChannel] = useState<string | null>(null);
   const [errorChannel, setErrorChannel] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(true);
+  const [adultUnlocked, setAdultUnlocked] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('xuperstream_adult_unlocked') === 'true';
+    }
+    return false;
+  });
+  const [showAdultConfirm, setShowAdultConfirm] = useState(false);
+
+  // ─── Adult content unlock ───────────────────────────────────
+  const unlockAdult = useCallback(() => {
+    setAdultUnlocked(true);
+    localStorage.setItem('xuperstream_adult_unlocked', 'true');
+    setShowAdultConfirm(false);
+  }, []);
+
+  const lockAdult = useCallback(() => {
+    setAdultUnlocked(false);
+    localStorage.removeItem('xuperstream_adult_unlocked');
+  }, []);
+
+  // ─── Filter channels excluding adult if locked ─────────────
+  const safeChannels = useMemo(() => {
+    if (adultUnlocked) return LIVE_TV_CHANNELS;
+    return LIVE_TV_CHANNELS.filter((ch) => ch.category !== 'adultos');
+  }, [adultUnlocked]);
 
   // ─── Filter channels by category and search ─────────────────────
   const filteredChannels = useMemo(() => {
-    let result = LIVE_TV_CHANNELS;
+    let result = safeChannels;
 
     if (selectedCategory !== 'all') {
       result = result.filter((ch) => ch.category === selectedCategory);
@@ -92,7 +127,7 @@ export default function LiveTVView() {
     }
 
     return result;
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, safeChannels]);
 
   // ─── Group channels by category when "all" or searching ─────────
   const groupedChannels = useMemo(() => {
@@ -126,7 +161,7 @@ export default function LiveTVView() {
 
     // Default: group by category groups
     const groups: { categoryId: string; categoryName: string; channels: LiveTVChannel[] }[] = [];
-    LIVE_TV_CATEGORIES.filter((c) => c.id !== 'all').forEach((cat) => {
+    LIVE_TV_CATEGORIES.filter((c) => c.id !== 'all' && c.id !== 'adultos').forEach((cat) => {
       const catChannels = LIVE_TV_CHANNELS.filter((ch) => ch.category === cat.id);
       if (catChannels.length > 0) {
         groups.push({
@@ -142,9 +177,9 @@ export default function LiveTVView() {
   const totalVisible = useMemo(
     () =>
       selectedCategory === 'all' && !searchQuery.trim()
-        ? LIVE_TV_CHANNELS.length
+        ? safeChannels.length
         : filteredChannels.length,
-    [selectedCategory, searchQuery, filteredChannels]
+    [selectedCategory, searchQuery, filteredChannels, safeChannels]
   );
 
   // ─── Play channel ───────────────────────────────────────────────
@@ -215,6 +250,7 @@ export default function LiveTVView() {
       case 'co-entretenimiento': return Theater;
       case 'co-religiosos': return Church;
       case 'latam': return Globe;
+      case 'adultos': return ShieldAlert;
       case 'news': return Newspaper;
       case 'sports': return Trophy;
       case 'music': return Music2;
@@ -239,6 +275,7 @@ export default function LiveTVView() {
       case 'sports': return 'bg-green-600/20 text-green-400 border-green-600/30';
       case 'music': return 'bg-purple-600/20 text-purple-400 border-purple-600/30';
       case 'documentary': return 'bg-orange-600/20 text-orange-400 border-orange-600/30';
+      case 'adultos': return 'bg-pink-600/20 text-pink-400 border-pink-600/30';
       default: return 'bg-gray-600/20 text-gray-400 border-gray-600/30';
     }
   };
@@ -248,6 +285,7 @@ export default function LiveTVView() {
       case 'colombia': return 'border-yellow-500/30 bg-yellow-500/5';
       case 'latam': return 'border-teal-500/30 bg-teal-500/5';
       case 'internacional': return 'border-blue-500/30 bg-blue-500/5';
+      case 'adultos': return 'border-pink-500/30 bg-pink-500/5';
       default: return 'border-gray-500/30 bg-gray-500/5';
     }
   };
@@ -271,7 +309,8 @@ export default function LiveTVView() {
                 TV en Vivo
               </h1>
               <p className="text-gray-400 text-sm mt-1">
-                {LIVE_TV_CHANNELS.length} canales en vivo de Colombia, Latinoamérica y el mundo
+                {safeChannels.length} canales en vivo de Colombia, Latinoamérica y el mundo
+                {adultUnlocked && <span className='text-pink-400'> (incluye contenido +18)</span>}
               </p>
             </div>
           </div>
@@ -353,7 +392,7 @@ export default function LiveTVView() {
                 >
                   <Tv className="h-4 w-4" />
                   Todos
-                  <span className="text-xs opacity-70">({LIVE_TV_CHANNELS.length})</span>
+                  <span className="text-xs opacity-70">({safeChannels.length})</span>
                 </button>
               </div>
 
@@ -363,7 +402,7 @@ export default function LiveTVView() {
                   group.categories.includes(c.id)
                 );
                 const groupTotal = groupCategories.reduce((sum, cat) => {
-                  return sum + LIVE_TV_CHANNELS.filter((ch) => ch.category === cat.id).length;
+                  return sum + (cat.id === 'adultos' && !adultUnlocked ? 0 : LIVE_TV_CHANNELS.filter((ch) => ch.category === cat.id).length);
                 }, 0);
 
                 return (
@@ -379,7 +418,7 @@ export default function LiveTVView() {
                     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                       {groupCategories.map((cat) => {
                         const Icon = getCategoryIcon(cat.id);
-                        const count = LIVE_TV_CHANNELS.filter((ch) => ch.category === cat.id).length;
+                        const count = cat.id === 'adultos' && !adultUnlocked ? 0 : LIVE_TV_CHANNELS.filter((ch) => ch.category === cat.id).length;
                         const isActive = selectedCategory === cat.id;
                         return (
                           <button
@@ -424,6 +463,110 @@ export default function LiveTVView() {
 
       {/* ─── Channel Grid (Grouped) ─────────────────────────────── */}
       <div className="px-4 sm:px-8 md:px-12 lg:px-16">
+        {/* ─── Adult Content Section (+18) ──────────────────────── */}
+        {selectedCategory === 'all' && !searchQuery.trim() && (
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-pink-600/20 text-pink-400 border border-pink-600/30">
+                <ShieldAlert className="h-4 w-4" />
+              </div>
+              <h2 className="text-lg font-bold text-white">+18 Adultos</h2>
+              <Badge className="bg-pink-600/80 text-white text-xs border-0">
+                CONTENIDO PARA ADULTOS
+              </Badge>
+              <div className="flex-1 h-px bg-gray-800/50" />
+            </div>
+
+            {!adultUnlocked ? (
+              <div className="relative bg-gray-900/80 border-2 border-pink-600/30 rounded-xl overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-pink-900/10 via-transparent to-purple-900/10 pointer-events-none" />
+                <div className="relative p-8 text-center">
+                  <div className="w-16 h-16 rounded-full bg-pink-600/20 flex items-center justify-center mx-auto mb-4">
+                    <Lock className="h-8 w-8 text-pink-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Contenido Exclusivo para Adultos
+                  </h3>
+                  <p className="text-gray-400 text-sm mb-2 max-w-md mx-auto">
+                    Esta seccion contiene contenido exclusivo para mayores de 18 anos.
+                    Al acceder, confirmas que eres mayor de edad y aceptas ver este tipo de contenido.
+                  </p>
+                  <p className="text-pink-400 text-xs mb-6">
+                    24 canales disponibles
+                  </p>
+
+                  {!showAdultConfirm ? (
+                    <Button
+                      onClick={() => setShowAdultConfirm(true)}
+                      className="bg-pink-600 hover:bg-pink-700 text-white px-8 py-3 rounded-lg font-semibold transition-all"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Soy mayor de 18 anos - Desbloquear
+                    </Button>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-3"
+                    >
+                      <div className="bg-red-950/50 border border-red-600/30 rounded-lg p-4">
+                        <p className="text-red-400 text-sm font-semibold mb-1">
+                          Confirmacion requerida
+                        </p>
+                        <p className="text-gray-400 text-xs">
+                          Este contenido es exclusivamente para personas mayores de 18 anos.
+                          Contiene material pornografico explicito. Al continuar, aceptas
+                          toda responsabilidad sobre el acceso a este contenido.
+                        </p>
+                      </div>
+                      <div className="flex gap-3 justify-center">
+                        <Button
+                          onClick={() => setShowAdultConfirm(false)}
+                          variant="outline"
+                          className="border-gray-700 text-gray-400 hover:bg-gray-800 px-6"
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          onClick={unlockAdult}
+                          className="bg-pink-600 hover:bg-pink-700 text-white px-6 font-semibold"
+                        >
+                          Confirmar - Tengo mas de 18
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-end mb-3">
+                  <button
+                    onClick={lockAdult}
+                    className="flex items-center gap-2 text-xs text-gray-500 hover:text-pink-400 transition-colors"
+                  >
+                    <EyeOff className="h-3.5 w-3.5" />
+                    Bloquear seccion +18
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {LIVE_TV_CHANNELS.filter((ch) => ch.category === 'adultos').map((channel, index) => (
+                    <ChannelCard
+                      key={channel.id}
+                      channel={channel}
+                      index={index}
+                      loadingChannel={loadingChannel}
+                      errorChannel={errorChannel}
+                      getCategoryColor={getCategoryColor}
+                      onPlay={playChannel}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {selectedCategory === 'all' && !searchQuery.trim() ? (
           // Show channels grouped by category sections
           groupedChannels.map((group) => {
