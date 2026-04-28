@@ -151,3 +151,78 @@ Work Log:
 
 Stage Summary:
 - Flujo completo: Película → Botón Torrent → Búsqueda → Selección → Streaming P2P
+
+---
+Task ID: 5
+Agent: Super Z (Main)
+Task: Integracion IPTV M3U Tools - Parser, validador, zapping y M3U import
+
+Work Log:
+- Leidos protocol files: LEE_PRIMERO.txt, INSTRUCTIVO_BITACORA.txt, worklog.md
+- Clonado repositorio y analizada arquitectura existente
+- Creada rama feature/iptv-m3u-tools con tag de respaldo
+- Creados 3 servicios core: m3uParser.ts, channelValidator.ts, channelInfo.ts
+- Creados 2 hooks: useChannelSurfing.ts, useChannelValidation.ts
+- Creada API route: /api/iptv-proxy/route.ts (proxy CORS + SSRF protection)
+- Actualizado IPTVView.tsx con modo dual Xtream/M3U (importar URL o archivo)
+- Creado ChannelSurfingOverlay.tsx (overlay zapping tipo TV)
+- Instalada dependencia hls.js (falta pre-existente)
+- Build exitoso, ESLint limpio
+- Actualizada bitacora en INSTRUCTIVO_BITACORA.txt
+
+Stage Summary:
+- 7 archivos nuevos, 2 modificados
+- IPTVView ahora soporta playlists M3U ademas de Xtream Codes
+- Parser M3U compatible con iptv-org, Xtream Codes y M3U generico
+- Validador de canales con batch concurrente y progreso reactivo
+- Channel surfing con keyboard, touch/swipe, auto-hide, EPG placeholder
+- Rama: feature/iptv-m3u-tools | Commits: ceab68b, 258b0d5
+---
+Task ID: 6
+Agent: Super Z (Main)
+Task: Integracion API iptv-org - Canales dinamicos, cache y validacion
+
+Work Log:
+- Analizado documento de implementacion IPTV-org vs codigo actual del repo
+- Verificados endpoints reales de iptv-org API (streams.json, channels.json, countries.json, categories.json)
+- Identificados 5 problemas criticos en el estado actual (hardcodeados, URL incorrecta, datos estaticos)
+- Descubiertos archivos ya existentes de la tarea 5 (m3uParser, channelValidator, channelInfo) no mergeados a main
+- Cherry-picked commits de feature/iptv-m3u-tools a la rama actual
+
+Capa 1 - Correcciones Inmediatas:
+- Corregida URL en playlist/route.ts: raw.githubusercontent.com → iptv-org.github.io/iptv/countries/
+- Reescrito countries/route.ts: 40 paises hardcoded → 250 paises dinamicos de la API con prioridad LatAm
+- Reutilizado m3uParser.ts compartido en playlist route (eliminado parser duplicado inline)
+
+Capa 2 - Cache y Nuevos Endpoints:
+- Creado src/lib/iptv-org-cache.ts: cache serverless-safe con Next.js revalidate + deduplicacion de fetches en flight
+- Creado /api/iptv-org/streams/route.ts: doble estrategia (M3U rapido ~24KB por pais, API JSON ~13MB con filtros avanzados)
+- Creado /api/iptv-org/countries/[code]/route.ts: canales por pais con conteos por categoria
+- Creado /api/iptv-org/categories/route.ts: 30 categorias de iptv-org
+
+Capa 3 - Validacion de Streams:
+- Creado /api/iptv-org/validate/route.ts: reutilizando channelValidator.ts existente
+- Soporta validacion por URLs directas o por country code
+- Filtros automaticos: NSFW y canales cerrados excluidos
+
+Capa 4 - Actualizacion UI:
+- Reescrito IPTVOrgView.tsx para consumir API dinamica
+- Fallback automatico a datos estaticos de live-tv.ts cuando API falla
+- Indicadores de estado: "API en vivo" (verde) / "Modo offline" (amarillo)
+- Categorias dinamicas desde la API (ya no hardcodeadas)
+- Pais por defecto: Colombia (en vez de "Todos")
+- Boton de refresh manual
+- Busqueda con debounce por la API
+
+Capa 5 - Build:
+- Build exitoso, todos los 6 endpoints nuevos compilados correctamente
+- Sin errores nuevos de ESLint
+
+Stage Summary:
+- 8 archivos nuevos, 3 modificados, 6 cherry-picked de feature branch
+- 6 API routes: /countries, /countries/[code], /categories, /streams, /playlist, /validate
+- 1 servicio de cache centralizado: iptv-org-cache.ts
+- Estrategia dual M3U/API: rapida para listing, rica para busqueda
+- Fallback a datos estaticos garantiza que la app siempre funciona
+- Rama: feature/iptv-org-api-integration
+---

@@ -1,59 +1,68 @@
 import { NextResponse } from 'next/server';
 
-interface Country {
-  code: string;
+// Cache por 6 horas - los paises cambian muy poco
+export const revalidate = 21600;
+
+const IPTV_API_BASE = 'https://iptv-org.github.io/api';
+
+interface ApiCountry {
   name: string;
+  code: string;
+  languages: string[];
   flag: string;
-  channelCount: number;
 }
 
-const COUNTRIES: Country[] = [
-  // Latin America
-  { code: 'ar', name: 'Argentina', flag: '🇦🇷', channelCount: 120 },
-  { code: 'bo', name: 'Bolivia', flag: '🇧🇴', channelCount: 30 },
-  { code: 'br', name: 'Brazil', flag: '🇧🇷', channelCount: 200 },
-  { code: 'cl', name: 'Chile', flag: '🇨🇱', channelCount: 70 },
-  { code: 'co', name: 'Colombia', flag: '🇨🇴', channelCount: 90 },
-  { code: 'cr', name: 'Costa Rica', flag: '🇨🇷', channelCount: 30 },
-  { code: 'cu', name: 'Cuba', flag: '🇨🇺', channelCount: 20 },
-  { code: 'do', name: 'Dominican Republic', flag: '🇩🇴', channelCount: 35 },
-  { code: 'ec', name: 'Ecuador', flag: '🇪🇨', channelCount: 40 },
-  { code: 'sv', name: 'El Salvador', flag: '🇸🇻', channelCount: 25 },
-  { code: 'gt', name: 'Guatemala', flag: '🇬🇹', channelCount: 30 },
-  { code: 'hn', name: 'Honduras', flag: '🇭🇳', channelCount: 20 },
-  { code: 'mx', name: 'Mexico', flag: '🇲🇽', channelCount: 150 },
-  { code: 'ni', name: 'Nicaragua', flag: '🇳🇮', channelCount: 15 },
-  { code: 'pa', name: 'Panama', flag: '🇵🇦', channelCount: 25 },
-  { code: 'py', name: 'Paraguay', flag: '🇵🇾', channelCount: 25 },
-  { code: 'pe', name: 'Peru', flag: '🇵🇪', channelCount: 60 },
-  { code: 'pr', name: 'Puerto Rico', flag: '🇵🇷', channelCount: 30 },
-  { code: 'uy', name: 'Uruguay', flag: '🇺🇾', channelCount: 35 },
-  { code: 've', name: 'Venezuela', flag: '🇻🇪', channelCount: 50 },
-  // International
-  { code: 'us', name: 'United States', flag: '🇺🇸', channelCount: 500 },
-  { code: 'es', name: 'Spain', flag: '🇪🇸', channelCount: 250 },
-  { code: 'gb', name: 'United Kingdom', flag: '🇬🇧', channelCount: 200 },
-  { code: 'de', name: 'Germany', flag: '🇩🇪', channelCount: 180 },
-  { code: 'fr', name: 'France', flag: '🇫🇷', channelCount: 160 },
-  { code: 'it', name: 'Italy', flag: '🇮🇹', channelCount: 150 },
-  { code: 'pt', name: 'Portugal', flag: '🇵🇹', channelCount: 60 },
-  { code: 'jp', name: 'Japan', flag: '🇯🇵', channelCount: 100 },
-  { code: 'kr', name: 'South Korea', flag: '🇰🇷', channelCount: 80 },
-  { code: 'ca', name: 'Canada', flag: '🇨🇦', channelCount: 120 },
-  { code: 'au', name: 'Australia', flag: '🇦🇺', channelCount: 90 },
-  { code: 'in', name: 'India', flag: '🇮🇳', channelCount: 200 },
-  { code: 'tr', name: 'Turkey', flag: '🇹🇷', channelCount: 120 },
-  { code: 'ru', name: 'Russia', flag: '🇷🇺', channelCount: 150 },
-  { code: 'nl', name: 'Netherlands', flag: '🇳🇱', channelCount: 60 },
-  { code: 'se', name: 'Sweden', flag: '🇸🇪', channelCount: 40 },
-  { code: 'no', name: 'Norway', flag: '🇳🇴', channelCount: 30 },
-  { code: 'pl', name: 'Poland', flag: '🇵🇱', channelCount: 70 },
-  { code: 'ae', name: 'United Arab Emirates', flag: '🇦🇪', channelCount: 50 },
-];
+// Paises prioritarios (Latinoamerica + espana) que se muestran primero
+const PRIORITY_CODES = new Set([
+  'co', 'mx', 'ar', 've', 'cl', 'pe', 'ec', 'br',
+  'es', 'us', 'gb', 'fr', 'de', 'it', 'pt', 'ca',
+]);
+
+function getFlagEmoji(countryCode: string): string {
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map((char) => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+}
 
 export async function GET() {
-  return NextResponse.json({
-    total: COUNTRIES.length,
-    countries: COUNTRIES,
-  });
+  try {
+    const response = await fetch(`${IPTV_API_BASE}/countries.json`, {
+      next: { revalidate: 21600 },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API responded with status ${response.status}`);
+    }
+
+    const countries: ApiCountry[] = await response.json();
+
+    // Convertir a formato de la app, ordenar con prioridad LatAm
+    const formattedCountries = countries
+      .map((c) => ({
+        code: c.code.toLowerCase(),
+        name: c.name,
+        flag: getFlagEmoji(c.code),
+        languages: c.languages,
+      }))
+      .sort((a, b) => {
+        const aPriority = PRIORITY_CODES.has(a.code) ? 0 : 1;
+        const bPriority = PRIORITY_CODES.has(b.code) ? 0 : 1;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+        return a.name.localeCompare(b.name);
+      });
+
+    return NextResponse.json({
+      total: formattedCountries.length,
+      countries: formattedCountries,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error fetching countries from iptv-org API:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch countries' },
+      { status: 502 }
+    );
+  }
 }
