@@ -650,7 +650,7 @@ export function IPTVView() {
                           ) : channel.status === 'geo-blocked' ? (
                             <span className="text-yellow-400 text-[10px]">Geo-bloqueado</span>
                           ) : channel.status === 'partial' ? (
-                            <span className="text-orange-400 text-[10px]">No 24/7</span>
+                            <span className="text-yellow-400 text-[10px]">No 24/7</span>
                           ) : (
                             <span className="flex items-center gap-1 text-green-400 text-[10px]">
                               <Signal size={8} />

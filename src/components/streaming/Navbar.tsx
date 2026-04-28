@@ -36,9 +36,7 @@ export function Navbar() {
         <div className="max-w-[1400px] mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <button onClick={() => { setView('home'); setMobileMenuOpen(false); }} className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-white font-black text-sm group-hover:scale-105 transition-transform">
-              XS
-            </div>
+            <img src="/logo.svg" alt="X" className="w-9 h-9 group-hover:scale-105 transition-transform" />
             <span className="text-xl font-bold text-white hidden sm:block">
               Xuper<span className="text-red-500">Stream</span>
             </span>
@@ -86,7 +84,7 @@ export function Navbar() {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-all"
               >
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-full bg-red-600 flex items-center justify-center">
                   <User size={14} className="text-white" />
                 </div>
                 <span className="text-sm font-medium hidden sm:block">{username}</span>
