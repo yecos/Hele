@@ -63,12 +63,12 @@ export function VideoPlayer() {
         label: 'Servidores Subtitulados',
         sources: [
           {
-            id: 'vidlink-sub',
-            name: 'VidLink',
-            server: 'vidlink',
+            id: 'vidsrc-dev-sub',
+            name: 'VidSrc Dev',
+            server: 'vidsrc-dev',
             url: type === 'movie'
-              ? `https://vidlink.pro/movie/${currentMovie.tmdbId}`
-              : `https://vidlink.pro/tv/${currentMovie.tmdbId}/${currentSeason}/${currentEpisode}`,
+              ? `https://vidsrc.dev/embed/movie/${currentMovie.tmdbId}`
+              : `https://vidsrc.dev/embed/tv/${currentMovie.tmdbId}/${currentSeason}/${currentEpisode}`,
             lang: 'subtitulada' as AudioLang,
             quality: 'Auto',
             type: 'stream' as const,
@@ -87,12 +87,24 @@ export function VideoPlayer() {
             mode: 'embed' as const,
           },
           {
-            id: 'vidsrc-pm-sub',
-            name: 'VidSrc PM',
-            server: 'vidsrc-pm',
+            id: 'vidlink-sub',
+            name: 'VidLink',
+            server: 'vidlink',
             url: type === 'movie'
-              ? `https://vidsrc.pm/embed/movie/${currentMovie.tmdbId}`
-              : `https://vidsrc.pm/embed/tv/${currentMovie.tmdbId}/${currentSeason}/${currentEpisode}`,
+              ? `https://vidlink.pro/movie/${currentMovie.tmdbId}`
+              : `https://vidlink.pro/tv/${currentMovie.tmdbId}/${currentSeason}/${currentEpisode}`,
+            lang: 'subtitulada' as AudioLang,
+            quality: 'Auto',
+            type: 'stream' as const,
+            mode: 'embed' as const,
+          },
+          {
+            id: 'moviesapi-sub',
+            name: 'MoviesAPI',
+            server: 'moviesapi',
+            url: type === 'movie'
+              ? `https://moviesapi.to/movie/${currentMovie.tmdbId}`
+              : `https://moviesapi.to/tv/${currentMovie.tmdbId}-${currentSeason}-${currentEpisode}`,
             lang: 'subtitulada' as AudioLang,
             quality: 'Auto',
             type: 'stream' as const,
@@ -196,9 +208,9 @@ export function VideoPlayer() {
             src={currentServerUrl}
             className="w-full h-full border-0"
             allowFullScreen
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture; autoplay; encrypted-media"
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
             allowTransparency
-            referrerPolicy="no-referrer"
+            referrerPolicy="origin"
             onLoad={() => setLoadingProgress(false)}
             onError={() => { setIframeError(true); setLoadingProgress(false); }}
           />

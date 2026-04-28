@@ -31,11 +31,11 @@ interface TMDBServer {
 
 export const TMDB_SERVERS: TMDBServer[] = [
   {
-    id: 'vidsrc-pm',
-    name: 'VidSrc PM',
+    id: 'vidsrc-dev',
+    name: 'VidSrc Dev',
     getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'movie') return `https://vidsrc.pm/embed/movie/${tmdbId}`;
-      return `https://vidsrc.pm/embed/tv/${tmdbId}/${season}/${episode}`;
+      if (type === 'movie') return `https://vidsrc.dev/embed/movie/${tmdbId}`;
+      return `https://vidsrc.dev/embed/tv/${tmdbId}/${season}/${episode}`;
     },
   },
   {
@@ -97,7 +97,7 @@ export const SERVER_ICONS: Record<string, string> = {
   dood: '▶️',
   '1fichier': '📥',
   moviesapi: '🎥',
-  'vidsrc-pm': '📺',
+  'vidsrc-dev': '📺',
   'vidsrc-io': '📺',
   vidlink: '🔗',
   default: '🖥️',
