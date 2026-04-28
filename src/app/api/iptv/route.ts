@@ -15,6 +15,30 @@ interface IPTVChannel {
   status: string;
 }
 
+// Custom channels - these get prepended to Colombia playlist
+const CUSTOM_CHANNELS_CO: IPTVChannel[] = [
+  {
+    id: 'ch-custom-winsports-hd',
+    name: 'Win Sports HD',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Winsports.svg',
+    group: 'Deportes',
+    url: 'http://190.60.39.198:8000/play/a033/index.m3u8',
+    country: 'CO',
+    quality: 'HD',
+    status: 'online',
+  },
+  {
+    id: 'ch-custom-winsports-plus-hd',
+    name: 'Win Sports+ HD',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Win_Sports%2B_logo.svg',
+    group: 'Deportes',
+    url: 'http://190.60.39.198:8000/play/a0b6/index.m3u8',
+    country: 'CO',
+    quality: 'HD',
+    status: 'online',
+  },
+];
+
 function parseM3U(content: string, countryCode: string): IPTVChannel[] {
   const lines = content.split('\n');
   const channels: IPTVChannel[] = [];
@@ -147,6 +171,15 @@ export async function GET(request: NextRequest) {
       } catch (err) {
         console.error(`Error fetching playlist ${pl}:`, err);
       }
+    }
+
+    // Prepend custom channels for Colombia playlist
+    if (playlists.includes('co')) {
+      allChannels.unshift(...CUSTOM_CHANNELS_CO);
+    }
+    // Also add to Deportes and sports playlists
+    if (playlists.includes('sports') || playlists.includes('spa')) {
+      allChannels.unshift(...CUSTOM_CHANNELS_CO);
     }
 
     return NextResponse.json({

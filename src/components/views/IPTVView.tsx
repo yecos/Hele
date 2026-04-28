@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useViewStore } from '@/lib/store';
 import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff } from 'lucide-react';
+import Hls from 'hls.js';
 
 interface IPTVChannel {
   id: string;
@@ -97,24 +98,76 @@ export function IPTVView() {
     );
   }, [searchQuery, channels]);
 
+  // HLS.js instance ref
+  const hlsRef = useRef<Hls | null>(null);
+
   // Play channel when activeChannel changes
   useEffect(() => {
     if (!activeChannel || !videoRef.current) return;
     const video = videoRef.current;
+    const url = activeChannel.url;
 
     setIsChannelLoading(true);
     setChannelError(false);
     setShowInfo(true);
 
-    // Clear previous info timeout
+    // Clear previous info timeout and destroy previous HLS instance
     if (infoTimeout) clearTimeout(infoTimeout);
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
 
-    video.src = activeChannel.url;
-    video.load();
-    video.play().catch(() => {
-      setChannelError(true);
-      setIsChannelLoading(false);
-    });
+    const isHLS = url.includes('.m3u8');
+
+    if (isHLS && Hls.isSupported()) {
+      // Use HLS.js for m3u8 streams on non-Safari browsers
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        maxBufferLength: 10,
+        maxMaxBufferLength: 30,
+        startLevel: -1, // auto quality
+      });
+      hlsRef.current = hls;
+
+      hls.loadSource(url);
+      hls.attachMedia(video);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(() => {
+          setChannelError(true);
+          setIsChannelLoading(false);
+        });
+      });
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          setChannelError(true);
+          setIsChannelLoading(false);
+          if (hlsRef.current) {
+            hlsRef.current.destroy();
+            hlsRef.current = null;
+          }
+        }
+      });
+    } else if (isHLS && video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Native HLS support (Safari)
+      video.src = url;
+      video.load();
+      video.play().catch(() => {
+        setChannelError(true);
+        setIsChannelLoading(false);
+      });
+    } else {
+      // Regular video formats
+      video.src = url;
+      video.load();
+      video.play().catch(() => {
+        setChannelError(true);
+        setIsChannelLoading(false);
+      });
+    }
 
     // Auto-hide info after 5 seconds
     const timeout = setTimeout(() => setShowInfo(false), 5000);
@@ -122,6 +175,10 @@ export function IPTVView() {
 
     return () => {
       if (timeout) clearTimeout(timeout);
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
     };
   }, [activeChannel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -311,7 +368,7 @@ export function IPTVView() {
                   Siguiente Canal
                 </button>
                 <button
-                  onClick={() => { setRetryCount(0); setIsChannelError(false); setIsChannelLoading(true); if (videoRef.current) { videoRef.current.load(); videoRef.current.play().catch(() => {}); } }}
+                  onClick={() => { setRetryCount(0); setChannelError(false); setIsChannelLoading(true); if (videoRef.current && activeChannel) { const url = activeChannel.url; if (url.includes('.m3u8') && Hls.isSupported()) { if (hlsRef.current) hlsRef.current.destroy(); const hls = new Hls({ enableWorker: true, lowLatencyMode: true }); hlsRef.current = hls; hls.loadSource(url); hls.attachMedia(videoRef.current); hls.on(Hls.Events.MANIFEST_PARSED, () => { videoRef.current?.play().catch(() => {}); }); } else { videoRef.current.load(); videoRef.current.play().catch(() => {}); } } }}
                   className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg text-sm hover:bg-white/20 transition-colors"
                 >
                   <RefreshCw size={16} />
@@ -332,6 +389,7 @@ export function IPTVView() {
           onError={handleVideoError}
           onPlaying={handleVideoPlaying}
           onCanPlay={handleVideoCanPlay}
+          onLoadedData={handleVideoCanPlay}
           onWaiting={() => setIsChannelLoading(true)}
         />
       </div>
