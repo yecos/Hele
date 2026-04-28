@@ -1,6 +1,5 @@
-// Servidores de pelisjuanita.com
-// Los URLs son únicos por contenido, se obtienen via scraper API
-// También incluye servidores TMDB-based como fallback (vidsrc, moviesapi)
+// Servidores de streaming con TMDB IDs
+// Incluye servidores embed que aceptan TMDB IDs directamente
 
 export type SourceMode = 'embed' | 'native';
 export type AudioLang = 'latino' | 'español' | 'subtitulada';
@@ -22,7 +21,7 @@ export interface ServerGroup {
   sources: StreamSource[];
 }
 
-// Servidores que aceptan TMDB IDs directamente (fallback)
+// Servidores que aceptan TMDB IDs directamente
 interface TMDBServer {
   id: string;
   name: string;
@@ -31,11 +30,11 @@ interface TMDBServer {
 
 export const TMDB_SERVERS: TMDBServer[] = [
   {
-    id: 'vidsrc-dev',
-    name: 'VidSrc Dev',
+    id: 'smashystream',
+    name: 'SmashyStream',
     getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'movie') return `https://vidsrc.dev/embed/movie/${tmdbId}`;
-      return `https://vidsrc.dev/embed/tv/${tmdbId}/${season}/${episode}`;
+      if (type === 'movie') return `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}`;
+      return `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
     },
   },
   {
@@ -87,7 +86,7 @@ export function getTMDBFallbackSources(
   };
 }
 
-// Mapea los iconos de servidor de pelisjuanita
+// Mapea los iconos de servidor
 export const SERVER_ICONS: Record<string, string> = {
   streamwish: '📡',
   earnvids: '🎬',
@@ -97,7 +96,7 @@ export const SERVER_ICONS: Record<string, string> = {
   dood: '▶️',
   '1fichier': '📥',
   moviesapi: '🎥',
-  'vidsrc-dev': '📺',
+  smashystream: '🥝',
   'vidsrc-io': '📺',
   vidlink: '🔗',
   default: '🖥️',

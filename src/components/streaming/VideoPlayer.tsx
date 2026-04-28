@@ -63,12 +63,12 @@ export function VideoPlayer() {
         label: 'Servidores Subtitulados',
         sources: [
           {
-            id: 'vidsrc-dev-sub',
-            name: 'VidSrc Dev',
-            server: 'vidsrc-dev',
+            id: 'smashystream-sub',
+            name: 'SmashyStream',
+            server: 'smashystream',
             url: type === 'movie'
-              ? `https://vidsrc.dev/embed/movie/${currentMovie.tmdbId}`
-              : `https://vidsrc.dev/embed/tv/${currentMovie.tmdbId}/${currentSeason}/${currentEpisode}`,
+              ? `https://embed.smashystream.com/playere.php?tmdb=${currentMovie.tmdbId}`
+              : `https://embed.smashystream.com/playere.php?tmdb=${currentMovie.tmdbId}&season=${currentSeason}&episode=${currentEpisode}`,
             lang: 'subtitulada' as AudioLang,
             quality: 'Auto',
             type: 'stream' as const,
