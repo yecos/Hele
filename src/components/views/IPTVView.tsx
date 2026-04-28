@@ -14,6 +14,7 @@ interface IPTVChannel {
   country: string;
   quality: string;
   status: string;
+  verified?: boolean;
 }
 
 const PLAYLISTS = [
@@ -50,55 +51,152 @@ export function IPTVView() {
   const [infoTimeout, setInfoTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showInfo, setShowInfo] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyProgress, setVerifyProgress] = useState({ checked: 0, total: 0 });
+  const [showOnlyWorking, setShowOnlyWorking] = useState(true);
+  const [verifiedUrls, setVerifiedUrls] = useState<Set<string>>(new Set());
+  const verifyAbortRef = useRef<AbortController | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Verify channels against the API
+  const verifyChannels = useCallback(async (chs: IPTVChannel[], signal?: AbortSignal) => {
+    if (chs.length === 0) return;
+
+    setIsVerifying(true);
+    setVerifyProgress({ checked: 0, total: chs.length });
+
+    const urls = chs.map(c => c.url);
+
+    // Split into batches of 150 to avoid timeout
+    const batchSize = 150;
+    const allVerified = new Set<string>();
+    let totalChecked = 0;
+
+    for (let i = 0; i < urls.length; i += batchSize) {
+      if (signal?.aborted) break;
+
+      const batch = urls.slice(i, i + batchSize);
+      try {
+        const res = await fetch('/api/iptv/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ urls: batch }),
+          signal,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.working && Array.isArray(data.working)) {
+            data.working.forEach((url: string) => allVerified.add(url));
+          }
+          totalChecked += batch.length;
+          setVerifyProgress({ checked: totalChecked, total: urls.length });
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') break;
+        console.error('Error verifying batch:', err);
+        totalChecked += batch.length;
+        setVerifyProgress({ checked: totalChecked, total: urls.length });
+      }
+    }
+
+    setVerifiedUrls(allVerified);
+    setIsVerifying(false);
+    return allVerified;
+  }, []);
 
   // Fetch channels from API
   useEffect(() => {
     const fetchChannels = async () => {
       setLoadingPlaylist(true);
+      setChannels([]);
+      setFilteredChannels([]);
+      setOnlineChannels([]);
+      setVerifiedUrls(new Set());
+      setIsVerifying(false);
+
+      // Abort previous verification
+      if (verifyAbortRef.current) {
+        verifyAbortRef.current.abort();
+      }
+      const abortController = new AbortController();
+      verifyAbortRef.current = abortController;
+
       try {
         const res = await fetch(`/api/iptv?playlist=${selectedPlaylist}`);
         if (res.ok) {
           const data = await res.json();
           const chs: IPTVChannel[] = data.channels || [];
           setChannels(chs);
-          setFilteredChannels(chs);
-          const online = chs.filter(c => c.status !== 'offline');
-          setOnlineChannels(online);
 
-          if (online.length > 0) {
-            setCurrentIndex(0);
-            setActiveChannel(online[0]);
-            setIsChannelLoading(true);
-            setChannelError(false);
-            setRetryCount(0);
+          // Start verification in background
+          const allVerified = await verifyChannels(chs, abortController.signal);
+
+          if (abortController.signal.aborted) return;
+
+          if (allVerified && allVerified.size > 0) {
+            // Filter to only verified working channels
+            const workingChs = chs.filter(c => allVerified.has(c.url));
+            setOnlineChannels(workingChs);
+            setFilteredChannels(workingChs);
+
+            if (workingChs.length > 0) {
+              setCurrentIndex(0);
+              setActiveChannel(workingChs[0]);
+              setIsChannelLoading(true);
+              setChannelError(false);
+              setRetryCount(0);
+            }
+          } else {
+            // Fallback: use non-offline channels if verification returned nothing
+            const online = chs.filter(c => c.status !== 'offline');
+            setOnlineChannels(online);
+            setFilteredChannels(online);
+
+            if (online.length > 0) {
+              setCurrentIndex(0);
+              setActiveChannel(online[0]);
+              setIsChannelLoading(true);
+              setChannelError(false);
+              setRetryCount(0);
+            }
           }
         }
       } catch (err) {
         console.error('Error fetching IPTV:', err);
       } finally {
-        setLoadingPlaylist(false);
+        if (!abortController.signal.aborted) {
+          setLoadingPlaylist(false);
+        }
       }
     };
     fetchChannels();
-  }, [selectedPlaylist]);
+
+    return () => {
+      if (verifyAbortRef.current) {
+        verifyAbortRef.current.abort();
+      }
+    };
+  }, [selectedPlaylist, verifyChannels]);
 
   // Filter channels by search
   useEffect(() => {
+    let sourceChannels = showOnlyWorking ? onlineChannels : channels;
+
     if (!searchQuery.trim()) {
-      setFilteredChannels(channels);
+      setFilteredChannels(sourceChannels);
       return;
     }
     const q = searchQuery.toLowerCase();
     setFilteredChannels(
-      channels.filter(c =>
+      sourceChannels.filter(c =>
         c.name.toLowerCase().includes(q) ||
         c.group.toLowerCase().includes(q)
       )
     );
-  }, [searchQuery, channels]);
+  }, [searchQuery, channels, onlineChannels, showOnlyWorking]);
 
   // HLS.js instance ref
   const hlsRef = useRef<Hls | null>(null);
@@ -323,6 +421,9 @@ export function IPTVView() {
     groupedChannels[group].push(ch);
   });
 
+  const workingCount = onlineChannels.length;
+  const totalCount = channels.length;
+
   return (
     <div
       ref={containerRef}
@@ -332,13 +433,34 @@ export function IPTVView() {
     >
       {/* Video player - fills entire screen */}
       <div className="flex-1 relative bg-black">
-        {/* Loading playlist */}
-        {loadingPlaylist && (
+        {/* Loading / Verifying playlist */}
+        {(loadingPlaylist || isVerifying) && (
           <div className="absolute inset-0 flex items-center justify-center z-30 bg-black">
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-4 max-w-sm text-center px-4">
               <Loader2 size={48} className="text-red-500 animate-spin" />
-              <p className="text-gray-400 text-lg">Cargando canales...</p>
-              <p className="text-gray-600 text-sm">Obteniendo lista de iptv-org</p>
+              {isVerifying ? (
+                <>
+                  <p className="text-gray-400 text-lg">Verificando canales...</p>
+                  <p className="text-gray-500 text-sm">
+                    Comprobando {verifyProgress.checked} de {verifyProgress.total} canales
+                  </p>
+                  {/* Progress bar */}
+                  <div className="w-full max-w-xs h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 rounded-full transition-all duration-300"
+                      style={{ width: `${verifyProgress.total > 0 ? (verifyProgress.checked / verifyProgress.total) * 100 : 0}%` }}
+                    />
+                  </div>
+                  <p className="text-gray-600 text-xs">
+                    Solo se mostrarán los canales que estén funcionando
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-400 text-lg">Cargando canales...</p>
+                  <p className="text-gray-600 text-sm">Obteniendo lista de iptv-org</p>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -572,14 +694,31 @@ export function IPTVView() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
               <h2 className="text-white font-bold flex items-center gap-2">
                 <Tv size={18} />
-                Lista de Canales ({filteredChannels.length})
+                Canales
+                <span className="text-green-400 text-sm font-normal">
+                  {workingCount}/{totalCount} OK
+                </span>
               </h2>
-              <button
-                onClick={() => setShowChannelList(false)}
-                className="text-gray-400 hover:text-white p-1"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Toggle: working only vs all */}
+                <button
+                  onClick={() => setShowOnlyWorking(!showOnlyWorking)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
+                    showOnlyWorking
+                      ? 'bg-green-600/30 text-green-400 border border-green-500/30'
+                      : 'bg-white/5 text-gray-500 border border-white/10'
+                  }`}
+                >
+                  <Signal size={10} />
+                  {showOnlyWorking ? 'Solo OK' : 'Todos'}
+                </button>
+                <button
+                  onClick={() => setShowChannelList(false)}
+                  className="text-gray-400 hover:text-white p-1"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* Playlist selector */}
@@ -645,7 +784,14 @@ export function IPTVView() {
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-medium truncate">{channel.name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          {channel.status === 'offline' ? (
+                          {verifiedUrls.has(channel.url) ? (
+                            <span className="flex items-center gap-1 text-green-400 text-[10px]">
+                              <Signal size={8} />
+                              Verificado
+                            </span>
+                          ) : verifiedUrls.size > 0 ? (
+                            <span className="text-red-400/60 text-[10px]">Sin señal</span>
+                          ) : channel.status === 'offline' ? (
                             <span className="text-red-400 text-[10px]">Offline</span>
                           ) : channel.status === 'geo-blocked' ? (
                             <span className="text-yellow-400 text-[10px]">Geo-bloqueado</span>
