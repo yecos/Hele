@@ -2,9 +2,59 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/lib/store';
-import { getTMDBFallbackSources, LANG_LABELS, SERVER_ICONS, type StreamSource, type ServerGroup } from '@/lib/sources';
-import type { AudioLang } from '@/lib/sources';
+import { LANG_LABELS, SERVER_ICONS, type StreamSource, type ServerGroup, type AudioLang } from '@/lib/sources';
 import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+
+// Server URL generators (kept in sync with sources.ts)
+function getServerUrl(serverId: string, tmdbId: number, type: 'movie' | 'tv', season?: number, episode?: number): string {
+  switch (serverId) {
+    case 'vidsrc-io':
+      return type === 'movie' ? `https://vidsrc.io/embed/movie/${tmdbId}` : `https://vidsrc.io/embed/tv/${tmdbId}/${season}/${episode}`;
+    case 'vidlink':
+      return type === 'movie' ? `https://vidlink.pro/movie/${tmdbId}` : `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`;
+    case 'moviesapi':
+      return type === 'movie' ? `https://moviesapi.to/movie/${tmdbId}` : `https://moviesapi.to/tv/${tmdbId}-${season}-${episode}`;
+    case 'vidsrc-dev':
+      return type === 'movie' ? `https://vidsrc.dev/embed/movie/${tmdbId}` : `https://vidsrc.dev/embed/tv/${tmdbId}/${season}/${episode}`;
+    default:
+      return '';
+  }
+}
+
+// Server definitions for each language tab
+const SERVER_CONFIG = [
+  { id: 'vidsrc-io', name: 'VidSrc IO', quality: 'HD' },
+  { id: 'vidlink', name: 'VidLink', quality: 'HD' },
+  { id: 'moviesapi', name: 'MoviesAPI', quality: 'Auto' },
+  { id: 'vidsrc-dev', name: 'VidSrc Dev', quality: 'Auto' },
+];
+
+function buildServerGroups(
+  tmdbId: number,
+  type: 'movie' | 'tv',
+  season?: number,
+  episode?: number
+): ServerGroup[] {
+  const langSources = (lang: AudioLang, label: string): ServerGroup => ({
+    lang,
+    label,
+    sources: SERVER_CONFIG.map(s => ({
+      id: `${s.id}-${lang}`,
+      name: s.name,
+      server: s.id,
+      url: getServerUrl(s.id, tmdbId, type, season, episode),
+      lang,
+      quality: s.quality,
+      type: 'stream' as const,
+      mode: 'embed' as const,
+    })),
+  });
+
+  return [
+    langSources('subtitulada', 'Subtitulado'),
+    langSources('latino', 'Español'),
+  ];
+}
 
 export function VideoPlayer() {
   const {
@@ -18,7 +68,7 @@ export function VideoPlayer() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeKey, setIframeKey] = useState(0);
   const [iframeError, setIframeError] = useState(false);
-  const [availableLangs, setAvailableLangs] = useState<AudioLang[]>(['latino']);
+  const [availableLangs, setAvailableLangs] = useState<AudioLang[]>([]);
   const [loadingProgress, setLoadingProgress] = useState(true);
 
   // Fetch servers when movie changes
@@ -32,97 +82,38 @@ export function VideoPlayer() {
       const type = currentMovie.mediaType as 'movie' | 'tv';
 
       // 1. Fetch movie detail for metadata
-      let detailData: any = null;
       try {
         const detailRes = await fetch(`/api/tmdb?endpoint=/${type}/${currentMovie.tmdbId}&append_to_response=videos,similar,credits`);
         if (detailRes.ok) {
-          detailData = await detailRes.json();
+          const detailData = await detailRes.json();
           setDetail(detailData);
         }
       } catch (err) {
         console.error('Error fetching detail:', err);
       }
 
-      // 2. Build server groups with working TMDB servers
-      const groups: ServerGroup[] = [];
-      const seenLangs = new Set<AudioLang>();
-
-      // Always add TMDB servers as primary source
-      const fallback = getTMDBFallbackSources(
+      // 2. Build server groups
+      const groups = buildServerGroups(
         currentMovie.tmdbId,
         type,
         type === 'tv' ? currentSeason : undefined,
         type === 'tv' ? currentEpisode : undefined
       );
-      groups.push(fallback);
-      seenLangs.add('latino');
 
-      // Also add English/subbed servers
-      const subbedGroup: ServerGroup = {
-        lang: 'subtitulada',
-        label: 'Servidores Subtitulados',
-        sources: [
-          {
-            id: 'smashystream-sub',
-            name: 'SmashyStream',
-            server: 'smashystream',
-            url: type === 'movie'
-              ? `https://embed.smashystream.com/playere.php?tmdb=${currentMovie.tmdbId}`
-              : `https://embed.smashystream.com/playere.php?tmdb=${currentMovie.tmdbId}&season=${currentSeason}&episode=${currentEpisode}`,
-            lang: 'subtitulada' as AudioLang,
-            quality: 'Auto',
-            type: 'stream' as const,
-            mode: 'embed' as const,
-          },
-          {
-            id: 'vidsrc-io-sub',
-            name: 'VidSrc IO',
-            server: 'vidsrc-io',
-            url: type === 'movie'
-              ? `https://vidsrc.io/embed/movie/${currentMovie.tmdbId}`
-              : `https://vidsrc.io/embed/tv/${currentMovie.tmdbId}/${currentSeason}/${currentEpisode}`,
-            lang: 'subtitulada' as AudioLang,
-            quality: 'Auto',
-            type: 'stream' as const,
-            mode: 'embed' as const,
-          },
-          {
-            id: 'vidlink-sub',
-            name: 'VidLink',
-            server: 'vidlink',
-            url: type === 'movie'
-              ? `https://vidlink.pro/movie/${currentMovie.tmdbId}`
-              : `https://vidlink.pro/tv/${currentMovie.tmdbId}/${currentSeason}/${currentEpisode}`,
-            lang: 'subtitulada' as AudioLang,
-            quality: 'Auto',
-            type: 'stream' as const,
-            mode: 'embed' as const,
-          },
-          {
-            id: 'moviesapi-sub',
-            name: 'MoviesAPI',
-            server: 'moviesapi',
-            url: type === 'movie'
-              ? `https://moviesapi.to/movie/${currentMovie.tmdbId}`
-              : `https://moviesapi.to/tv/${currentMovie.tmdbId}-${currentSeason}-${currentEpisode}`,
-            lang: 'subtitulada' as AudioLang,
-            quality: 'Auto',
-            type: 'stream' as const,
-            mode: 'embed' as const,
-          },
-        ],
-      };
-      groups.push(subbedGroup);
-      seenLangs.add('subtitulada');
-
-      setAvailableLangs([...seenLangs]);
       setServerGroups(groups);
+      setAvailableLangs(groups.map(g => g.lang));
+
+      // Auto-select first server of first group
+      if (groups.length > 0 && groups[0].sources.length > 0) {
+        const firstSource = groups[0].sources[0];
+        selectServer(firstSource);
+      }
     } catch (err) {
       console.error('Error fetching servers:', err);
     } finally {
       setLoadingProgress(false);
     }
-  }, [isPlaying, currentMovie?.id, currentSeason, currentEpisode]);
+  }, [isPlaying, currentMovie?.id, currentSeason, currentEpisode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetchServers();
@@ -147,8 +138,6 @@ export function VideoPlayer() {
   const hasMultipleLangs = availableLangs.length > 1;
 
   if (!isPlaying || !currentMovie) return null;
-
-  const type = currentMovie.mediaType as 'movie' | 'tv';
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col">

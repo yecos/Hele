@@ -30,19 +30,19 @@ interface TMDBServer {
 
 export const TMDB_SERVERS: TMDBServer[] = [
   {
-    id: 'smashystream',
-    name: 'SmashyStream',
-    getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'movie') return `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}`;
-      return `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
-    },
-  },
-  {
     id: 'vidsrc-io',
     name: 'VidSrc IO',
     getUrl: (tmdbId, type, season, episode) => {
       if (type === 'movie') return `https://vidsrc.io/embed/movie/${tmdbId}`;
       return `https://vidsrc.io/embed/tv/${tmdbId}/${season}/${episode}`;
+    },
+  },
+  {
+    id: 'vidlink',
+    name: 'VidLink',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://vidlink.pro/movie/${tmdbId}`;
+      return `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`;
     },
   },
   {
@@ -54,11 +54,11 @@ export const TMDB_SERVERS: TMDBServer[] = [
     },
   },
   {
-    id: 'vidlink',
-    name: 'VidLink',
+    id: 'vidsrc-dev',
+    name: 'VidSrc Dev',
     getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'movie') return `https://vidlink.pro/movie/${tmdbId}`;
-      return `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`;
+      if (type === 'movie') return `https://vidsrc.dev/embed/movie/${tmdbId}`;
+      return `https://vidsrc.dev/embed/tv/${tmdbId}/${season}/${episode}`;
     },
   },
 ];
@@ -72,7 +72,7 @@ export function getTMDBFallbackSources(
 ): ServerGroup {
   return {
     lang: 'latino',
-    label: 'Servidores Alternativos (TMDB)',
+    label: 'Servidores (TMDB)',
     sources: TMDB_SERVERS.map(server => ({
       id: server.id,
       name: server.name,
@@ -96,9 +96,10 @@ export const SERVER_ICONS: Record<string, string> = {
   dood: '▶️',
   '1fichier': '📥',
   moviesapi: '🎥',
-  smashystream: '🥝',
   'vidsrc-io': '📺',
+  'vidsrc-dev': '🖥️',
   vidlink: '🔗',
+  smashystream: '🥝',
   default: '🖥️',
 };
 
