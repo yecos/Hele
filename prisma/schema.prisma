@@ -58,12 +58,14 @@ model GuardianScan {
   trigger         String   @default("scheduled") // "scheduled" | "manual"
 }
 
-/// Fuentes M3U descubiertas por búsqueda web
+/// Fuentes descubiertas por los 4 motores del Discovery
+/// Tipos: "web" (búsqueda general), "github" (scanner GitHub), "scraped" (deep scraping), "xtream" (probing)
 model DiscoveredSource {
   id              String   @id @default(cuid())
   url             String   @unique              // URL del M3U (única)
   name            String   @default("")         // Nombre del sitio/página donde se encontró
   sourceUrl       String   @default("")         // URL de la página que la contenía
+  discoveryEngine String   @default("web")      // "web" | "github" | "scraped" | "xtream"
   channelCount    Int      @default(0)          // Canales encontrados en la última validación
   isValid         Boolean  @default(false)      // Si la URL devuelve un M3U válido
   addedToGuardian Boolean  @default(false)      // Si fue promovida al Guardian
