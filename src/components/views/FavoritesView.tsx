@@ -108,6 +108,7 @@ export function FavoritesView() {
         </div>
       ) : (
         <div className="text-center py-20">
+          <img src="/logo.svg" alt="XuperStream" className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <Heart size={48} className="text-gray-700 mx-auto mb-4" />
           <h3 className="text-gray-400 text-lg font-semibold">Tu lista está vacía</h3>
           <p className="text-gray-600 text-sm mt-1">Agrega películas y series haciendo clic en el corazón</p>

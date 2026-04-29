@@ -31,12 +31,17 @@ export function OfflinePage() {
       </div>
 
       <div className="relative text-center max-w-sm">
-        {/* Icon */}
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/5 mb-6">
-          <WifiOff size={40} className="text-red-500" />
+        {/* Logo */}
+        <div className="inline-flex items-center justify-center mb-4">
+          <img src="/logo.svg" alt="XuperStream" className="w-20 h-20 drop-shadow-lg" />
         </div>
 
-        {/* Logo */}
+        {/* Icon */}
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 mb-4">
+          <WifiOff size={32} className="text-red-500" />
+        </div>
+
+        {/* Brand */}
         <div className="mb-2">
           <span className="text-2xl font-bold text-white">Xuper<span className="text-red-500">Stream</span></span>
         </div>

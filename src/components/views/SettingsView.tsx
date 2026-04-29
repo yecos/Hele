@@ -34,13 +34,16 @@ export function SettingsView() {
       <div className="space-y-4">
         {/* About */}
         <div className="bg-white/5 rounded-xl p-6 space-y-4">
-          <h2 className="text-white font-semibold text-base flex items-center gap-2">
-            <span className="text-red-500">●</span> Acerca de
-          </h2>
+          <div className="flex items-center gap-3">
+            <img src="/logo.svg" alt="XuperStream" className="w-10 h-10" />
+            <div>
+              <h2 className="text-white font-semibold text-base">XuperStream</h2>
+              <p className="text-gray-500 text-xs">Versión 0.2.0</p>
+            </div>
+          </div>
           <p className="text-gray-400 text-sm leading-relaxed">
             XuperStream es tu plataforma personal de streaming. Disfruta de películas, series y canales en vivo desde un solo lugar.
           </p>
-          <p className="text-gray-500 text-xs">Versión 0.2.0</p>
         </div>
 
         {/* Servers */}
