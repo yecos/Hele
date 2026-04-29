@@ -49,7 +49,7 @@ export function VideoPlayer() {
   const [loadingProgress, setLoadingProgress] = useState(true);
 
   const cast = useChromecast();
-  const isActivelyCasting = cast.isCasting && cast.isConnected;
+  const isActivelyCasting = cast.isConnected;
 
   // Fetch servers when movie changes
   const fetchServers = useCallback(async () => {
@@ -150,8 +150,8 @@ export function VideoPlayer() {
             <p className="text-xs text-gray-400">
               {currentServerName || 'Cargando servidor...'}
               {currentMovie.mediaType === 'tv' && ` - T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}`}
-              {isActivelyCasting && (
-                <span className="text-green-400 ml-2">Casting en {cast.device?.friendlyName}</span>
+              {cast.isConnected && (
+                <span className="text-green-400 ml-2">{cast.statusMessage}</span>
               )}
             </p>
           </div>
@@ -176,11 +176,13 @@ export function VideoPlayer() {
               }
             }}
             className={`p-2 rounded-full transition-all ${
-              isActivelyCasting
+              cast.status === 'connected'
                 ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                : cast.status === 'connecting'
+                ? 'bg-yellow-500/20 text-yellow-400 animate-pulse'
                 : 'bg-white/10 hover:bg-white/20 text-white'
             }`}
-            title={isActivelyCasting ? `Desconectar de ${cast.device?.friendlyName}` : 'Enviar a Chromecast'}
+            title={cast.statusMessage || (cast.isConnected ? `Desconectar de ${cast.device?.friendlyName}` : 'Enviar a Chromecast')}
           >
             <Cast size={20} />
           </button>

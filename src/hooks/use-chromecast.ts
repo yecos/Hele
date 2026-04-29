@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 declare global {
   interface Window {
     __onGCastApiAvailable: (isAvailable: boolean) => void;
+    cast: typeof chrome.cast;
     chrome: {
       cast: {
         isAvailable: boolean;
@@ -49,11 +50,15 @@ interface CastDeviceInfo {
   deviceId?: string;
 }
 
+export type CastStatus = 'loading' | 'unavailable' | 'available' | 'connecting' | 'connected' | 'error';
+
 interface ChromecastState {
+  status: CastStatus;
   isAvailable: boolean;
   isConnected: boolean;
   isCasting: boolean;
   device: CastDeviceInfo | null;
+  statusMessage: string;
   connect: () => void;
   disconnect: () => void;
   castHLS: (url: string, title?: string, subtitle?: string) => void;
@@ -61,222 +66,375 @@ interface ChromecastState {
   stopCast: () => void;
 }
 
-const NAMESPACE = 'urn:x-cast:com.xuperstream';
-// Default Media Receiver works for HLS natively
+// Default Media Receiver — works for HLS/DASH/mp4 natively on Chromecast
 const DEFAULT_MEDIA_RECEIVER_APP_ID = 'CC1AD845';
+const MAX_INIT_RETRIES = 3;
 
 export function useChromecast(): ChromecastState {
+  const [status, setStatus] = useState<CastStatus>('loading');
   const [isAvailable, setIsAvailable] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isCasting, setIsCasting] = useState(false);
   const [device, setDevice] = useState<CastDeviceInfo | null>(null);
+  const [statusMessage, setStatusMessage] = useState('Cargando Chromecast...');
+
   const sessionRef = useRef<chrome.cast.Session | null>(null);
-  const initializedRef = useRef(false);
+  const initRetryRef = useRef(0);
 
-  // Load Cast SDK dynamically
-  useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-
-    // Define the callback before loading the script
-    window.__onGCastApiAvailable = (isAvailable: boolean) => {
-      if (isAvailable && window.chrome?.cast) {
-        initializeCastApi();
-      }
-    };
-
-    // Load the Cast SDK script
-    if (!document.querySelector('script[src*="cast_sender"]')) {
-      const script = document.createElement('script');
-      script.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
-      script.async = true;
-      document.head.appendChild(script);
-    }
+  // Helper to update state from session
+  const updateFromSession = useCallback((session: chrome.cast.Session) => {
+    sessionRef.current = session;
+    setIsConnected(true);
+    setIsCasting(true);
+    setDevice({
+      friendlyName: session.receiver.friendlyName || 'Chromecast',
+      deviceId: session.receiver.deviceId,
+    });
+    setStatus('connected');
+    setStatusMessage(`Conectado a ${session.receiver.friendlyName || 'Chromecast'}`);
   }, []);
 
+  const resetState = useCallback(() => {
+    sessionRef.current = null;
+    setIsConnected(false);
+    setIsCasting(false);
+    setDevice(null);
+    if (isAvailable) {
+      setStatus('available');
+      setStatusMessage('Dispositivo disponible');
+    }
+  }, [isAvailable]);
+
+  // Initialize the Cast API
   const initializeCastApi = useCallback(() => {
     try {
-      if (!window.chrome?.cast) return;
+      const cast = window.chrome?.cast;
+      if (!cast) {
+        console.warn('[Chromecast] chrome.cast not available');
+        if (initRetryRef.current < MAX_INIT_RETRIES) {
+          initRetryRef.current += 1;
+          console.log(`[Chromecast] Retry ${initRetryRef.current}/${MAX_INIT_RETRIES} in 2s...`);
+          setTimeout(initializeCastApi, 2000);
+        } else {
+          setStatus('unavailable');
+          setStatusMessage('Chromecast no disponible en este navegador');
+        }
+        return;
+      }
 
-      const sessionRequest = new window.chrome.cast.SessionRequest(DEFAULT_MEDIA_RECEIVER_APP_ID);
+      console.log('[Chromecast] Initializing Cast API...');
+      setStatusMessage('Buscando dispositivos...');
 
-      const apiConfig = new window.chrome.cast.ApiConfig(
+      const sessionRequest = new cast.SessionRequest(DEFAULT_MEDIA_RECEIVER_APP_ID);
+
+      const apiConfig = new cast.ApiConfig(
         sessionRequest,
-        // Session listener - called when a session is started/ended
+        // Session listener
         (session: chrome.cast.Session) => {
-          sessionRef.current = session;
-          setIsConnected(true);
-          setIsCasting(true);
-          setDevice({
-            friendlyName: session.receiver.friendlyName || 'Chromecast',
-            deviceId: session.receiver.deviceId,
-          });
+          console.log('[Chromecast] Session started:', session.receiver.friendlyName);
+          updateFromSession(session);
 
-          // Listen for session updates
           session.addEventListener('update', () => {
-            if (session.status === window.chrome.cast.SessionStatus.STOPPED) {
-              sessionRef.current = null;
-              setIsConnected(false);
-              setIsCasting(false);
-              setDevice(null);
+            if (session.status === cast.SessionStatus.STOPPED) {
+              console.log('[Chromecast] Session stopped');
+              resetState();
             }
           });
         },
         // Receiver availability listener
         (availability: string) => {
-          setIsAvailable(availability === window.chrome.cast.ReceiverAvailability.AVAILABLE);
+          const available = availability === cast.ReceiverAvailability.AVAILABLE;
+          console.log(`[Chromecast] Receiver availability: ${availability} (available=${available})`);
+          setIsAvailable(available);
+          if (available) {
+            setStatus('available');
+            setStatusMessage('Dispositivo disponible');
+          } else {
+            setStatus('unavailable');
+            setStatusMessage('No se encontraron dispositivos Chromecast');
+          }
+          initRetryRef.current = 0; // Reset retries on successful init
         }
       );
 
-      window.chrome.cast.initialize(
+      cast.initialize(
         apiConfig,
         () => {
-          console.log('[Chromecast] Initialized');
+          console.log('[Chromecast] Cast API initialized successfully');
+          setStatusMessage('Buscando dispositivos...');
+          if (status === 'loading') {
+            setStatus('unavailable');
+          }
         },
         (error: chrome.cast.Error) => {
-          console.warn('[Chromecast] Init error:', error);
+          console.warn('[Chromecast] Init error:', error.code, error.description);
+          setStatus('error');
+          setStatusMessage(`Error al inicializar Chromecast (código ${error.code})`);
         }
       );
     } catch (err) {
-      console.warn('[Chromecast] Failed to initialize:', err);
+      console.error('[Chromecast] Failed to initialize:', err);
+      setStatus('error');
+      setStatusMessage('Error al inicializar Chromecast');
     }
-  }, []);
+  }, [status, updateFromSession, resetState]);
+
+  // Load Cast SDK
+  useEffect(() => {
+    // Check if we're on HTTPS or localhost (required for Chromecast)
+    const isSecure = window.location.protocol === 'https:' ||
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.');
+
+    if (!isSecure) {
+      console.warn('[Chromecast] Not on HTTPS or localhost. Cast discovery requires secure context.');
+      setStatus('unavailable');
+      setStatusMessage('Chromecast requiere HTTPS');
+      return;
+    }
+
+    // Check for native Cast support first
+    if (window.chrome?.cast?.isAvailable) {
+      console.log('[Chromecast] Cast API already available');
+      initializeCastApi();
+      return;
+    }
+
+    // Set up the callback
+    window.__onGCastApiAvailable = (isAvailable: boolean) => {
+      console.log(`[Chromecast] __onGCastApiAvailable fired: ${isAvailable}`);
+      if (isAvailable) {
+        initializeCastApi();
+      } else {
+        setStatus('unavailable');
+        setStatusMessage('Chromecast no disponible en este navegador');
+      }
+    };
+
+    // Load the Cast SDK script
+    const existingScript = document.querySelector('script[src*="cast_sender"]');
+    if (!existingScript) {
+      console.log('[Chromecast] Loading Cast SDK...');
+      const script = document.createElement('script');
+      script.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
+      script.async = true;
+
+      script.onload = () => {
+        console.log('[Chromecast] Cast SDK script loaded');
+      };
+
+      script.onerror = () => {
+        console.error('[Chromecast] Failed to load Cast SDK script');
+        setStatus('error');
+        setStatusMessage('No se pudo cargar el SDK de Chromecast');
+      };
+
+      document.head.appendChild(script);
+    } else {
+      console.log('[Chromecast] Cast SDK script already in DOM');
+    }
+
+    // Timeout: if SDK doesn't load in 10s
+    const timeout = setTimeout(() => {
+      if (status === 'loading') {
+        console.warn('[Chromecast] SDK load timeout');
+        setStatus('unavailable');
+        setStatusMessage('Tiempo de espera agotado al cargar Chromecast');
+      }
+    }, 10000);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Connect to a Cast device
   const connect = useCallback(() => {
-    if (!window.chrome?.cast) return;
+    const cast = window.chrome?.cast;
+    if (!cast) {
+      console.warn('[Chromecast] Cannot connect: Cast API not available');
+      return;
+    }
 
-    window.chrome.cast.requestSession(
+    console.log('[Chromecast] Requesting session...');
+    setStatus('connecting');
+    setStatusMessage('Selecciona un dispositivo...');
+
+    cast.requestSession(
       (session: chrome.cast.Session) => {
-        sessionRef.current = session;
-        setIsConnected(true);
-        setIsCasting(true);
-        setDevice({
-          friendlyName: session.receiver.friendlyName || 'Chromecast',
-          deviceId: session.receiver.deviceId,
-        });
+        console.log('[Chromecast] Session established:', session.receiver.friendlyName);
+        updateFromSession(session);
       },
       (error: chrome.cast.Error) => {
-        if (error.code !== window.chrome.cast.ErrorCode.CANCEL) {
-          console.warn('[Chromecast] Session error:', error);
+        if (error.code !== cast.ErrorCode.CANCEL) {
+          console.warn('[Chromecast] Session request error:', error.code, error.description);
+          setStatus('error');
+          setStatusMessage(`Error de conexión (${error.code})`);
+          setTimeout(() => {
+            if (isAvailable) {
+              setStatus('available');
+              setStatusMessage('Dispositivo disponible');
+            }
+          }, 3000);
+        } else {
+          console.log('[Chromecast] User cancelled device selection');
+          setStatus('available');
+          setStatusMessage('Dispositivo disponible');
         }
       }
     );
-  }, []);
+  }, [isAvailable, updateFromSession]);
 
-  // Disconnect from Cast device
+  // Disconnect
   const disconnect = useCallback(() => {
     if (sessionRef.current) {
-      sessionRef.current.stop(
-        () => {
-          sessionRef.current = null;
-          setIsConnected(false);
-          setIsCasting(false);
-          setDevice(null);
-        },
-        () => {
-          sessionRef.current = null;
-          setIsConnected(false);
-          setIsCasting(false);
-          setDevice(null);
-        }
-      );
+      console.log('[Chromecast] Stopping session...');
+      try {
+        sessionRef.current.stop(
+          () => {
+            console.log('[Chromecast] Session stopped successfully');
+            resetState();
+            setStatusMessage('Desconectado');
+          },
+          () => {
+            console.log('[Chromecast] Session stop failed (already ended?)');
+            resetState();
+          }
+        );
+      } catch {
+        resetState();
+      }
     }
-  }, []);
+  }, [resetState]);
 
-  // Send a custom message to the receiver
-  const sendMessage = useCallback((message: Record<string, unknown>) => {
-    if (sessionRef.current) {
-      sessionRef.current.sendMessage(NAMESPACE, message, () => {}, () => {});
-    }
-  }, []);
-
-  // Cast an HLS stream
+  // Cast an HLS stream via Default Media Receiver
   const castHLS = useCallback((url: string, title?: string, subtitle?: string) => {
-    if (!window.chrome?.cast) return;
+    const cast = window.chrome?.cast;
+    if (!cast) return;
 
-    // Try to use Default Media Receiver for native HLS playback
-    const mediaInfo = new window.chrome.cast.media.MediaInfo(
-      url,
-      'application/x-mpegurl'
-    );
-    const metadata = new window.chrome.cast.media.GenericMediaMetadata();
+    console.log('[Chromecast] Casting HLS:', url);
+
+    const mediaInfo = new cast.media.MediaInfo(url, 'application/x-mpegurl');
+    const metadata = new cast.media.GenericMediaMetadata();
     if (title) metadata.title = title;
     if (subtitle) metadata.subtitle = subtitle;
     mediaInfo.metadata = metadata;
 
-    const loadRequest = new window.chrome.cast.media.LoadRequest(mediaInfo);
+    const loadRequest = new cast.media.LoadRequest(mediaInfo);
+    setStatusMessage(`Enviando a ${device?.friendlyName || 'Chromecast'}...`);
 
     if (sessionRef.current) {
       sessionRef.current.loadMedia(
         loadRequest,
         () => {
+          console.log('[Chromecast] HLS media loaded');
           setIsCasting(true);
+          setStatusMessage(`Reproduciendo en ${device?.friendlyName || 'Chromecast'}`);
         },
         (error: chrome.cast.Error) => {
-          console.warn('[Chromecast] Load media error:', error);
+          console.warn('[Chromecast] Load media error:', error.code);
+          setStatusMessage('Error al cargar el contenido');
         }
       );
     } else {
-      // No active session, request one first
-      window.chrome.cast.requestSession(
-        (session: chrome.cast.Session) => {
-          sessionRef.current = session;
-          setIsConnected(true);
-          setDevice({
-            friendlyName: session.receiver.friendlyName || 'Chromecast',
-          });
+      // No session — request one first, then load
+      cast.requestSession(
+        (session) => {
+          updateFromSession(session);
           session.loadMedia(
             loadRequest,
-            () => setIsCasting(true),
-            (err: chrome.cast.Error) => console.warn('[Chromecast] Load error:', err)
+            () => {
+              setIsCasting(true);
+              setStatusMessage(`Reproduciendo en ${device?.friendlyName || 'Chromecast'}`);
+            },
+            (err) => {
+              console.warn('[Chromecast] Load error:', err.code);
+              setStatusMessage('Error al cargar el contenido');
+            }
           );
         },
-        (err: chrome.cast.Error) => {
-          if (err.code !== window.chrome.cast.ErrorCode.CANCEL) {
-            console.warn('[Chromecast] Session request error:', err);
+        (err) => {
+          if (err.code !== cast.ErrorCode.CANCEL) {
+            setStatusMessage('No se pudo conectar al dispositivo');
           }
         }
       );
     }
-  }, []);
+  }, [device, updateFromSession]);
 
-  // Cast an embed URL (iframe)
+  // Cast an embed URL (iframe content) via Default Media Receiver
+  // NOTE: Default Media Receiver can't render iframes, but we try loading
+  // the URL as media content — for embed URLs this may show a basic player
   const castEmbed = useCallback((url: string, title?: string, subtitle?: string) => {
-    // For embed URLs, we send a custom message to our custom receiver
-    // If using Default Media Receiver, we still try loadMedia (may not work for embeds)
-    sendMessage({
-      action: 'PLAY_EMBED',
-      url,
-      title: title || '',
-      subtitle: subtitle || '',
-    });
+    const cast = window.chrome?.cast;
+    if (!cast) return;
 
-    setIsCasting(true);
-  }, [sendMessage]);
+    console.log('[Chromecast] Casting embed URL:', url);
+
+    // Strategy: Send the embed URL to the receiver using loadMedia.
+    // The Default Media Receiver will attempt to play it.
+    // For HLS/MP4 streams within embeds, this works. For pure iframe embeds,
+    // the receiver will show a "content type not supported" message.
+    const mediaInfo = new cast.media.MediaInfo(url, 'video/mp4');
+    const metadata = new cast.media.GenericMediaMetadata();
+    if (title) metadata.title = title;
+    if (subtitle) metadata.subtitle = subtitle;
+    mediaInfo.metadata = metadata;
+
+    const loadRequest = new cast.media.LoadRequest(mediaInfo);
+    setStatusMessage(`Enviando a ${device?.friendlyName || 'Chromecast'}...`);
+
+    const doLoad = (session: chrome.cast.Session) => {
+      updateFromSession(session);
+      session.loadMedia(
+        loadRequest,
+        () => {
+          setIsCasting(true);
+          setStatusMessage(`Reproduciendo en ${device?.friendlyName || 'Chromecast'}`);
+        },
+        (error: chrome.cast.Error) => {
+          console.warn('[Chromecast] Embed load failed:', error.code);
+          setStatusMessage('El servidor no es compatible con Chromecast — intenta otro');
+        }
+      );
+    };
+
+    if (sessionRef.current) {
+      doLoad(sessionRef.current);
+    } else {
+      cast.requestSession(
+        (session) => doLoad(session),
+        (err) => {
+          if (err.code !== cast.ErrorCode.CANCEL) {
+            setStatusMessage('No se pudo conectar al dispositivo');
+          }
+        }
+      );
+    }
+  }, [device, updateFromSession]);
 
   // Stop casting
   const stopCast = useCallback(() => {
-    sendMessage({ action: 'STOP' });
     disconnect();
-  }, [sendMessage, disconnect]);
+  }, [disconnect]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (sessionRef.current) {
-        try {
-          sessionRef.current.stop(() => {}, () => {});
-        } catch {}
+        try { sessionRef.current.stop(() => {}, () => {}); } catch { /* ignore */ }
       }
     };
   }, []);
 
   return {
+    status,
     isAvailable,
     isConnected,
     isCasting,
     device,
+    statusMessage,
     connect,
     disconnect,
     castHLS,

@@ -20,7 +20,8 @@ export function Navbar() {
     setCastState(cast.isCasting, cast.device?.friendlyName || null);
   }, [cast.isCasting, cast.device?.friendlyName, setCastState]);
 
-  const isActivelyCasting = cast.isCasting && cast.isConnected;
+  const isActivelyCasting = cast.isConnected;
+  const castStatus = cast.status;
 
   // Auto-cast movie when server URL is set and Cast is connected
   useEffect(() => {
@@ -100,14 +101,26 @@ export function Navbar() {
             {/* Chromecast button */}
             <button
               onClick={handleCastClick}
-              className={`p-2 rounded-full transition-all ${
-                isActivelyCasting
+              className={`p-2 rounded-full transition-all relative ${
+                castStatus === 'connected'
                   ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                  : castStatus === 'connecting'
+                  ? 'bg-yellow-500/20 text-yellow-400 animate-pulse'
+                  : castStatus === 'error'
+                  ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                  : castStatus === 'loading'
+                  ? 'bg-white/5 text-gray-500'
                   : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white'
               }`}
-              title={isActivelyCasting ? `Conectado a ${cast.device?.friendlyName || 'Chromecast'}` : 'Chromecast'}
+              title={cast.statusMessage || (isActivelyCasting ? `Conectado a ${cast.device?.friendlyName || 'Chromecast'}` : 'Chromecast')}
             >
-              <Cast size={18} className={isActivelyCasting ? 'text-green-400' : ''} />
+              <Cast size={18} />
+              {castStatus === 'connecting' && (
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-yellow-500 rounded-full animate-ping" />
+              )}
+              {castStatus === 'connected' && (
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full" />
+              )}
             </button>
             {/* Search bar - desktop */}
             <form onSubmit={handleSearch} className="hidden sm:flex items-center bg-white/5 rounded-full px-4 py-2 border border-white/10 focus-within:border-red-500/50 transition-colors w-52 lg:w-64">
