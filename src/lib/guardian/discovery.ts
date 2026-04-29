@@ -15,16 +15,15 @@
 
 import ZAI from 'z-ai-web-dev-sdk';
 
-// Lazy Prisma init — evita crash si DATABASE_URL no está configurada
+// Lazy Prisma init — usa el singleton centralizado de db.ts
 let _db: any = null;
 function db() {
-  if (!_db && process.env.DATABASE_URL) {
-    try {
-      const { PrismaClient } = require('@prisma/client');
-      _db = new PrismaClient();
-    } catch { _db = null; }
-  }
-  return _db;
+ if (!_db) {
+   try {
+     _db = require('@/lib/db').db;
+   } catch { _db = null; }
+ }
+ return _db;
 }
 
 // ===== Configuración =====

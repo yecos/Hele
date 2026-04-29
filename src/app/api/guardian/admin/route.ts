@@ -4,18 +4,17 @@ import { runDiscovery, promoteToGuardian, getDiscoveredSources, getDiscoveryStat
 import { runFullScan, getGuardianStats, getVerifiedChannels } from '@/lib/guardian/scanner';
 import { getSchedulerStatus } from '@/lib/guardian/scheduler';
 
-// Lazy Prisma — solo se inicializa si DATABASE_URL está disponible
-let db: any = null;
+// Lazy Prisma — usa el singleton centralizado de db.ts
+let _db: any = null;
 function getDb() {
-  if (db) return db;
-  if (!process.env.DATABASE_URL) return null;
-  try {
-    const { PrismaClient } = require('@prisma/client');
-    db = new PrismaClient();
-    return db;
-  } catch {
-    return null;
+  if (!_db) {
+    try {
+      _db = require('@/lib/db').db;
+    } catch {
+      return null;
+    }
   }
+  return _db;
 }
 
 const EMPTY_DASHBOARD = {
