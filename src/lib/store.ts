@@ -142,7 +142,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const stored = localStorage.getItem('xs-auth');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.username) {
+        if (parsed.username && typeof parsed.username === 'string') {
           set({ isLoggedIn: true, username: parsed.username.toLowerCase() });
           return;
         }
