@@ -69,34 +69,34 @@ interface DashboardData {
 // ===== Admin Auth Hook =====
 function useAdminAuth() {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
+  const [authData, setAuthData] = useState<string | null>(null);
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem('xs-auth');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.username === 'admin' && parsed.token) {
+        if (parsed.username?.toLowerCase() === 'admin' && parsed.token) {
           setIsAdmin(true);
-          setToken(parsed.token);
+          setAuthData(stored);
         }
       }
     } catch {}
   }, []);
 
   const adminFetch = useCallback(async (url: string, options?: RequestInit) => {
-    if (!token) throw new Error('No auth token');
+    if (!authData) throw new Error('No auth token');
     return fetch(url, {
       ...options,
       headers: {
         ...options?.headers,
-        'Authorization': `Bearer ${token}`,
+        'X-Admin-Auth': authData,
         'Content-Type': 'application/json',
       },
     });
-  }, [token]);
+  }, [authData]);
 
-  return { isAdmin, token, adminFetch };
+  return { isAdmin, authData, adminFetch };
 }
 
 // ===== Engine Icon =====

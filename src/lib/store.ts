@@ -60,8 +60,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         });
         const data = await legacyRes.json();
         if (data.success) {
-          localStorage.setItem('xs-auth', JSON.stringify({ username: data.username, token: data.token }));
-          set({ isLoggedIn: true, username: data.username, isLoading: false });
+          localStorage.setItem('xs-auth', JSON.stringify({ username: data.username.toLowerCase(), token: data.token }));
+          set({ isLoggedIn: true, username: data.username.toLowerCase(), isLoading: false });
           return true;
         }
       }
@@ -78,8 +78,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         });
         const data = await res.json();
         if (data.success) {
-          localStorage.setItem('xs-auth', JSON.stringify({ username: data.username, token: data.token }));
-          set({ isLoggedIn: true, username: data.username, isLoading: false });
+          localStorage.setItem('xs-auth', JSON.stringify({ username: data.username.toLowerCase(), token: data.token }));
+          set({ isLoggedIn: true, username: data.username.toLowerCase(), isLoading: false });
           return true;
         }
       } catch {}
@@ -143,7 +143,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed.username) {
-          set({ isLoggedIn: true, username: parsed.username });
+          set({ isLoggedIn: true, username: parsed.username.toLowerCase() });
           return;
         }
       }

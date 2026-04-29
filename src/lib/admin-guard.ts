@@ -1,60 +1,64 @@
 /**
  * Admin Guard - Verificación de permisos de administrador
- * 
- * Server-side: Decodifica el token xs-auth del header Authorization
- * Client-side: Compara username con la lista de admins
+ *
+ * Server-side: Lee el header X-Admin-Auth que contiene el xs-auth JSON
+ * Formato esperado: { username: string, token: string }
  */
 
-// Usuarios con permisos de admin
+// Usuarios con permisos de admin (siempre en minúsculas)
 const ADMIN_USERS = ['admin'];
 
 /**
- * Verifica si un token xs-auth pertenece a un usuario admin
- * Token formato: base64(username:timestamp:random)
+ * Verifica si un xs-auth JSON pertenece a un usuario admin
+ * Espera formato: JSON.stringify({ username, token, ... })
  */
-export function isAdminFromToken(token: string): boolean {
+export function isAdminFromAuthData(authData: string): boolean {
   try {
-    const decoded = Buffer.from(token, 'base64').toString('utf-8');
-    const parts = decoded.split(':');
-    if (parts.length < 3) return false;
-    const username = parts[0].toLowerCase();
-    return ADMIN_USERS.includes(username);
+    const parsed = JSON.parse(authData);
+    if (!parsed.username) return false;
+    return ADMIN_USERS.includes(parsed.username.toLowerCase());
   } catch {
     return false;
   }
 }
 
 /**
- * Extrae el token de admin de una request Next.js
- * Busca en: Authorization header, cookie xs-auth, o body token
+ * Extrae los datos de admin de una request Next.js
+ * Busca en: X-Admin-Auth header (xs-auth JSON directo)
  */
-export function getAdminToken(request: Request): string | null {
-  // 1. Authorization header: "Bearer <token>"
-  const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.substring(7);
-  }
-
-  // 2. Custom header (para fetch directo desde client)
-  const xsAuth = request.headers.get('x-xs-auth');
+export function getAdminAuthData(request: Request): string | null {
+  // Header personalizado con el xs-auth JSON completo
+  const xsAuth = request.headers.get('x-admin-auth');
   if (xsAuth) return xsAuth;
+
+  // Fallback: Authorization header
+  const authHeader = request.headers.get('authorization');
+  if (authHeader) {
+    const token = authHeader.replace('Bearer ', '');
+    // Intentar parsear como JSON (nuevo formato)
+    try {
+      const parsed = JSON.parse(token);
+      if (parsed.username && parsed.token) return token;
+    } catch {
+      // No es JSON, podría ser un token legacy — rechazar por seguridad
+    }
+  }
 
   return null;
 }
 
 /**
  * Middleware de verificación admin para API routes
- * Returns { isAdmin: boolean, username?: string } o lanza error
+ * Returns { isAdmin: true, username } o lanza error
  */
 export function requireAdmin(request: Request): { isAdmin: true; username: string } {
-  const token = getAdminToken(request);
-  if (!token) {
+  const authData = getAdminAuthData(request);
+  if (!authData) {
     throw new Error('No se proporcionó token de autenticación');
   }
-  if (!isAdminFromToken(token)) {
+  if (!isAdminFromAuthData(authData)) {
     throw new Error('Acceso denegado - Se requieren permisos de administrador');
   }
-  const decoded = Buffer.from(token, 'base64').toString('utf-8');
-  const username = decoded.split(':')[0].toLowerCase();
-  return { isAdmin: true, username };
+  const parsed = JSON.parse(authData);
+  return { isAdmin: true, username: parsed.username.toLowerCase() };
 }

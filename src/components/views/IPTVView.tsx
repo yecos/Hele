@@ -131,7 +131,7 @@ export function IPTVView() {
 
   // Admin state
   const { username } = useAuthStore();
-  const isAdmin = username === 'admin';
+  const isAdmin = username?.toLowerCase() === 'admin';
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // Guardian state
