@@ -13,10 +13,19 @@
  * - Rate limiting para no saturar servidores
  */
 
-import { PrismaClient } from '@prisma/client';
 import ZAI from 'z-ai-web-dev-sdk';
 
-const db = new PrismaClient();
+// Lazy Prisma init — evita crash si DATABASE_URL no está configurada
+let _db: any = null;
+function db() {
+  if (!_db && process.env.DATABASE_URL) {
+    try {
+      const { PrismaClient } = require('@prisma/client');
+      _db = new PrismaClient();
+    } catch { _db = null; }
+  }
+  return _db;
+}
 
 // ===== Configuración =====
 const WEB_SEARCH_QUERIES_PER_RUN = 10;
@@ -434,21 +443,21 @@ async function runXtreamProbing(maxProbes: number): Promise<{ probes: number; wo
 
 async function saveDiscovered(url: string, name: string, sourceUrl: string, channelCount: number, type: string = 'm3u', engine: string = 'web'): Promise<boolean> {
   try {
-    await db.discoveredSource.upsert({
+    await db().discoveredSource.upsert({
       where: { url },
       create: { url, name: name.substring(0, 100), sourceUrl, discoveryEngine: engine, channelCount, isValid: true, lastChecked: new Date(), addedToGuardian: false },
       update: { channelCount, isValid: true, lastChecked: new Date(), sourceUrl, discoveryEngine: engine, name: name.substring(0, 100) },
     });
     if (channelCount >= MIN_CHANNELS_TO_PROMOTE) {
       try {
-        await db.guardianSource.create({
+        await db().guardianSource.create({
           data: { name: `Descubierta: ${name.substring(0, 40)}`, url, type, category: 'discovered', priority: 50, enabled: true },
         });
-        await db.discoveredSource.update({ where: { url }, data: { addedToGuardian: true } });
+        await db().discoveredSource.update({ where: { url }, data: { addedToGuardian: true } });
         console.log(`[Discovery] Promovida al Guardian: ${url.substring(0, 60)}... (${channelCount} canales)`);
         return true;
       } catch {
-        try { await db.guardianSource.updateMany({ where: { url }, data: { enabled: true, updatedAt: new Date() } }); } catch {}
+        try { await db().guardianSource.updateMany({ where: { url }, data: { enabled: true, updatedAt: new Date() } }); } catch {}
       }
     }
     return false;
@@ -460,18 +469,18 @@ async function saveDiscovered(url: string, name: string, sourceUrl: string, chan
 async function revalidateDiscoveredSources(): Promise<{ revalidated: number; stillValid: number; newlyInvalid: number }> {
   let revalidated = 0, stillValid = 0, newlyInvalid = 0;
   const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
-  const sources = await db.discoveredSource.findMany({ where: { isValid: true, lastChecked: { lt: sixHoursAgo } }, orderBy: { channelCount: 'desc' }, take: 30 });
+  const sources = await db().discoveredSource.findMany({ where: { isValid: true, lastChecked: { lt: sixHoursAgo } }, orderBy: { channelCount: 'desc' }, take: 30 });
   console.log(`[Discovery] Re-validando ${sources.length} fuentes previamente válidas...`);
   for (const source of sources) {
     revalidated++;
     const validation = await validateM3uUrl(source.url);
     if (validation.valid) {
       stillValid++;
-      await db.discoveredSource.update({ where: { url: source.url }, data: { channelCount: validation.channelCount, lastChecked: new Date() } });
+      await db().discoveredSource.update({ where: { url: source.url }, data: { channelCount: validation.channelCount, lastChecked: new Date() } });
     } else {
       newlyInvalid++;
-      await db.discoveredSource.update({ where: { url: source.url }, data: { isValid: false, lastChecked: new Date() } });
-      try { await db.guardianSource.updateMany({ where: { url: source.url }, data: { enabled: false } }); } catch {}
+      await db().discoveredSource.update({ where: { url: source.url }, data: { isValid: false, lastChecked: new Date() } });
+      try { await db().guardianSource.updateMany({ where: { url: source.url }, data: { enabled: false } }); } catch {}
     }
     await delay(500);
   }
@@ -490,7 +499,7 @@ export async function runDiscovery(trigger: 'scheduled' | 'manual' = 'scheduled'
 
   try {
     const reval = await revalidateDiscoveredSources();
-    const [existingSources, existingDiscovered] = await Promise.all([db.guardianSource.findMany({ select: { url: true } }), db.discoveredSource.findMany({ select: { url: true } })]);
+    const [existingSources, existingDiscovered] = await Promise.all([db().guardianSource.findMany({ select: { url: true } }), db().discoveredSource.findMany({ select: { url: true } })]);
     const existingUrls = new Set<string>();
     existingSources.forEach(s => existingUrls.add(normalizeUrl(s.url)));
     existingDiscovered.forEach(d => existingUrls.add(normalizeUrl(d.url)));
@@ -524,27 +533,35 @@ export function getDiscoveryStatus() {
 }
 
 export async function getDiscoveredSources(options?: { validOnly?: boolean; limit?: number }) {
+  const database = db();
+  if (!database) return [];
   const where: Record<string, unknown> = {};
   if (options?.validOnly) where.isValid = true;
-  return db.discoveredSource.findMany({ where, orderBy: { lastChecked: 'desc' }, take: options?.limit || 200 });
+  return database.discoveredSource.findMany({ where, orderBy: { lastChecked: 'desc' }, take: options?.limit || 200 });
 }
 
 export async function promoteToGuardian(url: string) {
-  const discovered = await db.discoveredSource.findUnique({ where: { url } });
+  const database = db();
+  if (!database) return { success: false, error: 'DATABASE_URL no configurada' };
+  const discovered = await database.discoveredSource.findUnique({ where: { url } });
   if (!discovered) return { success: false, error: 'Fuente no encontrada' };
   try {
-    await db.guardianSource.create({ data: { name: discovered.name || `Descubierta: ${new URL(discovered.url).hostname}`, url: discovered.url, type: 'm3u', category: 'discovered', priority: 60, enabled: true } });
-    await db.discoveredSource.update({ where: { url }, data: { addedToGuardian: true } });
+    await database.guardianSource.create({ data: { name: discovered.name || `Descubierta: ${new URL(discovered.url).hostname}`, url: discovered.url, type: 'm3u', category: 'discovered', priority: 60, enabled: true } });
+    await database.discoveredSource.update({ where: { url }, data: { addedToGuardian: true } });
     return { success: true };
   } catch { return { success: false, error: 'Ya existe en el Guardian' }; }
 }
 
 export async function getDiscoveryStats() {
+  const database = db();
+  if (!database) {
+    return { totalDiscovered: 0, validSources: 0, addedToGuardian: 0, totalChannelsInValidSources: 0, lastRun: lastDiscoveryResult };
+  }
   const [total, valid, addedToGuardian, totalChannels] = await Promise.all([
-    db.discoveredSource.count(),
-    db.discoveredSource.count({ where: { isValid: true } }),
-    db.discoveredSource.count({ where: { addedToGuardian: true } }),
-    db.discoveredSource.aggregate({ _sum: { channelCount: true }, where: { isValid: true } }),
+    database.discoveredSource.count(),
+    database.discoveredSource.count({ where: { isValid: true } }),
+    database.discoveredSource.count({ where: { addedToGuardian: true } }),
+    database.discoveredSource.aggregate({ _sum: { channelCount: true }, where: { isValid: true } }),
   ]);
   return { totalDiscovered: total, validSources: valid, addedToGuardian, totalChannelsInValidSources: totalChannels._sum.channelCount || 0, lastRun: lastDiscoveryResult };
 }

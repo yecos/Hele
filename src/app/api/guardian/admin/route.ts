@@ -3,26 +3,67 @@ import { requireAdmin } from '@/lib/admin-guard';
 import { runDiscovery, promoteToGuardian, getDiscoveredSources, getDiscoveryStats, getDiscoveryStatus } from '@/lib/guardian/discovery';
 import { runFullScan, getGuardianStats, getVerifiedChannels } from '@/lib/guardian/scanner';
 import { getSchedulerStatus } from '@/lib/guardian/scheduler';
-import { PrismaClient } from '@prisma/client';
 
-const db = new PrismaClient();
+// Lazy Prisma — solo se inicializa si DATABASE_URL está disponible
+let db: any = null;
+function getDb() {
+  if (db) return db;
+  if (!process.env.DATABASE_URL) return null;
+  try {
+    const { PrismaClient } = require('@prisma/client');
+    db = new PrismaClient();
+    return db;
+  } catch {
+    return null;
+  }
+}
+
+const EMPTY_DASHBOARD = {
+  guardian: {
+    totalSources: 0,
+    totalVerified: 0,
+    isScanning: false,
+    latestScan: null,
+    totalScans: 0,
+    playlistsBreakdown: [],
+  },
+  scheduler: { initialized: false, activeTasks: 0, tasks: [] },
+  discovery: {
+    isDiscovering: false,
+    lastDiscovery: null,
+    stats: { totalDiscovered: 0, validSources: 0, addedToGuardian: 0, totalChannelsInValidSources: 0 },
+  },
+  recentScans: [],
+  discoveredSources: [],
+  verifiedChannelCount: 0,
+  dbAvailable: false,
+};
 
 /**
  * GET /api/guardian/admin - Dashboard completo del Guardian
- * Requiere header: Authorization: Bearer <xs-auth-token>
  */
 export async function GET(request: NextRequest) {
   try {
     const admin = requireAdmin(request);
+    const database = getDb();
+
+    if (!database) {
+      return NextResponse.json({
+        success: true,
+        admin: admin.username,
+        dashboard: EMPTY_DASHBOARD,
+        warning: 'DATABASE_URL no configurada. El Guardian requiere una base de datos persistente.',
+      });
+    }
 
     const [stats, scheduler, discoveryStatus, discoveryStats, recentScans, discoveredSources, verifiedChannels] = await Promise.all([
       getGuardianStats(),
       getSchedulerStatus(),
       getDiscoveryStatus(),
       getDiscoveryStats(),
-      db.guardianScan.findMany({ orderBy: { startedAt: 'desc' }, take: 10 }),
-      getDiscoveredSources({ validOnly: false, limit: 50 }),
-      getVerifiedChannels(),
+      database.guardianScan.findMany({ orderBy: { startedAt: 'desc' }, take: 10 }).catch(() => []),
+      getDiscoveredSources({ validOnly: false, limit: 50 }).catch(() => []),
+      getVerifiedChannels().catch(() => []),
     ]);
 
     return NextResponse.json({
@@ -31,13 +72,11 @@ export async function GET(request: NextRequest) {
       dashboard: {
         guardian: stats,
         scheduler,
-        discovery: {
-          ...discoveryStatus,
-          stats: discoveryStats,
-        },
+        discovery: { ...discoveryStatus, stats: discoveryStats },
         recentScans,
         discoveredSources,
-        verifiedChannelCount: verifiedChannels.length,
+        verifiedChannelCount: verifiedChannels?.length || 0,
+        dbAvailable: true,
       },
     });
   } catch (error) {
@@ -46,33 +85,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: msg }, { status: 403 });
     }
     console.error('[Admin API] GET error:', msg);
-    return NextResponse.json({ success: false, error: msg });
+    return NextResponse.json({
+      success: true,
+      admin: 'unknown',
+      dashboard: EMPTY_DASHBOARD,
+      error: msg,
+    });
   }
 }
 
 /**
  * POST /api/guardian/admin - Acciones administrativas
- * Body: { action: string, ...params }
- * 
- * Acciones disponibles:
- * - runDiscovery: Ejecutar descubrimiento manual
- * - runScan: Ejecutar escaneo manual
- * - promoteSource: Promover fuente descubierta al Guardian
- * - clearChannels: Limpiar canales verificados
- * - clearDiscovered: Limpiar fuentes descubiertas inválidas
- * - toggleSource: Habilitar/deshabilitar fuente del Guardian
- * - deleteSource: Eliminar fuente del Guardian
  */
 export async function POST(request: NextRequest) {
   try {
     const admin = requireAdmin(request);
+    const database = getDb();
+
+    if (!database) {
+      return NextResponse.json({
+        success: false,
+        error: 'DATABASE_URL no configurada. El Guardian no puede ejecutar acciones sin base de datos.',
+      });
+    }
+
     const body = await request.json().catch(() => ({}));
     const { action } = body;
 
     console.log(`[Admin API] Acción "${action}" ejecutada por ${admin.username}`);
 
     switch (action) {
-      // === DISCOVERY ===
       case 'runDiscovery': {
         const result = await runDiscovery('manual');
         if (result.status === 'already_running') {
@@ -90,13 +132,10 @@ export async function POST(request: NextRequest) {
       }
 
       case 'clearDiscovered': {
-        const deleted = await db.discoveredSource.deleteMany({
-          where: { isValid: false },
-        });
+        const deleted = await database.discoveredSource.deleteMany({ where: { isValid: false } });
         return NextResponse.json({ success: true, deleted: deleted.count, message: `${deleted.count} fuentes inválidas eliminadas` });
       }
 
-      // === SCANNER ===
       case 'runScan': {
         const result = await runFullScan('manual');
         if (result.status === 'already_running') {
@@ -106,20 +145,19 @@ export async function POST(request: NextRequest) {
       }
 
       case 'clearChannels': {
-        const deleted = await db.verifiedChannel.deleteMany();
+        const deleted = await database.verifiedChannel.deleteMany();
         return NextResponse.json({ success: true, deleted: deleted.count, message: `${deleted.count} canales verificados eliminados` });
       }
 
-      // === SOURCES ===
       case 'toggleSource': {
         if (!body.sourceId) {
           return NextResponse.json({ success: false, error: 'sourceId requerido' });
         }
-        const source = await db.guardianSource.findUnique({ where: { id: body.sourceId } });
+        const source = await database.guardianSource.findUnique({ where: { id: body.sourceId } });
         if (!source) {
           return NextResponse.json({ success: false, error: 'Fuente no encontrada' });
         }
-        const updated = await db.guardianSource.update({
+        const updated = await database.guardianSource.update({
           where: { id: body.sourceId },
           data: { enabled: !source.enabled, updatedAt: new Date() },
         });
@@ -130,7 +168,7 @@ export async function POST(request: NextRequest) {
         if (!body.sourceId) {
           return NextResponse.json({ success: false, error: 'sourceId requerido' });
         }
-        await db.guardianSource.delete({ where: { id: body.sourceId } });
+        await database.guardianSource.delete({ where: { id: body.sourceId } });
         return NextResponse.json({ success: true, message: 'Fuente eliminada' });
       }
 
