@@ -113,18 +113,24 @@ export function HomeView() {
       {/* Continue Watching */}
       {history.length > 0 && (
         <div className="max-w-[1400px] mx-auto px-4 pt-4 pb-2">
-          <CategoryRow title="▶️ Continuar Viendo" movies={history.slice(0, 10).map(h => ({
-            id: h.movieId,
-            tmdbId: parseInt(h.movieId) || 0,
-            title: h.title,
-            mediaType: h.mediaType,
-            posterUrl: h.posterUrl,
-            backdropUrl: '',
-            rating: 0,
-            year: 0,
-            overview: '',
-            genreIds: [],
-          }))} />
+          <CategoryRow
+            title="▶️ Continuar Viendo"
+            movies={history.slice(0, 10).map(h => ({
+              id: h.movieId,
+              tmdbId: parseInt(h.movieId) || 0,
+              title: h.title,
+              mediaType: h.mediaType,
+              posterUrl: h.posterUrl,
+              backdropUrl: '',
+              rating: 0,
+              year: 0,
+              overview: '',
+              genreIds: [],
+            }))}
+            progressMap={Object.fromEntries(
+              history.slice(0, 10).filter(h => h.progress > 0 && h.duration > 0).map(h => [h.movieId, h.progress / h.duration])
+            )}
+          />
         </div>
       )}
 

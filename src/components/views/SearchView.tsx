@@ -30,10 +30,11 @@ export function SearchView() {
       setResults([]);
       return;
     }
+    const controller = new AbortController();
     const doSearch = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/tmdb?endpoint=/search/multi&query=${encodeURIComponent(debouncedQuery)}`);
+        const res = await fetch(`/api/tmdb?endpoint=/search/multi&query=${encodeURIComponent(debouncedQuery)}`, { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
           const items = (data.results || [])
@@ -41,13 +42,16 @@ export function SearchView() {
             .map(mapItem);
           setResults(items);
         }
-      } catch (err) {
-        console.error('Search error:', err);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('Search error:', err);
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     doSearch();
+    return () => controller.abort();
   }, [debouncedQuery]);
 
   const filteredResults = filter === 'all' ? results : results.filter(m => m.mediaType === filter);

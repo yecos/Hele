@@ -11,10 +11,20 @@ interface HeroBannerProps {
 
 export function HeroBanner({ movies }: HeroBannerProps) {
   const [current, setCurrent] = useState(0);
+  const [prevIndex, setPrevIndex] = useState(-1);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const playMovie = usePlayerStore(s => s.playMovie);
 
-  const next = useCallback(() => setCurrent(c => (c + 1) % movies.length), [movies.length]);
-  const prev = useCallback(() => setCurrent(c => (c - 1 + movies.length) % movies.length), [movies.length]);
+  const goTo = useCallback((idx: number) => {
+    if (idx === current || isTransitioning) return;
+    setPrevIndex(current);
+    setCurrent(idx);
+    setIsTransitioning(true);
+    setTimeout(() => setIsTransitioning(false), 800);
+  }, [current, isTransitioning]);
+
+  const next = useCallback(() => goTo((current + 1) % movies.length), [current, movies.length, goTo]);
+  const prev = useCallback(() => goTo((current - 1 + movies.length) % movies.length), [current, movies.length, goTo]);
 
   useEffect(() => {
     if (movies.length === 0) return;
@@ -25,20 +35,35 @@ export function HeroBanner({ movies }: HeroBannerProps) {
   if (movies.length === 0) return null;
 
   const movie = movies[current];
+  const prevMovie = prevIndex >= 0 ? movies[prevIndex] : null;
 
   return (
     <div className="relative w-full h-[60vh] min-h-[400px] max-h-[700px] overflow-hidden">
-      {/* Backdrop */}
+      {/* Backdrop — two stacked layers for crossfade */}
+      {prevMovie && (
+        <div
+          key={`backdrop-${prevIndex}`}
+          className="absolute inset-0 bg-cover bg-center transition-opacity duration-700 ease-out"
+          style={{
+            backgroundImage: `url(${prevMovie.backdropUrl})`,
+            opacity: isTransitioning ? 1 : 0,
+          }}
+        />
+      )}
       <div
-        className="absolute inset-0 bg-cover bg-center transition-all duration-700"
-        style={{ backgroundImage: `url(${movie.backdropUrl})` }}
+        key={`backdrop-${current}`}
+        className="absolute inset-0 bg-cover bg-center transition-opacity duration-700 ease-out"
+        style={{
+          backgroundImage: `url(${movie.backdropUrl})`,
+          opacity: isTransitioning ? 0 : 1,
+        }}
       />
       <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-black/30" />
 
       {/* Content */}
       <div className="relative h-full max-w-[1400px] mx-auto px-4 flex items-center">
-        <div className="max-w-lg space-y-4">
+        <div className={`max-w-lg space-y-4 transition-all duration-500 ${isTransitioning ? 'opacity-0 translate-y-3' : 'opacity-100 translate-y-0'}`}>
           <div className="flex items-center gap-2">
             {movie.rating > 0 && (
               <div className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded text-sm font-bold">
@@ -66,13 +91,18 @@ export function HeroBanner({ movies }: HeroBannerProps) {
             <button
               onClick={() => playMovie(movie)}
               className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-red-600/20"
+              aria-label="Ver ahora"
             >
               <Play size={20} fill="white" />
               Ver Ahora
             </button>
             <button
-              onClick={() => playMovie(movie)}
+              onClick={() => {
+                playMovie(movie);
+                setTimeout(() => usePlayerStore.getState().openDetail(), 100);
+              }}
               className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg font-semibold transition-all backdrop-blur-sm"
+              aria-label="Más información"
             >
               <Info size={18} />
               Más Info
@@ -86,12 +116,14 @@ export function HeroBanner({ movies }: HeroBannerProps) {
         <>
           <button
             onClick={prev}
+            aria-label="Anterior"
             className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all opacity-0 hover:opacity-100 focus:opacity-100 lg:opacity-100"
           >
             <ChevronLeft size={24} />
           </button>
           <button
             onClick={next}
+            aria-label="Siguiente"
             className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all opacity-0 hover:opacity-100 focus:opacity-100 lg:opacity-100"
           >
             <ChevronRight size={24} />
@@ -102,7 +134,8 @@ export function HeroBanner({ movies }: HeroBannerProps) {
             {movies.slice(0, 8).map((_, i) => (
               <button
                 key={i}
-                onClick={() => setCurrent(i)}
+                onClick={() => goTo(i)}
+                aria-label={`Ir a imagen ${i + 1}`}
                 className={`h-1 rounded-full transition-all ${i === current ? 'w-8 bg-red-500' : 'w-2 bg-white/30 hover:bg-white/50'}`}
               />
             ))}
