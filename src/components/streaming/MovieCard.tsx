@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import type { MovieItem } from '@/lib/tmdb';
 import { usePlayerStore, useFavoritesStore } from '@/lib/store';
-import { Play, Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Heart, Star, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 
 interface MovieCardProps {
   movie: MovieItem;
@@ -11,6 +11,7 @@ interface MovieCardProps {
 
 export function MovieCard({ movie }: MovieCardProps) {
   const playMovie = usePlayerStore(s => s.playMovie);
+  const { openDetail } = usePlayerStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const favorite = isFavorite(movie.id);
   const [hovered, setHovered] = useState(false);
@@ -52,6 +53,12 @@ export function MovieCard({ movie }: MovieCardProps) {
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
           >
             <Heart size={18} className={favorite ? 'text-red-500 fill-red-500' : 'text-white'} />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); playMovie(movie); setTimeout(() => openDetail(), 50); }}
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
+          >
+            <Info size={18} className="text-white" />
           </button>
         </div>
 

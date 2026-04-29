@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePlayerStore, useFavoritesStore } from '@/lib/store';
+import { usePlayerStore, useFavoritesStore, useHistoryStore } from '@/lib/store';
 import type { MovieItem } from '@/lib/tmdb';
 import { HeroBanner } from '@/components/streaming/HeroBanner';
 import { CategoryRow } from '@/components/streaming/MovieCard';
@@ -16,6 +16,7 @@ interface CategoryData {
 export function HomeView() {
   const playMovie = usePlayerStore(s => s.playMovie);
   const { favorites } = useFavoritesStore();
+  const { history } = useHistoryStore();
   const [categories, setCategories] = useState<{ title: string; movies: MovieItem[] }[]>([]);
   const [heroMovies, setHeroMovies] = useState<MovieItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,6 +110,24 @@ export function HomeView() {
 
   return (
     <div className="pt-20">
+      {/* Continue Watching */}
+      {history.length > 0 && (
+        <div className="max-w-[1400px] mx-auto px-4 pt-4 pb-2">
+          <CategoryRow title="▶️ Continuar Viendo" movies={history.slice(0, 10).map(h => ({
+            id: h.movieId,
+            tmdbId: parseInt(h.movieId) || 0,
+            title: h.title,
+            mediaType: h.mediaType,
+            posterUrl: h.posterUrl,
+            backdropUrl: '',
+            rating: 0,
+            year: 0,
+            overview: '',
+            genreIds: [],
+          }))} />
+        </div>
+      )}
+
       {/* Hero */}
       <HeroBanner movies={heroMovies} />
 

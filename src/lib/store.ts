@@ -185,6 +185,9 @@ interface PlayerState {
   currentLang: AudioLang;
   serverGroups: ServerGroup[];
   isLoadingServers: boolean;
+  showDetail: boolean;
+  openDetail: () => void;
+  closeDetail: () => void;
 
   playMovie: (movie: MovieItem, detail?: TMDBMovieDetail) => void;
   playEpisode: (season: number, episode: number) => void;
@@ -206,6 +209,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   currentLang: 'latino',
   serverGroups: [],
   isLoadingServers: false,
+  showDetail: false,
 
   playMovie: (movie, detail) => set({
     isPlaying: true,
@@ -230,6 +234,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
 
   closePlayer: () => set({
     isPlaying: false,
+    showDetail: false,
     currentMovie: null,
     currentDetail: null,
     currentServerUrl: '',
@@ -253,6 +258,8 @@ export const usePlayerStore = create<PlayerState>((set) => ({
 
   selectLang: (lang) => set({ currentLang: lang }),
   setDetail: (detail) => set({ currentDetail: detail }),
+  openDetail: () => set({ showDetail: true }),
+  closeDetail: () => set({ showDetail: false }),
 }));
 
 // ==================== CAST STATE ====================

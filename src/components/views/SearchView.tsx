@@ -223,7 +223,7 @@ function mapItem(item: any): MovieItem {
     tmdbId: item.id,
     title: isTV ? (item.name || '') : (item.title || ''),
     mediaType: isTV ? 'tv' : 'movie',
-    posterUrl: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : '',
+    posterUrl: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : '/placeholder-poster.svg',
     backdropUrl: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : '',
     rating: item.vote_average || 0,
     year: date ? parseInt(date.substring(0, 4)) : 0,

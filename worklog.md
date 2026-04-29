@@ -135,3 +135,22 @@ Stage Summary:
 - Failed categories auto-retry once before showing empty
 - Keyboard navigation: /, Escape, h, f
 - Smoother view transitions with opacity animation
+
+---
+Task ID: 6
+Agent: Main
+Task: Phase 4 - Continue watching, detail modal, poster fixes
+
+Work Log:
+- Added Continue Watching row to HomeView (shows last 10 from history)
+- Added showDetail/openDetail/closeDetail to player store
+- Connected MovieDetailModal to store showDetail flag (was unreachable before)
+- Added Info button to MovieCard hover overlay to open detail modal
+- Fixed posterUrl fallback in SearchView mapItem (empty string → placeholder SVG)
+- Created placeholder-poster.svg for missing poster images
+
+Stage Summary:
+- Detail modal now accessible via Info button on movie cards
+- Continue Watching section appears on home when history exists
+- Poster images gracefully fall back to placeholder SVG
+- Play button still directly starts playback for quick access

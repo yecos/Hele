@@ -11,11 +11,11 @@ export function MovieDetailModal() {
     isPlaying, currentMovie, currentDetail,
     setDetail, closePlayer, playMovie, playEpisode,
     currentSeason, currentEpisode,
+    showDetail, closeDetail,
   } = usePlayerStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const [seasonDetail, setSeasonDetail] = useState<TMDBSeasonDetail | null>(null);
   const [activeSeason, setActiveSeason] = useState(1);
-  const [showModal, setShowModal] = useState(false);
 
   // Derived season: sync with player state for TV shows
   const displaySeason = isPlaying && currentMovie?.mediaType === 'tv' ? currentSeason : activeSeason;
@@ -57,7 +57,7 @@ export function MovieDetailModal() {
     fetchSeason();
   }, [currentMovie?.id, displaySeason, isPlaying]);
 
-  if (!isPlaying || !currentMovie || !showModal) return null;
+  if (!isPlaying || !currentMovie || !showDetail) return null;
 
   const detail = currentDetail;
   const isTV = currentMovie.mediaType === 'tv';
@@ -70,7 +70,7 @@ export function MovieDetailModal() {
     <div className="fixed inset-0 z-[200] bg-black/95 overflow-y-auto">
       {/* Close button */}
       <button
-        onClick={() => setShowModal(false)}
+        onClick={() => closeDetail()}
         className="fixed top-4 right-4 z-30 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-all"
       >
         <X size={24} />
@@ -141,7 +141,7 @@ export function MovieDetailModal() {
             )}
 
             <button
-              onClick={() => playMovie(currentMovie, detail || undefined)}
+              onClick={() => { closeDetail(); playMovie(currentMovie, detail || undefined); }}
               className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-semibold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-red-600/20"
             >
               <Play size={18} fill="white" />
@@ -251,7 +251,7 @@ export function MovieDetailModal() {
                       key={ep.id}
                       onClick={() => {
                         playEpisode(displaySeason, ep.episode_number);
-                        setShowModal(false);
+                        closeDetail();
                       }}
                       className={`flex items-start gap-3 p-3 rounded-xl text-left transition-all ${
                         isActive
