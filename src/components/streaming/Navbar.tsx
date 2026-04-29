@@ -233,7 +233,7 @@ export function Navbar() {
                 {cast.status === 'loading'
                   ? t('nav.chromecastLoading')
                   : isActivelyCasting
-                  ? `Casting: ${cast.device?.friendlyName}`
+                  ? t('iptv.castingOn', { device: cast.device?.friendlyName || 'Chromecast' })
                   : cast.isAvailable
                   ? t('nav.chromecast')
                   : t('nav.chromecastUnavailable')}

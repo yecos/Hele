@@ -579,16 +579,16 @@ export function IPTVView() {
                 <p className="text-gray-500 text-xs mt-0.5">
                   {t('iptv.channel')} {currentIndex + 1} {t('iptv.of')} {onlineChannels.length}
                   {isActivelyCasting && (
-                    <span className="text-green-400 ml-2">Casting en {cast.device?.friendlyName}</span>
+                    <span className="text-green-400 ml-2">{t('iptv.castingOn', { device: cast.device?.friendlyName || '' })}</span>
                   )}
                 </p>
               </div>
 
               {/* Controls hint */}
               <div className="hidden sm:flex flex-col items-end gap-1 text-gray-600 text-[10px] shrink-0">
-                <span>↑↓ Cambiar canal</span>
-                <span>M Mutear</span>
-                <span>Esp Pausar</span>
+                <span>{t('iptv.controls.changeChannel')}</span>
+                <span>{t('iptv.controls.mute')}</span>
+                <span>{t('iptv.controls.pause')}</span>
               </div>
             </div>
           </div>
@@ -619,7 +619,7 @@ export function IPTVView() {
                 <button
                   onClick={goPrev}
                   className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
-                  title="Canal anterior"
+                  title={t('iptv.prevChannel')}
                 >
                   <ChevronUp size={20} />
                 </button>
@@ -627,7 +627,7 @@ export function IPTVView() {
                 <button
                   onClick={togglePause}
                   className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
-                  title={isPaused ? 'Reanudar' : 'Pausar'}
+                  title={isPaused ? t('iptv.resume') : t('iptv.pause')}
                 >
                   {isPaused ? <Play size={18} fill="white" /> : <Pause size={18} />}
                 </button>
@@ -635,7 +635,7 @@ export function IPTVView() {
                 <button
                   onClick={goNext}
                   className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
-                  title="Siguiente canal"
+                  title={t('iptv.nextChannel')}
                 >
                   <ChevronDown size={20} />
                 </button>
@@ -645,7 +645,7 @@ export function IPTVView() {
                 <button
                   onClick={toggleMute}
                   className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
-                  title={isMuted ? 'Activar sonido' : 'Silenciar'}
+                  title={isMuted ? t('iptv.unmute') : t('iptv.mute')}
                 >
                   {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
                 </button>
@@ -653,7 +653,7 @@ export function IPTVView() {
                 <button
                   onClick={toggleFullscreen}
                   className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
-                  title="Pantalla completa"
+                  title={t('iptv.fullscreen')}
                 >
                   {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
                 </button>
@@ -686,7 +686,7 @@ export function IPTVView() {
                         ? 'bg-yellow-500/20 text-yellow-400 animate-pulse'
                         : 'bg-white/10 hover:bg-white/20 text-white'
                     }`}
-                    title={isActivelyCasting ? `Desconectar de ${cast.device?.friendlyName}` : 'Enviar a Chromecast'}
+                    title={isActivelyCasting ? `${t('player.disconnectFrom')} ${cast.device?.friendlyName}` : t('iptv.sendToChromecast')}
                   >
                     <Cast size={18} />
                     {cast.status === 'connecting' && (

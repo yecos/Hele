@@ -42,7 +42,7 @@ export function SettingsView() {
   const saveCastAppId = () => {
     const trimmed = castAppId.trim();
     if (trimmed && !/^[A-Fa-f0-9]{12}$/.test(trimmed)) {
-      setCastAppIdError('El App ID debe tener 12 caracteres hexadecimales');
+      setCastAppIdError(t('settings.castAppIdError'));
       return;
     }
     setCastAppIdError('');
@@ -147,16 +147,16 @@ export function SettingsView() {
               <>
                 <Wifi className="text-green-400 shrink-0" size={18} />
                 <div>
-                  <p className="text-green-400 text-sm font-medium">Custom Receiver activado</p>
-                  <p className="text-gray-500 text-xs">Películas, series e IPTV funcionarán en TV</p>
+                  <p className="text-green-400 text-sm font-medium">{t('settings.customReceiverActive')}</p>
+                  <p className="text-gray-500 text-xs">{t('settings.customReceiverDesc')}</p>
                 </div>
               </>
             ) : (
               <>
                 <WifiOff className="text-yellow-500 shrink-0" size={18} />
                 <div>
-                  <p className="text-yellow-400 text-sm font-medium">Modo estándar</p>
-                  <p className="text-gray-500 text-xs">Solo IPTV funciona en TV. Películas necesitan Custom Receiver.</p>
+                  <p className="text-yellow-400 text-sm font-medium">{t('settings.standardMode')}</p>
+                  <p className="text-gray-500 text-xs">{t('settings.standardModeDesc')}</p>
                 </div>
               </>
             )}
@@ -165,14 +165,14 @@ export function SettingsView() {
           {/* App ID input */}
           <div className="space-y-2">
             <label className="text-gray-300 text-sm font-medium block">
-              Cast Receiver App ID
+              {t('settings.castReceiverAppId')}
             </label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={castAppId}
                 onChange={(e) => { setCastAppId(e.target.value); setCastAppIdError(''); setCastAppIdSaved(false); }}
-                placeholder="Ej: A1B2C3D4E5F6"
+                placeholder={t('settings.castAppIdPlaceholder')}
                 maxLength={12}
                 className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm font-mono uppercase outline-none focus:border-red-500/50 transition-colors placeholder:text-gray-600 placeholder:normal-case"
               />
@@ -180,7 +180,7 @@ export function SettingsView() {
                 <button
                   onClick={clearCastAppId}
                   className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
-                  title="Limpiar"
+                  title={t('settings.clear')}
                 >
                   <XIcon size={16} />
                 </button>
@@ -194,9 +194,9 @@ export function SettingsView() {
                 }`}
               >
                 {castAppIdSaved ? (
-                  <><Check size={14} /> Guardado</>
+                  <><Check size={14} /> {t('settings.saved')}</>
                 ) : (
-                  'Guardar'
+                  t('settings.save')
                 )}
               </button>
             </div>
@@ -208,11 +208,11 @@ export function SettingsView() {
           {/* How to register */}
           <div className="border border-white/10 rounded-lg p-4 space-y-3">
             <h3 className="text-white text-sm font-semibold flex items-center gap-2">
-              ¿Cómo obtener el App ID?
+              {t('settings.howToGetAppId')}
             </h3>
             <ol className="text-gray-400 text-xs space-y-2 leading-relaxed list-decimal list-inside">
               <li>
-                Ve a{' '}
+                {t('settings.step1')}{' '}
                 <a
                   href="https://cast.google.com/publish"
                   target="_blank"
@@ -222,30 +222,29 @@ export function SettingsView() {
                   Google Cast Developer Console <ExternalLink size={10} />
                 </a>
               </li>
-              <li>Registra una nueva aplicación de Cast</li>
-              <li>En &quot;Receiver URL&quot;, ingresa la URL de tu app seguida de <code className="bg-white/10 px-1 rounded text-[11px]">/cast-receiver.html</code></li>
-              <li>Ejemplo: <code className="bg-white/10 px-1 rounded text-[11px] break-all">https://tudominio.com/cast-receiver.html</code></li>
-              <li>Copia el App ID que Google te asigna y pégalo arriba</li>
-              <li>Recarga la página para que los cambios surtan efecto</li>
+              <li>{t('settings.step2')}</li>
+              <li>{t('settings.step3')}</li>
+              <li>{t('settings.step4')}</li>
+              <li>{t('settings.step5')}</li>
+              <li>{t('settings.step6')}</li>
             </ol>
             <div className="bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
-              <p className="text-green-400 text-xs font-medium">¿Qué cambia al activar el Custom Receiver?</p>
+              <p className="text-green-400 text-xs font-medium">{t('settings.whatChanges')}</p>
               <p className="text-green-400/70 text-xs mt-1">
-                Las películas y series se enviarán a tu TV mediante un iframe en el receptor personalizado,
-                además de los canales IPTV que ya funcionan. Sin el Custom Receiver, solo IPTV se reproduce en TV.
+                {t('settings.whatChangesDesc')}
               </p>
             </div>
           </div>
 
           {/* Troubleshooting */}
           <div className="space-y-2">
-            <h3 className="text-gray-300 text-sm font-medium">Solución de problemas</h3>
+            <h3 className="text-gray-300 text-sm font-medium">{t('settings.troubleshooting')}</h3>
             <div className="text-gray-500 text-xs space-y-1.5">
-              <p>• Asegúrate de estar en HTTPS (requerido por Chromecast)</p>
-              <p>• Tu teléfono y el Chromecast deben estar en la misma red WiFi</p>
-              <p>• Si no aparecen dispositivos, recarga la página y espera 10 segundos</p>
-              <p>• En iOS: usa Chrome o Safari (no funciona en otras apps)</p>
-              <p>• En Android: usa Chrome (el cast se integra en el menú del sistema)</p>
+              <p>• {t('settings.troubleshoot1')}</p>
+              <p>• {t('settings.troubleshoot2')}</p>
+              <p>• {t('settings.troubleshoot3')}</p>
+              <p>• {t('settings.troubleshoot4')}</p>
+              <p>• {t('settings.troubleshoot5')}</p>
             </div>
           </div>
         </div>

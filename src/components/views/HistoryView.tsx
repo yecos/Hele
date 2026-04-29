@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useHistoryStore, usePlayerStore } from '@/lib/store';
-import { useT } from '@/lib/i18n';
+import { useT, DATE_LOCALES } from '@/lib/i18n';
 import { Clock, Play, Trash2, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function HistoryView() {
   const { history, removeFromHistory } = useHistoryStore();
-  const { t } = useT();
+  const { t, locale } = useT();
   const playMovie = usePlayerStore(s => s.playMovie);
 
   const formatTime = (timestamp: number) => {
@@ -22,7 +22,7 @@ export function HistoryView() {
     if (diffHours < 24) return t('history.hoursAgo', { n: diffHours });
     if (diffDays === 1) return t('history.yesterday');
     if (diffDays < 7) return t('history.daysAgo', { n: diffDays });
-    return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+    return date.toLocaleDateString(DATE_LOCALES[locale], { day: 'numeric', month: 'short' });
   };
 
   const clearHistory = () => {

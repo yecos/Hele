@@ -8,6 +8,7 @@ import { VideoPlayer } from '@/components/streaming/VideoPlayer';
 import { LoginView } from '@/components/views/LoginView';
 import { OfflinePage } from '@/components/views/OfflinePage';
 import { X } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 const HomeView = dynamic(() => import('@/components/views/HomeView').then(m => ({ default: m.HomeView })), { ssr: false, loading: () => <ViewSkeleton /> });
 const MoviesView = dynamic(() => import('@/components/views/MoviesView').then(m => ({ default: m.MoviesView })), { ssr: false, loading: () => <ViewSkeleton /> });
@@ -43,6 +44,7 @@ export default function Page() {
   const { currentView, setView } = useViewStore();
   const { isPlaying, closePlayer } = usePlayerStore();
   const { isLoggedIn, checkAuth } = useAuthStore();
+  const { t } = useT();
   const [showShortcuts, setShowShortcuts] = useState(false);
 
   // Check auth on mount
@@ -113,7 +115,7 @@ export default function Page() {
       <button
         onClick={() => setShowShortcuts(true)}
         className="fixed bottom-6 right-6 z-30 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white flex items-center justify-center transition-all backdrop-blur-sm text-sm font-bold border border-white/10"
-        title="Atajos de teclado (?)"
+        title={t('shortcuts.buttonTitle')}
       >
         ?
       </button>
@@ -123,18 +125,18 @@ export default function Page() {
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowShortcuts(false)}>
           <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 w-[90vw] max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-white font-bold text-lg">Atajos de Teclado</h2>
+              <h2 className="text-white font-bold text-lg">{t('shortcuts.title')}</h2>
               <button onClick={() => setShowShortcuts(false)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all">
                 <X size={18} />
               </button>
             </div>
             <div className="space-y-3">
               {[
-                { key: '/', desc: 'Buscar' },
-                { key: 'H', desc: 'Ir a Inicio' },
-                { key: 'F', desc: 'Ir a Mi Lista' },
-                { key: '?', desc: 'Mostrar atajos' },
-                { key: 'Esc', desc: 'Cerrar reproductor' },
+                { key: '/', desc: t('shortcuts.search') },
+                { key: 'H', desc: t('shortcuts.goHome') },
+                { key: 'F', desc: t('shortcuts.goFavorites') },
+                { key: '?', desc: t('shortcuts.showShortcuts') },
+                { key: 'Esc', desc: t('shortcuts.closePlayer') },
               ].map(s => (
                 <div key={s.key} className="flex items-center justify-between">
                   <span className="text-gray-300 text-sm">{s.desc}</span>
@@ -142,7 +144,7 @@ export default function Page() {
                 </div>
               ))}
             </div>
-            <p className="text-gray-600 text-xs mt-5 text-center">Presiona <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-mono">?</kbd> para abrir/cerrar</p>
+            <p className="text-gray-600 text-xs mt-5 text-center">{t('shortcuts.hint')}</p>
           </div>
         </div>
       )}

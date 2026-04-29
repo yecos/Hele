@@ -48,7 +48,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es" className="dark" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#dc2626" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -168,6 +168,22 @@ export default function RootLayout({
             }
             // Safety: hide after 4s max
             setTimeout(hideSplash, 4000);
+          })();
+        `}} />
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              var loc = localStorage.getItem('xs-locale');
+              if (loc && ['es','en','pt'].indexOf(loc) !== -1) {
+                document.documentElement.lang = loc;
+              }
+            } catch(e) {}
+            // Also sync on storage changes (other tabs)
+            window.addEventListener('storage', function(e) {
+              if (e.key === 'xs-locale' && e.newValue) {
+                document.documentElement.lang = e.newValue;
+              }
+            });
           })();
         `}} />
         <script dangerouslySetInnerHTML={{ __html: `

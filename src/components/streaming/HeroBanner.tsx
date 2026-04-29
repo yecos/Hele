@@ -93,7 +93,7 @@ export function HeroBanner({ movies }: HeroBannerProps) {
             <button
               onClick={() => playMovie(movie)}
               className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-red-600/20"
-              aria-label="Ver ahora"
+              aria-label={t('aria.watchNow')}
             >
               <Play size={20} fill="white" />
               {t('banner.watchNow')}
@@ -104,7 +104,7 @@ export function HeroBanner({ movies }: HeroBannerProps) {
                 setTimeout(() => usePlayerStore.getState().openDetail(), 100);
               }}
               className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg font-semibold transition-all backdrop-blur-sm"
-              aria-label="Más información"
+              aria-label={t('aria.moreInfo')}
             >
               <Info size={18} />
               {t('banner.moreInfo')}
@@ -118,14 +118,14 @@ export function HeroBanner({ movies }: HeroBannerProps) {
         <>
           <button
             onClick={prev}
-            aria-label="Anterior"
+            aria-label={t('aria.previous')}
             className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all opacity-0 hover:opacity-100 focus:opacity-100 lg:opacity-100"
           >
             <ChevronLeft size={24} />
           </button>
           <button
             onClick={next}
-            aria-label="Siguiente"
+            aria-label={t('aria.next')}
             className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all opacity-0 hover:opacity-100 focus:opacity-100 lg:opacity-100"
           >
             <ChevronRight size={24} />
@@ -137,7 +137,7 @@ export function HeroBanner({ movies }: HeroBannerProps) {
               <button
                 key={i}
                 onClick={() => goTo(i)}
-                aria-label={`Ir a imagen ${i + 1}`}
+                aria-label={t('aria.goToImage', { n: i + 1 })}
                 className={`h-1 rounded-full transition-all ${i === current ? 'w-8 bg-red-500' : 'w-2 bg-white/30 hover:bg-white/50'}`}
               />
             ))}

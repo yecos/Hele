@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { create } from 'zustand';
 
 // ==================== LANGUAGE TYPES ====================
@@ -16,6 +17,13 @@ export const LOCALE_FLAGS: Record<AppLocale, string> = {
   es: '🇪🇸',
   en: '🇺🇸',
   pt: '🇧🇷',
+};
+
+/** Map AppLocale to a locale string for Date.toLocaleDateString */
+export const DATE_LOCALES: Record<AppLocale, string> = {
+  es: 'es-CO',
+  en: 'en-US',
+  pt: 'pt-BR',
 };
 
 // ==================== TRANSLATIONS ====================
@@ -253,6 +261,72 @@ const translations: Record<AppLocale, Record<string, string>> = {
     'misc.serie': 'Serie',
     'misc.peli': 'Peli',
     'min': 'min',
+
+    // ---- SHORTCUTS ----
+    'shortcuts.title': 'Atajos de Teclado',
+    'shortcuts.search': 'Buscar',
+    'shortcuts.goHome': 'Ir a Inicio',
+    'shortcuts.goFavorites': 'Ir a Mi Lista',
+    'shortcuts.showShortcuts': 'Mostrar atajos',
+    'shortcuts.closePlayer': 'Cerrar reproductor',
+    'shortcuts.hint': 'Presiona ? para abrir/cerrar',
+    'shortcuts.buttonTitle': 'Atajos de teclado (?)',
+
+    // ---- ARIA LABELS ----
+    'aria.play': 'Reproducir',
+    'aria.removeFromFavorites': 'Quitar de favoritos',
+    'aria.addToFavorites': 'Agregar a favoritos',
+    'aria.moreInfo': 'Más información',
+    'aria.scrollLeft': 'Desplazar izquierda',
+    'aria.scrollRight': 'Desplazar derecha',
+    'aria.watchNow': 'Ver ahora',
+    'aria.previous': 'Anterior',
+    'aria.next': 'Siguiente',
+    'aria.goToImage': 'Ir a imagen {n}',
+
+    // ---- SETTINGS CHROMECAST ----
+    'settings.castAppIdError': 'El App ID debe tener 12 caracteres hexadecimales',
+    'settings.customReceiverActive': 'Custom Receiver activado',
+    'settings.customReceiverDesc': 'Películas, series e IPTV funcionarán en TV',
+    'settings.standardMode': 'Modo estándar',
+    'settings.standardModeDesc': 'Solo IPTV funciona en TV. Películas necesitan Custom Receiver.',
+    'settings.castReceiverAppId': 'Cast Receiver App ID',
+    'settings.castAppIdPlaceholder': 'Ej: A1B2C3D4E5F6',
+    'settings.clear': 'Limpiar',
+    'settings.saved': 'Guardado',
+    'settings.save': 'Guardar',
+    'settings.howToGetAppId': '¿Cómo obtener el App ID?',
+    'settings.step1': 'Ve a',
+    'settings.step2': 'Registra una nueva aplicación de Cast',
+    'settings.step3': 'En "Receiver URL", ingresa la URL de tu app seguida de /cast-receiver.html',
+    'settings.step4': 'Ejemplo:',
+    'settings.step5': 'Copia el App ID que Google te asigna y pégalo arriba',
+    'settings.step6': 'Recarga la página para que los cambios surtan efecto',
+    'settings.whatChanges': '¿Qué cambia al activar el Custom Receiver?',
+    'settings.whatChangesDesc': 'Las películas y series se enviarán a tu TV mediante un iframe en el receptor personalizado, además de los canales IPTV que ya funcionan. Sin el Custom Receiver, solo IPTV se reproduce en TV.',
+    'settings.troubleshooting': 'Solución de problemas',
+    'settings.troubleshoot1': 'Asegúrate de estar en HTTPS (requerido por Chromecast)',
+    'settings.troubleshoot2': 'Tu teléfono y el Chromecast deben estar en la misma red WiFi',
+    'settings.troubleshoot3': 'Si no aparecen dispositivos, recarga la página y espera 10 segundos',
+    'settings.troubleshoot4': 'En iOS: usa Chrome o Safari (no funciona en otras apps)',
+    'settings.troubleshoot5': 'En Android: usa Chrome (el cast se integra en el menú del sistema)',
+
+    // ---- IPTV CONTROLS ----
+    'iptv.prevChannel': 'Canal anterior',
+    'iptv.sendToChromecast': 'Enviar a Chromecast',
+    'iptv.castingOn': 'Casting en {device}',
+    'iptv.controls.changeChannel': '↑↓ Cambiar canal',
+    'iptv.controls.mute': 'M Mutear',
+    'iptv.controls.pause': 'Esp Pausar',
+    'iptv.controls.fullscreen': 'F Pantalla completa',
+
+    // ---- DETAIL ----
+    'detail.watchEpisodeFormat': 'Ver T{season}E{episode}',
+    'detail.min': 'min',
+
+    // ---- META ----
+    'meta.title': 'XuperStream - Ver Películas y Series Online',
+    'meta.description': 'Tu plataforma personal de streaming. Películas, series y TV en vivo en español latino, HD.',
   },
 
   en: {
@@ -487,6 +561,72 @@ const translations: Record<AppLocale, Record<string, string>> = {
     'misc.serie': 'Series',
     'misc.peli': 'Movie',
     'min': 'min',
+
+    // ---- SHORTCUTS ----
+    'shortcuts.title': 'Keyboard Shortcuts',
+    'shortcuts.search': 'Search',
+    'shortcuts.goHome': 'Go to Home',
+    'shortcuts.goFavorites': 'Go to My List',
+    'shortcuts.showShortcuts': 'Show shortcuts',
+    'shortcuts.closePlayer': 'Close player',
+    'shortcuts.hint': 'Press ? to open/close',
+    'shortcuts.buttonTitle': 'Keyboard shortcuts (?)',
+
+    // ---- ARIA LABELS ----
+    'aria.play': 'Play',
+    'aria.removeFromFavorites': 'Remove from favorites',
+    'aria.addToFavorites': 'Add to favorites',
+    'aria.moreInfo': 'More information',
+    'aria.scrollLeft': 'Scroll left',
+    'aria.scrollRight': 'Scroll right',
+    'aria.watchNow': 'Watch now',
+    'aria.previous': 'Previous',
+    'aria.next': 'Next',
+    'aria.goToImage': 'Go to image {n}',
+
+    // ---- SETTINGS CHROMECAST ----
+    'settings.castAppIdError': 'App ID must be 12 hexadecimal characters',
+    'settings.customReceiverActive': 'Custom Receiver active',
+    'settings.customReceiverDesc': 'Movies, series and IPTV will work on TV',
+    'settings.standardMode': 'Standard mode',
+    'settings.standardModeDesc': 'Only IPTV works on TV. Movies need Custom Receiver.',
+    'settings.castReceiverAppId': 'Cast Receiver App ID',
+    'settings.castAppIdPlaceholder': 'E.g: A1B2C3D4E5F6',
+    'settings.clear': 'Clear',
+    'settings.saved': 'Saved',
+    'settings.save': 'Save',
+    'settings.howToGetAppId': 'How to get the App ID?',
+    'settings.step1': 'Go to',
+    'settings.step2': 'Register a new Cast application',
+    'settings.step3': 'In "Receiver URL", enter your app URL followed by /cast-receiver.html',
+    'settings.step4': 'Example:',
+    'settings.step5': 'Copy the App ID Google assigns you and paste it above',
+    'settings.step6': 'Reload the page for changes to take effect',
+    'settings.whatChanges': 'What changes when enabling Custom Receiver?',
+    'settings.whatChangesDesc': 'Movies and series will be sent to your TV via an iframe in the custom receiver, in addition to IPTV channels that already work. Without Custom Receiver, only IPTV plays on TV.',
+    'settings.troubleshooting': 'Troubleshooting',
+    'settings.troubleshoot1': 'Make sure you are on HTTPS (required by Chromecast)',
+    'settings.troubleshoot2': 'Your phone and Chromecast must be on the same WiFi network',
+    'settings.troubleshoot3': 'If no devices appear, reload the page and wait 10 seconds',
+    'settings.troubleshoot4': 'On iOS: use Chrome or Safari (does not work in other apps)',
+    'settings.troubleshoot5': 'On Android: use Chrome (cast integrates into system menu)',
+
+    // ---- IPTV CONTROLS ----
+    'iptv.prevChannel': 'Previous channel',
+    'iptv.sendToChromecast': 'Send to Chromecast',
+    'iptv.castingOn': 'Casting on {device}',
+    'iptv.controls.changeChannel': '↑↓ Change channel',
+    'iptv.controls.mute': 'M Mute',
+    'iptv.controls.pause': 'Space Pause',
+    'iptv.controls.fullscreen': 'F Fullscreen',
+
+    // ---- DETAIL ----
+    'detail.watchEpisodeFormat': 'Watch S{season}E{episode}',
+    'detail.min': 'min',
+
+    // ---- META ----
+    'meta.title': 'XuperStream - Watch Movies and Series Online',
+    'meta.description': 'Your personal streaming platform. Movies, series and live TV in HD.',
   },
 
   pt: {
@@ -721,6 +861,72 @@ const translations: Record<AppLocale, Record<string, string>> = {
     'misc.serie': 'Série',
     'misc.peli': 'Filme',
     'min': 'min',
+
+    // ---- SHORTCUTS ----
+    'shortcuts.title': 'Atalhos de Teclado',
+    'shortcuts.search': 'Buscar',
+    'shortcuts.goHome': 'Ir para Início',
+    'shortcuts.goFavorites': 'Ir para Minha Lista',
+    'shortcuts.showShortcuts': 'Mostrar atalhos',
+    'shortcuts.closePlayer': 'Fechar reprodutor',
+    'shortcuts.hint': 'Pressione ? para abrir/fechar',
+    'shortcuts.buttonTitle': 'Atalhos de teclado (?)',
+
+    // ---- ARIA LABELS ----
+    'aria.play': 'Reproduzir',
+    'aria.removeFromFavorites': 'Remover dos favoritos',
+    'aria.addToFavorites': 'Adicionar aos favoritos',
+    'aria.moreInfo': 'Mais informações',
+    'aria.scrollLeft': 'Rolar para esquerda',
+    'aria.scrollRight': 'Rolar para direita',
+    'aria.watchNow': 'Assistir agora',
+    'aria.previous': 'Anterior',
+    'aria.next': 'Próximo',
+    'aria.goToImage': 'Ir para imagem {n}',
+
+    // ---- SETTINGS CHROMECAST ----
+    'settings.castAppIdError': 'O App ID deve ter 12 caracteres hexadecimais',
+    'settings.customReceiverActive': 'Custom Receiver ativado',
+    'settings.customReceiverDesc': 'Filmes, séries e IPTV funcionarão na TV',
+    'settings.standardMode': 'Modo padrão',
+    'settings.standardModeDesc': 'Apenas IPTV funciona na TV. Filmes precisam de Custom Receiver.',
+    'settings.castReceiverAppId': 'Cast Receiver App ID',
+    'settings.castAppIdPlaceholder': 'Ex: A1B2C3D4E5F6',
+    'settings.clear': 'Limpar',
+    'settings.saved': 'Salvo',
+    'settings.save': 'Salvar',
+    'settings.howToGetAppId': 'Como obter o App ID?',
+    'settings.step1': 'Vá para',
+    'settings.step2': 'Registre uma nova aplicação de Cast',
+    'settings.step3': 'Em \"Receiver URL\", insira a URL da sua app seguida de /cast-receiver.html',
+    'settings.step4': 'Exemplo:',
+    'settings.step5': 'Copie o App ID que o Google te atribui e cole acima',
+    'settings.step6': 'Recarregue a página para que as mudanças tenham efeito',
+    'settings.whatChanges': 'O que muda ao ativar o Custom Receiver?',
+    'settings.whatChangesDesc': 'Os filmes e séries serão enviados à sua TV via iframe no receptor personalizado, além dos canais IPTV que já funcionam. Sem o Custom Receiver, apenas IPTV reproduz na TV.',
+    'settings.troubleshooting': 'Solução de problemas',
+    'settings.troubleshoot1': 'Certifique-se de estar em HTTPS (requerido pelo Chromecast)',
+    'settings.troubleshoot2': 'Seu celular e o Chromecast devem estar na mesma rede WiFi',
+    'settings.troubleshoot3': 'Se nenhum dispositivo aparecer, recarregue a página e espere 10 segundos',
+    'settings.troubleshoot4': 'No iOS: use Chrome ou Safari (não funciona em outros apps)',
+    'settings.troubleshoot5': 'No Android: use Chrome (o cast se integra no menu do sistema)',
+
+    // ---- IPTV CONTROLS ----
+    'iptv.prevChannel': 'Canal anterior',
+    'iptv.sendToChromecast': 'Enviar para Chromecast',
+    'iptv.castingOn': 'Casting em {device}',
+    'iptv.controls.changeChannel': '↑↓ Mudar canal',
+    'iptv.controls.mute': 'M Mutar',
+    'iptv.controls.pause': 'Esp Pausar',
+    'iptv.controls.fullscreen': 'F Tela cheia',
+
+    // ---- DETAIL ----
+    'detail.watchEpisodeFormat': 'Assistir T{season}E{episode}',
+    'detail.min': 'min',
+
+    // ---- META ----
+    'meta.title': 'XuperStream - Assistir Filmes e Séries Online',
+    'meta.description': 'Sua plataforma pessoal de streaming. Filmes, séries e TV ao vivo em HD.',
   },
 };
 
@@ -748,6 +954,8 @@ export const useI18nStore = create<I18nState>((set) => ({
   })(),
   setLocale: (locale) => {
     try { localStorage.setItem('xs-locale', locale); } catch {}
+    // Sync <html lang> attribute immediately
+    try { document.documentElement.lang = locale; } catch {}
     set({ locale });
   },
 }));
