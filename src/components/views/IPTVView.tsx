@@ -19,19 +19,87 @@ interface IPTVChannel {
   verified?: boolean;
 }
 
-const PLAYLISTS = [
-  { id: 'co', label: 'Colombia', flag: '🇨🇴' },
-  { id: 'mx', label: 'México', flag: '🇲🇽' },
-  { id: 'ar', label: 'Argentina', flag: '🇦🇷' },
-  { id: 'es', label: 'España', flag: '🇪🇸' },
-  { id: 'tdt', label: 'TDT España', flag: '📺' },
-  { id: 'tdt-radio', label: 'TDT Radio', flag: '📻' },
-  { id: 'cl', label: 'Chile', flag: '🇨🇱' },
-  { id: 've', label: 'Venezuela', flag: '🇻🇪' },
-  { id: 'pe', label: 'Perú', flag: '🇵🇪' },
-  { id: 'news', label: 'Noticias', flag: '📰' },
-  { id: 'sports', label: 'Deportes', flag: '⚽' },
-  { id: 'music', label: 'Música', flag: '🎵' },
+interface PlaylistSection {
+  title: string;
+  items: { id: string; label: string; flag: string }[];
+}
+
+const PLAYLIST_SECTIONS: PlaylistSection[] = [
+  {
+    title: 'Mundo',
+    items: [
+      { id: 'spa', label: 'Todo Español', flag: '🌐' },
+      { id: 'latam', label: 'Latinoamérica', flag: '🌎' },
+    ],
+  },
+  {
+    title: 'Países',
+    items: [
+      { id: 'co', label: 'Colombia', flag: '🇨🇴' },
+      { id: 'mx', label: 'México', flag: '🇲🇽' },
+      { id: 'ar', label: 'Argentina', flag: '🇦🇷' },
+      { id: 'es', label: 'España', flag: '🇪🇸' },
+      { id: 'cl', label: 'Chile', flag: '🇨🇱' },
+      { id: 've', label: 'Venezuela', flag: '🇻🇪' },
+      { id: 'pe', label: 'Perú', flag: '🇵🇪' },
+      { id: 'bo', label: 'Bolivia', flag: '🇧🇴' },
+      { id: 'ec', label: 'Ecuador', flag: '🇪🇨' },
+      { id: 'cu', label: 'Cuba', flag: '🇨🇺' },
+      { id: 'do', label: 'Rep. Dominicana', flag: '🇩🇴' },
+      { id: 'gt', label: 'Guatemala', flag: '🇬🇹' },
+      { id: 'hn', label: 'Honduras', flag: '🇭🇳' },
+      { id: 'sv', label: 'El Salvador', flag: '🇸🇻' },
+      { id: 'ni', label: 'Nicaragua', flag: '🇳🇮' },
+      { id: 'cr', label: 'Costa Rica', flag: '🇨🇷' },
+      { id: 'pa', label: 'Panamá', flag: '🇵🇦' },
+      { id: 'py', label: 'Paraguay', flag: '🇵🇾' },
+      { id: 'uy', label: 'Uruguay', flag: '🇺🇾' },
+      { id: 'pr', label: 'Puerto Rico', flag: '🇵🇷' },
+    ],
+  },
+  {
+    title: 'Categorías',
+    items: [
+      { id: 'news', label: 'Noticias', flag: '📰' },
+      { id: 'sports', label: 'Deportes', flag: '⚽' },
+      { id: 'entertainment', label: 'Entretenimiento', flag: '🎬' },
+      { id: 'music', label: 'Música', flag: '🎵' },
+      { id: 'movies', label: 'Películas', flag: '🎥' },
+      { id: 'kids', label: 'Infantil', flag: '🧸' },
+      { id: 'documentary', label: 'Documentales', flag: '🔬' },
+      { id: 'education', label: 'Educación', flag: '📚' },
+      { id: 'comedy', label: 'Comedia', flag: '😂' },
+      { id: 'lifestyle', label: 'Estilo de vida', flag: '🏠' },
+      { id: 'religious', label: 'Religión', flag: '⛪' },
+      { id: 'general', label: 'General', flag: '📡' },
+    ],
+  },
+  {
+    title: 'España (TDT)',
+    items: [
+      { id: 'tdt', label: 'TDT TV', flag: '📺' },
+      { id: 'tdt8', label: 'TDT TV (HLS)', flag: '📺' },
+      { id: 'tdt-radio', label: 'TDT Radio', flag: '📻' },
+      { id: 'tdt-radio8', label: 'TDT Radio (HLS)', flag: '📻' },
+      { id: 'tdt-all', label: 'TV + Radio', flag: '📻' },
+    ],
+  },
+  {
+    title: 'Más Fuentes',
+    items: [
+      { id: 'free-tv', label: 'Free-TV Global', flag: '🌐' },
+      { id: 'free-tv-es', label: 'Free-TV España', flag: '🇪🇸' },
+      { id: 'free-tv-mx', label: 'Free-TV México', flag: '🇲🇽' },
+      { id: 'free-tv-ar', label: 'Free-TV Argentina', flag: '🇦🇷' },
+      { id: 'free-tv-cl', label: 'Free-TV Chile', flag: '🇨🇱' },
+      { id: 'free-tv-co', label: 'Free-TV Colombia', flag: '🇨🇴' },
+      { id: 'free-tv-pe', label: 'Free-TV Perú', flag: '🇵🇪' },
+      { id: 'free-tv-ve', label: 'Free-TV Venezuela', flag: '🇻🇪' },
+      { id: 'm3ucl-total', label: 'M3U.CL Todos', flag: '🌐' },
+      { id: 'm3ucl-music', label: 'M3U.CL Música', flag: '🎵' },
+      { id: 'telechancho', label: 'telechancho', flag: '📺' },
+    ],
+  },
 ];
 
 export function IPTVView() {
@@ -772,21 +840,30 @@ export function IPTVView() {
               </div>
             </div>
 
-            {/* Playlist selector */}
+            {/* Playlist selector - organized by sections */}
             <div className="px-4 py-3 border-b border-white/5">
-              <div className="flex flex-wrap gap-1.5">
-                {PLAYLISTS.map(pl => (
-                  <button
-                    key={pl.id}
-                    onClick={() => { setSelectedPlaylist(pl.id); setShowChannelList(false); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                      selectedPlaylist === pl.id
-                        ? 'bg-green-600 text-white'
-                        : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    {pl.flag} {pl.label}
-                  </button>
+              <div className="max-h-[45vh] overflow-y-auto space-y-3 pr-1">
+                {PLAYLIST_SECTIONS.map(section => (
+                  <div key={section.title}>
+                    <h4 className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider mb-1.5">
+                      {section.title}
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {section.items.map(pl => (
+                        <button
+                          key={pl.id}
+                          onClick={() => { setSelectedPlaylist(pl.id); setShowChannelList(false); }}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                            selectedPlaylist === pl.id
+                              ? 'bg-green-600 text-white shadow-lg shadow-green-600/20'
+                              : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          {pl.flag} {pl.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
 
