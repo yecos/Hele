@@ -47,6 +47,17 @@ export function HomeView() {
           movies: results[i].status === 'fulfilled' ? results[i].value : [],
         }));
 
+        // Retry failed categories once
+        const failedIndices = results.map((r, i) => r.status === 'rejected' ? i : -1).filter(i => i >= 0);
+        if (failedIndices.length > 0) {
+          const retries = await Promise.allSettled(failedIndices.map(i => categoryLoaders[i].loader()));
+          retries.forEach((r, j) => {
+            if (r.status === 'fulfilled') {
+              loaded[failedIndices[j]] = { title: loaded[failedIndices[j]].title, movies: r.value };
+            }
+          });
+        }
+
         setCategories(loaded);
 
         // Set hero movies from trending

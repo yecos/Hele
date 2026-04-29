@@ -114,7 +114,7 @@ export function Navbar() {
               <Search size={16} className="text-gray-400 mr-2 shrink-0" />
               <input
                 type="text"
-                placeholder="Buscar..."
+                placeholder="Buscar...  /"
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
                 className="bg-transparent text-white text-sm outline-none w-full placeholder:text-gray-500"
@@ -171,7 +171,7 @@ export function Navbar() {
             <Search size={16} className="text-gray-400 mr-2 shrink-0" />
             <input
               type="text"
-              placeholder="Buscar..."
+              placeholder="Buscar...  /"
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
               className="bg-transparent text-white text-sm outline-none w-full placeholder:text-gray-500"

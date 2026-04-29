@@ -116,3 +116,22 @@ Stage Summary:
 - 5 servers listed in settings (3 active + 2 backup)
 - Server auto-fallback tries next server on iframe error
 - Watch history auto-tracks when user starts playing content
+
+---
+Task ID: 5
+Agent: Main
+Task: Phase 3 - Performance, UX improvements, keyboard shortcuts
+
+Work Log:
+- Converted all view imports to dynamic imports with ssr:false and loading skeletons
+- Added ViewSkeleton component for lazy loading states
+- Added retry mechanism for failed categories in HomeView (one retry attempt)
+- Added keyboard shortcuts: / for search, Escape to close player, h for home, f for favorites
+- Updated Navbar search placeholder with keyboard hint
+- Added opacity transition to main content area when player opens
+
+Stage Summary:
+- All 8 views now lazy-loaded (smaller initial bundle)
+- Failed categories auto-retry once before showing empty
+- Keyboard navigation: /, Escape, h, f
+- Smoother view transitions with opacity animation
