@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
 import { runDiscovery, promoteToGuardian } from '@/lib/guardian/discovery';
+import { requireAdmin } from '@/lib/admin-guard';
 
 /**
  * POST /api/guardian/discover/run
- * Dispara un descubrimiento web manual
- * Body: { trigger: 'manual' }
+ * Dispara un descubrimiento web manual (solo admin)
+ * Body: { trigger: 'manual' } o { action: 'promote', url: '...' }
  */
 export async function POST(request: Request) {
   try {
+    requireAdmin(request);
+
     const body = await request.json().catch(() => ({}));
 
-    // Diferenciar entre discovery y promote
     if (body.action === 'promote' && body.url) {
       const result = await promoteToGuardian(body.url);
       return NextResponse.json(result);
@@ -31,6 +33,10 @@ export async function POST(request: Request) {
       ...result,
     });
   } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Error desconocido';
+    if (msg.includes('denegado') || msg.includes('token')) {
+      return NextResponse.json({ success: false, error: msg }, { status: 403 });
+    }
     console.error('[Discovery API] Error:', error);
     return NextResponse.json({
       success: false,

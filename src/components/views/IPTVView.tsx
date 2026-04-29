@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useViewStore } from '@/lib/store';
-import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity } from 'lucide-react';
+import { useViewStore, useAuthStore } from '@/lib/store';
+import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity, Shield } from 'lucide-react';
 import Hls from 'hls.js';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
+import dynamic from 'next/dynamic';
+const AdminPanel = dynamic(() => import('@/components/guardian/AdminPanel'), { ssr: false });
 
 interface IPTVChannel {
   id: string;
@@ -126,6 +128,11 @@ export function IPTVView() {
   const [showOnlyWorking, setShowOnlyWorking] = useState(true);
   const [verifiedUrls, setVerifiedUrls] = useState<Set<string>>(new Set());
   const verifyAbortRef = useRef<AbortController | null>(null);
+
+  // Admin state
+  const { username } = useAuthStore();
+  const isAdmin = username === 'admin';
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // Guardian state
   const [guardianStatus, setGuardianStatus] = useState<{
@@ -704,16 +711,22 @@ export function IPTVView() {
                   <Radio size={20} className="text-green-500" />
                   <span className="text-white font-bold">IPTV</span>
                   {guardianStatus && guardianStatus.scheduler.initialized && (
-                    <span className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1">
+                    <button
+                      onClick={() => isAdmin && setShowAdminPanel(true)}
+                      className={`pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1 transition-colors ${isAdmin ? 'hover:bg-green-500/30 cursor-pointer' : ''}`}
+                      title={isAdmin ? 'Abrir Panel Admin' : 'Guardian activo'}
+                    >
                       {guardianStatus.isScanning ? (
                         <Activity size={10} className="text-green-400 animate-pulse" />
+                      ) : isAdmin ? (
+                        <Shield size={10} className="text-green-400" />
                       ) : (
                         <ShieldCheck size={10} className="text-green-400" />
                       )}
                       <span className="text-green-400 text-[10px] font-medium">
-                        {guardianStatus.isScanning ? 'Escaneando...' : guardianStatus.totalVerified > 0 ? `${guardianStatus.totalVerified} OK` : 'Guardian'}
+                        {guardianStatus.isScanning ? 'Escaneando...' : guardianStatus.totalVerified > 0 ? `${guardianStatus.totalVerified} OK` : isAdmin ? 'Admin' : 'Guardian'}
                       </span>
-                    </span>
+                    </button>
                   )}
                 </div>
               </div>
@@ -991,6 +1004,10 @@ export function IPTVView() {
             </div>
           </div>
         </div>
+      )}
+      {/* Admin Panel Modal */}
+      {showAdminPanel && isAdmin && (
+        <AdminPanel onClose={() => setShowAdminPanel(false)} />
       )}
     </div>
   );

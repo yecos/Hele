@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runFullScan } from '@/lib/guardian/scanner';
+import { requireAdmin } from '@/lib/admin-guard';
 
 /**
  * POST /api/guardian/scan
- * Dispara un escaneo manual del Guardian
+ * Dispara un escaneo manual del Guardian (solo admin)
  */
 export async function POST(request: NextRequest) {
   try {
+    requireAdmin(request);
+
     const body = await request.json().catch(() => ({}));
     const trigger = body.trigger === 'manual' ? 'manual' : 'manual';
 
-    // Ejecutar en background (no bloquear la respuesta)
-    // Devolvemos inmediatamente y el scan corre en segundo plano
     const result = await runFullScan(trigger);
 
     if (result.status === 'already_running') {
@@ -27,6 +28,10 @@ export async function POST(request: NextRequest) {
       ...result,
     });
   } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Error desconocido';
+    if (msg.includes('denegado') || msg.includes('token')) {
+      return NextResponse.json({ success: false, error: msg }, { status: 403 });
+    }
     console.error('[Guardian API] Error en scan:', error);
     return NextResponse.json({
       success: false,
