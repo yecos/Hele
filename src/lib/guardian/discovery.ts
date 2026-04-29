@@ -21,7 +21,7 @@ const WEB_SEARCH_QUERIES_PER_RUN = 10;
 const GITHUB_QUERIES_PER_RUN = 6;
 const XTREAM_PROBES_PER_RUN = 15;
 const MAX_PAGE_DEPTH = 8;
-const VALIDATION_TIMEOUT = 8000;
+const VALIDATION_TIMEOUT = 20000;
 const PAGE_FETCH_TIMEOUT = 12000;
 const RATE_LIMIT_MS = 800;
 const MIN_CHANNELS_TO_PROMOTE = 3;
@@ -227,23 +227,29 @@ async function validateM3uUrl(url: string): Promise<{ valid: boolean; channelCou
     clearTimeout(timeout);
     if (!response.ok) return { valid: false, channelCount: 0 };
 
+    // Read up to 5 chunks to handle chunked encoding
     const reader = response.body?.getReader();
     if (reader) {
-      const { value } = await reader.read();
-      if (value) {
-        const text = new TextDecoder().decode(value);
-        if (text.includes('#EXTM3U') || text.includes('#EXTINF')) {
-          const channelCount = (text.match(/#EXTINF/g) || []).length;
-          const sampleChannels: string[] = [];
-          const lines = text.split('\n');
-          for (let i = 0; i < lines.length && sampleChannels.length < 5; i++) {
-            const commaIdx = lines[i].lastIndexOf(',');
-            if (commaIdx !== -1 && lines[i].includes('#EXTINF')) {
-              sampleChannels.push(lines[i].substring(commaIdx + 1).trim().substring(0, 50));
-            }
+      let fullText = '';
+      for (let i = 0; i < 5; i++) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        if (value) fullText += new TextDecoder().decode(value, { stream: true });
+        if (fullText.length > 100000) break; // 100KB max
+      }
+      reader.cancel().catch(() => {});
+
+      if (fullText.includes('#EXTM3U') || fullText.includes('#EXTINF')) {
+        const channelCount = (fullText.match(/#EXTINF/g) || []).length;
+        const sampleChannels: string[] = [];
+        const lines = fullText.split('\n');
+        for (let i = 0; i < lines.length && sampleChannels.length < 5; i++) {
+          const commaIdx = lines[i].lastIndexOf(',');
+          if (commaIdx !== -1 && lines[i].includes('#EXTINF')) {
+            sampleChannels.push(lines[i].substring(commaIdx + 1).trim().substring(0, 50));
           }
-          return { valid: channelCount > 0, channelCount, sampleChannels };
         }
+        return { valid: channelCount > 0, channelCount, sampleChannels };
       }
     }
 
@@ -297,8 +303,8 @@ async function runWebDiscovery(existingUrls: Set<string>, maxNew: number): Promi
     const validation = await validateM3uUrl(url);
     if (validation.valid) {
       console.log(`[Discovery:Web] VALIDA: ${url} (${validation.channelCount} canales)`);
-      const added = await saveDiscovered(url, info.name, info.source, validation.channelCount, 'm3u', 'web');
-      if (added) newSources++;
+      const result = await saveDiscovered(url, info.name, info.source, validation.channelCount, 'm3u', 'web');
+      if (result.saved) newSources++;
     }
     await delay(400);
   }
@@ -337,7 +343,7 @@ async function runDeepScraping(existingUrls: Set<string>, maxNew: number): Promi
         const validation = await validateM3uUrl(m3uUrl);
         if (validation.valid) {
           console.log(`[Discovery:Scrape] VALIDA: ${m3uUrl} (${validation.channelCount} canales)`);
-          await saveDiscovered(m3uUrl, `Scrape: ${result.name}`, result.url, validation.channelCount, 'm3u', 'scraped');
+          const result = await saveDiscovered(m3uUrl, `Scrape: ${result.name}`, result.url, validation.channelCount, 'm3u', 'scraped');
           existingUrls.add(m3uUrl);
         }
         await delay(400);
@@ -386,8 +392,8 @@ async function runGitHubDiscovery(existingUrls: Set<string>, maxNew: number): Pr
     const validation = await validateM3uUrl(url);
     if (validation.valid) {
       console.log(`[Discovery:GitHub] VALIDA: ${url} (${validation.channelCount} canales)`);
-      const added = await saveDiscovered(url, info.name, info.source, validation.channelCount, 'm3u', 'github');
-      if (added) newSources++;
+      const result = await saveDiscovered(url, info.name, info.source, validation.channelCount, 'm3u', 'github');
+      if (result.saved) newSources++;
     }
     await delay(400);
   }
@@ -419,8 +425,8 @@ async function runXtreamProbing(maxProbes: number): Promise<{ probes: number; wo
     if (validation.valid && validation.channelCount >= 10) {
       working++;
       console.log(`[Discovery:Xtream] FUNCIONA: ${baseUrl} (${validation.channelCount} canales)`);
-      const added = await saveDiscovered(m3uUrl, `Xtream: ${domain}`, baseUrl, validation.channelCount, 'xtream', 'xtream');
-      if (added) newSources++;
+      const result = await saveDiscovered(m3uUrl, `Xtream: ${domain}`, baseUrl, validation.channelCount, 'xtream', 'xtream');
+      if (result.saved) newSources++;
     }
     await delay(1000);
   }
@@ -430,13 +436,18 @@ async function runXtreamProbing(maxProbes: number): Promise<{ probes: number; wo
 
 // ===== Guardar fuente descubierta =====
 
-async function saveDiscovered(url: string, name: string, sourceUrl: string, channelCount: number, type: string = 'm3u', engine: string = 'web'): Promise<boolean> {
+async function saveDiscovered(url: string, name: string, sourceUrl: string, channelCount: number, type: string = 'm3u', engine: string = 'web'): Promise<{ saved: boolean; promoted: boolean }> {
   try {
+    const existing = await db.discoveredSource.findUnique({ where: { url } });
+    const isNew = !existing;
+
     await db.discoveredSource.upsert({
       where: { url },
       create: { url, name: name.substring(0, 100), sourceUrl, discoveryEngine: engine, channelCount, isValid: true, lastChecked: new Date(), addedToGuardian: false },
       update: { channelCount, isValid: true, lastChecked: new Date(), sourceUrl, discoveryEngine: engine, name: name.substring(0, 100) },
     });
+
+    let promoted = false;
     if (channelCount >= MIN_CHANNELS_TO_PROMOTE) {
       try {
         await db.guardianSource.create({
@@ -444,13 +455,14 @@ async function saveDiscovered(url: string, name: string, sourceUrl: string, chan
         });
         await db.discoveredSource.update({ where: { url }, data: { addedToGuardian: true } });
         console.log(`[Discovery] Promovida al Guardian: ${url.substring(0, 60)}... (${channelCount} canales)`);
-        return true;
+        promoted = true;
       } catch {
         try { await db.guardianSource.updateMany({ where: { url }, data: { enabled: true, updatedAt: new Date() } }); } catch {}
       }
     }
-    return false;
-  } catch { return false; }
+
+    return { saved: true, promoted };
+  } catch { return { saved: false, promoted: false } }
 }
 
 // ===== Validación incremental =====
@@ -488,7 +500,10 @@ export async function runDiscovery(trigger: 'scheduled' | 'manual' = 'scheduled'
 
   try {
     const reval = await revalidateDiscoveredSources();
-    const [existingSources, existingDiscovered] = await Promise.all([db.guardianSource.findMany({ select: { url: true } }), db.discoveredSource.findMany({ select: { url: true } })]);
+    const [existingSources, existingDiscovered] = await Promise.all([
+      db.guardianSource.findMany({ select: { url: true } }),
+      db.discoveredSource.findMany({ select: { url: true }, where: { isValid: true } }),
+    ]);
     const existingUrls = new Set<string>();
     existingSources.forEach(s => existingUrls.add(normalizeUrl(s.url)));
     existingDiscovered.forEach(d => existingUrls.add(normalizeUrl(d.url)));
@@ -499,7 +514,7 @@ export async function runDiscovery(trigger: 'scheduled' | 'manual' = 'scheduled'
     try { console.log('[Discovery] === MOTOR 3: GitHub Scanner ==='); engines.github = await runGitHubDiscovery(existingUrls, maxPerEngine); } catch (err) { console.error('[Discovery] Error en Motor GitHub:', err); }
     try { console.log('[Discovery] === MOTOR 4: Xtream Codes Prober ==='); engines.xtream = await runXtreamProbing(XTREAM_PROBES_PER_RUN); } catch (err) { console.error('[Discovery] Error en Motor Xtream:', err); }
 
-    const totalNewSources = engines.web.newSources + engines.github.newSources + engines.xtream.newSources + engines.scraping.urlsExtracted;
+    const totalNewSources = engines.web.newSources + engines.github.newSources + engines.xtream.newSources;
     const totalDuration = Date.now() - startTime;
     lastDiscoveryResult = { status: 'completed', engines, totalNewSources, totalDuration, timestamp: new Date() };
     console.log(`[Discovery] Completado en ${(totalDuration / 1000).toFixed(1)}s`);
