@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useViewStore } from '@/lib/store';
-import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff } from 'lucide-react';
+import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast } from 'lucide-react';
 import Hls from 'hls.js';
+import { useChromecast } from '@/hooks/use-chromecast';
 
 interface IPTVChannel {
   id: string;
@@ -59,6 +60,9 @@ export function IPTVView() {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const cast = useChromecast();
+  const isActivelyCasting = cast.isCasting && cast.isConnected;
 
   // Verify channels against the API
   const verifyChannels = useCallback(async (chs: IPTVChannel[], signal?: AbortSignal) => {
@@ -200,6 +204,13 @@ export function IPTVView() {
 
   // HLS.js instance ref
   const hlsRef = useRef<Hls | null>(null);
+
+  // Auto-cast IPTV to Chromecast when channel changes and cast is connected
+  useEffect(() => {
+    if (activeChannel && cast.isConnected && activeChannel.url.includes('.m3u8')) {
+      cast.castHLS(activeChannel.url, activeChannel.name, `${activeChannel.group} - ${activeChannel.country}`);
+    }
+  }, [activeChannel?.id, cast.isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Play channel when activeChannel changes
   useEffect(() => {
@@ -565,6 +576,9 @@ export function IPTVView() {
                 <h2 className="text-white text-xl sm:text-2xl font-bold truncate">{activeChannel.name}</h2>
                 <p className="text-gray-500 text-xs mt-0.5">
                   Canal {currentIndex + 1} de {onlineChannels.length}
+                  {isActivelyCasting && (
+                    <span className="text-green-400 ml-2">Casting en {cast.device?.friendlyName}</span>
+                  )}
                 </p>
               </div>
 
@@ -643,8 +657,34 @@ export function IPTVView() {
                 </button>
               </div>
 
-              {/* Right: Channel list + search */}
+              {/* Right: Cast + Channel list */}
               <div className="flex items-center gap-2 pointer-events-auto">
+                {/* Chromecast button */}
+                {cast.isAvailable && (
+                  <button
+                    onClick={() => {
+                      if (isActivelyCasting) {
+                        cast.disconnect();
+                      } else if (activeChannel) {
+                        if (!cast.isConnected) {
+                          cast.connect();
+                        } else {
+                          cast.castHLS(activeChannel.url, activeChannel.name, `${activeChannel.group} - ${activeChannel.country}`);
+                        }
+                      } else {
+                        cast.connect();
+                      }
+                    }}
+                    className={`p-2 rounded-full transition-all ${
+                      isActivelyCasting
+                        ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                        : 'bg-white/10 hover:bg-white/20 text-white'
+                    }`}
+                    title={isActivelyCasting ? `Desconectar de ${cast.device?.friendlyName}` : 'Enviar a Chromecast'}
+                  >
+                    <Cast size={18} />
+                  </button>
+                )}
                 <button
                   onClick={() => setShowChannelList(true)}
                   className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm transition-all"

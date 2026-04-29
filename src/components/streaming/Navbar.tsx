@@ -1,15 +1,45 @@
 'use client';
 
-import { useState } from 'react';
-import { useViewStore, useAuthStore } from '@/lib/store';
-import { Search, Heart, Home, Settings, Menu, X, Film, Tv, Radio, LogOut, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useViewStore, useAuthStore, useCastStore, usePlayerStore } from '@/lib/store';
+import { useChromecast } from '@/hooks/use-chromecast';
+import { Search, Heart, Home, Settings, Menu, X, Film, Tv, Radio, LogOut, User, Cast } from 'lucide-react';
 
 export function Navbar() {
   const { currentView, setView, setSearchQuery } = useViewStore();
   const { isLoggedIn, username, logout } = useAuthStore();
+  const { isCasting: playerCasting, currentServerUrl, currentMovie, isPlaying: moviePlaying } = usePlayerStore();
+  const { isCasting: globalCasting, setCastState } = useCastStore();
+  const cast = useChromecast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Sync cast state to global store
+  useEffect(() => {
+    setCastState(cast.isCasting, cast.device?.friendlyName || null);
+  }, [cast.isCasting, cast.device?.friendlyName, setCastState]);
+
+  const isActivelyCasting = cast.isCasting && cast.isConnected;
+
+  // Auto-cast movie when server URL is set and Cast is connected
+  useEffect(() => {
+    if (moviePlaying && currentServerUrl && cast.isConnected && !playerCasting) {
+      const title = currentMovie?.title || 'Reproduciendo';
+      const subtitle = currentMovie?.mediaType === 'tv'
+        ? `Temporada ${usePlayerStore.getState().currentSeason} - Episodio ${usePlayerStore.getState().currentEpisode}`
+        : '';
+      cast.castEmbed(currentServerUrl, title, subtitle);
+    }
+  }, [currentServerUrl, cast.isConnected, moviePlaying]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCastClick = () => {
+    if (isActivelyCasting) {
+      cast.disconnect();
+    } else {
+      cast.connect();
+    }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,8 +94,22 @@ export function Navbar() {
             })}
           </div>
 
-          {/* Right side: search + user */}
+          {/* Right side: search + cast + user */}
           <div className="flex items-center gap-2">
+            {/* Chromecast button */}
+            {cast.isAvailable && (
+              <button
+                onClick={handleCastClick}
+                className={`p-2 rounded-full transition-all ${
+                  isActivelyCasting
+                    ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                    : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white'
+                }`}
+                title={isActivelyCasting ? `Conectado a ${cast.device?.friendlyName || 'Chromecast'}` : 'Chromecast'}
+              >
+                <Cast size={18} className={isActivelyCasting ? 'text-green-400' : ''} />
+              </button>
+            )}
             {/* Search bar - desktop */}
             <form onSubmit={handleSearch} className="hidden sm:flex items-center bg-white/5 rounded-full px-4 py-2 border border-white/10 focus-within:border-red-500/50 transition-colors w-52 lg:w-64">
               <Search size={16} className="text-gray-400 mr-2 shrink-0" />
@@ -160,6 +204,19 @@ export function Navbar() {
 
             {/* Logout in mobile */}
             <div className="border-t border-white/5 mt-3 pt-3">
+              {cast.isAvailable && (
+                <button
+                  onClick={() => { handleCastClick(); setMobileMenuOpen(false); }}
+                  className={`w-full px-4 py-3 rounded-lg text-left text-sm font-medium transition-all flex items-center gap-3 mb-1 ${
+                    isActivelyCasting
+                      ? 'text-green-400 bg-green-600/10'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Cast size={18} />
+                  {isActivelyCasting ? `Casting: ${cast.device?.friendlyName}` : 'Chromecast'}
+                </button>
+              )}
               <button
                 onClick={() => { logout(); setMobileMenuOpen(false); }}
                 className="w-full px-4 py-3 rounded-lg text-left text-sm font-medium text-red-400 hover:bg-red-500/10 flex items-center gap-3 transition-all"

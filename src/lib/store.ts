@@ -219,6 +219,19 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   setDetail: (detail) => set({ currentDetail: detail }),
 }));
 
+// ==================== CAST STATE ====================
+interface CastState {
+  isCasting: boolean;
+  castDevice: string | null;
+  setCastState: (isCasting: boolean, device?: string | null) => void;
+}
+
+export const useCastStore = create<CastState>((set) => ({
+  isCasting: false,
+  castDevice: null,
+  setCastState: (isCasting, device = null) => set({ isCasting, castDevice: device }),
+}));
+
 // ==================== FAVORITES STATE ====================
 interface FavoritesState {
   favorites: string[];

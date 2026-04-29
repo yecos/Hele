@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/lib/store';
 import { LANG_LABELS, SERVER_ICONS, type StreamSource, type ServerGroup, type AudioLang } from '@/lib/sources';
-import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight, Cast } from 'lucide-react';
+import { useChromecast } from '@/hooks/use-chromecast';
 
 // Server URL generators (kept in sync with sources.ts)
 function getServerUrl(serverId: string, tmdbId: number, type: 'movie' | 'tv', season?: number, episode?: number): string {
@@ -70,6 +71,9 @@ export function VideoPlayer() {
   const [iframeError, setIframeError] = useState(false);
   const [availableLangs, setAvailableLangs] = useState<AudioLang[]>([]);
   const [loadingProgress, setLoadingProgress] = useState(true);
+
+  const cast = useChromecast();
+  const isActivelyCasting = cast.isCasting && cast.isConnected;
 
   // Fetch servers when movie changes
   const fetchServers = useCallback(async () => {
@@ -155,9 +159,43 @@ export function VideoPlayer() {
             <p className="text-xs text-gray-400">
               {currentServerName || 'Cargando servidor...'}
               {currentMovie.mediaType === 'tv' && ` - T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}`}
+              {isActivelyCasting && (
+                <span className="text-green-400 ml-2">Casting en {cast.device?.friendlyName}</span>
+              )}
             </p>
           </div>
         </div>
+
+        {/* Cast button */}
+        {cast.isAvailable && (
+          <button
+            onClick={() => {
+              if (isActivelyCasting) {
+                cast.disconnect();
+              } else if (currentServerUrl) {
+                const subtitle = currentMovie.mediaType === 'tv'
+                  ? `T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}`
+                  : '';
+                if (!cast.isConnected) {
+                  // Connect first, then the Navbar auto-cast effect will handle it
+                  cast.connect();
+                } else {
+                  cast.castEmbed(currentServerUrl, currentMovie.title, subtitle);
+                }
+              } else {
+                cast.connect();
+              }
+            }}
+            className={`p-2 rounded-full transition-all ${
+              isActivelyCasting
+                ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                : 'bg-white/10 hover:bg-white/20 text-white'
+            }`}
+            title={isActivelyCasting ? `Desconectar de ${cast.device?.friendlyName}` : 'Enviar a Chromecast'}
+          >
+            <Cast size={20} />
+          </button>
+        )}
       </div>
 
       {/* Player area */}
