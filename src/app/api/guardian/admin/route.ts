@@ -5,6 +5,9 @@ import { runFullScan, getGuardianStats, getVerifiedChannels } from '@/lib/guardi
 import { getSchedulerStatus } from '@/lib/guardian/scheduler';
 import { db } from '@/lib/db';
 
+// Admin actions (runDiscovery, runScan) can take several minutes
+export const maxDuration = 300;
+
 const EMPTY_DASHBOARD = {
   guardian: {
     totalSources: 0,

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runFullScan } from '@/lib/guardian/scanner';
 import { requireAdmin } from '@/lib/admin-guard';
 
+// Scanning can take several minutes
+export const maxDuration = 300;
+
 /**
  * POST /api/guardian/scan
  * Dispara un escaneo manual del Guardian (solo admin)

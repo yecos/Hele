@@ -10,10 +10,10 @@ import {
 
 // ===== Types =====
 interface DiscoveryEngineStats {
-  web: { queries: number; urlsFound: number; validated: number; newSources: number };
+  seed: { sources: number; valid: number; newSources: number };
+  web: { queries: number; pagesFetched: number; urlsFound: number; validated: number; newSources: number };
   github: { queries: number; urlsFound: number; validated: number; newSources: number };
   xtream: { probes: number; working: number; newSources: number };
-  scraping: { pagesRead: number; urlsExtracted: number };
 }
 
 interface DashboardData {
@@ -102,9 +102,9 @@ function useAdminAuth() {
 // ===== Engine Icon =====
 function EngineIcon({ engine }: { engine: string }) {
   switch (engine) {
+    case 'seed': return <Database size={14} className="text-emerald-400" />;
     case 'web': return <Globe size={14} className="text-blue-400" />;
     case 'github': return <Github size={14} className="text-purple-400" />;
-    case 'scraped': return <Radar size={14} className="text-orange-400" />;
     case 'xtream': return <Zap size={14} className="text-yellow-400" />;
     default: return <Search size={14} className="text-gray-400" />;
   }
@@ -353,8 +353,8 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                       </div>
                       {/* Engine breakdown */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
-                        <EngineCard name="Web Search" engine="web" stats={d.discovery.lastDiscovery.engines.web} />
-                        <EngineCard name="Deep Scraping" engine="scraped" stats={d.discovery.lastDiscovery.engines.scraping} />
+                        <EngineCard name="Seed Sources" engine="seed" stats={d.discovery.lastDiscovery.engines.seed} />
+                        <EngineCard name="Web Scraper" engine="web" stats={d.discovery.lastDiscovery.engines.web} />
                         <EngineCard name="GitHub Scanner" engine="github" stats={d.discovery.lastDiscovery.engines.github} />
                         <EngineCard name="Xtream Prober" engine="xtream" stats={d.discovery.lastDiscovery.engines.xtream} />
                       </div>
@@ -370,8 +370,8 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                   <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <h3 className="text-sm font-semibold text-white">Motor de Descubrimiento v2.0</h3>
-                        <p className="text-xs text-gray-500 mt-1">4 motores: Web Search, Deep Scraping, GitHub Scanner, Xtream Codes Prober</p>
+                        <h3 className="text-sm font-semibold text-white">Motor de Descubrimiento v3.0</h3>
+                        <p className="text-xs text-gray-500 mt-1">4 motores: Seed Sources, Web Scraper, GitHub Scanner, Xtream Codes Prober</p>
                       </div>
                       <button
                         onClick={() => executeAction('runDiscovery')}
@@ -386,8 +386,8 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                     {/* Engine Stats */}
                     {d.discovery.lastDiscovery && (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
-                        <EngineCard name="Web Search" engine="web" stats={d.discovery.lastDiscovery.engines.web} />
-                        <EngineCard name="Deep Scraping" engine="scraped" stats={d.discovery.lastDiscovery.engines.scraping} />
+                        <EngineCard name="Seed Sources" engine="seed" stats={d.discovery.lastDiscovery.engines.seed} />
+                        <EngineCard name="Web Scraper" engine="web" stats={d.discovery.lastDiscovery.engines.web} />
                         <EngineCard name="GitHub Scanner" engine="github" stats={d.discovery.lastDiscovery.engines.github} />
                         <EngineCard name="Xtream Prober" engine="xtream" stats={d.discovery.lastDiscovery.engines.xtream} />
                       </div>

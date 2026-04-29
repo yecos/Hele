@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { runDiscovery, promoteToGuardian } from '@/lib/guardian/discovery';
 import { requireAdmin } from '@/lib/admin-guard';
 
+// Discovery can take 2-3 minutes with validation. Vercel default is 10s.
+export const maxDuration = 300;
+
 /**
  * POST /api/guardian/discover/run
  * Dispara un descubrimiento web manual (solo admin)
