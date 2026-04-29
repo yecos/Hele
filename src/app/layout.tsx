@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -13,11 +13,32 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#dc2626",
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: "XuperStream - Ver Películas y Series Online",
-  description: "Tu plataforma personal de streaming. Películas y series en español latino, HD.",
+  description: "Tu plataforma personal de streaming. Películas, series y TV en vivo en español latino, HD.",
+  manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/logo.svg",
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "XuperStream",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
   },
 };
 
@@ -29,6 +50,14 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark">
       <head>
+        <meta name="theme-color" content="#dc2626" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="XuperStream" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="application-name" content="XuperStream" />
+        <meta name="msapplication-TileColor" content="#dc2626" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <style>{`
           @keyframes splash-fade-in {
             0% { opacity: 0; transform: scale(0.8); }
@@ -140,6 +169,17 @@ export default function RootLayout({
             // Safety: hide after 4s max
             setTimeout(hideSplash, 4000);
           })();
+        `}} />
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                console.log('SW registered:', reg.scope);
+              }).catch(function(err) {
+                console.log('SW registration failed:', err);
+              });
+            });
+          }
         `}} />
         {children}
         <Toaster />
