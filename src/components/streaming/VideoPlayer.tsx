@@ -5,10 +5,12 @@ import { usePlayerStore, useHistoryStore, useViewStore } from '@/lib/store';
 import { LANG_LABELS, SERVER_ICONS, TMDB_SERVERS, type StreamSource, type ServerGroup, type AudioLang } from '@/lib/sources';
 import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight, Cast, Tv, Wifi, Settings } from 'lucide-react';
 import { useChromecast } from '@/hooks/use-chromecast';
+import { useT } from '@/lib/i18n';
 
 function buildServerGroups(
   tmdbId: number,
   type: 'movie' | 'tv',
+  labels: { subtitulada: string; latino: string },
   season?: number,
   episode?: number
 ): ServerGroup[] {
@@ -28,12 +30,13 @@ function buildServerGroups(
   });
 
   return [
-    langSources('subtitulada', 'Subtitulado'),
-    langSources('latino', 'Español'),
+    langSources('subtitulada', labels.subtitulada),
+    langSources('latino', labels.latino),
   ];
 }
 
 export function VideoPlayer() {
+  const { t } = useT();
   const {
     isPlaying, currentMovie, currentDetail, currentSeason, currentEpisode,
     currentServerUrl, currentServerName, currentLang,
@@ -80,6 +83,7 @@ export function VideoPlayer() {
       const groups = buildServerGroups(
         currentMovie.tmdbId,
         type,
+        { subtitulada: t('player.subtitulado'), latino: t('player.latino') },
         type === 'tv' ? currentSeason : undefined,
         type === 'tv' ? currentEpisode : undefined
       );
@@ -123,7 +127,7 @@ export function VideoPlayer() {
   // Auto-cast to Chromecast when connected and server URL changes
   useEffect(() => {
     if (isPlaying && currentServerUrl && cast.isConnected && !castTried && !cast.isCasting) {
-      const title = currentMovie?.title || 'Reproduciendo';
+      const title = currentMovie?.title || t('player.loadingServer');
       const subtitle = currentMovie?.mediaType === 'tv'
         ? `T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}`
         : '';
@@ -179,7 +183,7 @@ export function VideoPlayer() {
           <div className="text-white">
             <h2 className="text-sm font-semibold truncate max-w-[200px] sm:max-w-[400px]">{currentMovie.title}</h2>
             <p className="text-xs text-gray-400">
-              {currentServerName || 'Cargando servidor...'}
+              {currentServerName || t('player.loadingServer')}
               {currentMovie.mediaType === 'tv' && ` - T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}`}
               {cast.isConnected && cast.isCasting && (
                 <span className="text-green-400 ml-2">{cast.statusMessage}</span>
@@ -218,7 +222,7 @@ export function VideoPlayer() {
                 ? 'bg-yellow-500/20 text-yellow-400 animate-pulse'
                 : 'bg-white/10 hover:bg-white/20 text-white'
             }`}
-            title={cast.statusMessage || (cast.isConnected ? `Desconectar de ${cast.device?.friendlyName}` : 'Enviar a Chromecast')}
+            title={cast.statusMessage || (cast.isConnected ? t('player.disconnectFrom', { device: cast.device?.friendlyName }) : t('player.sendToChromecast'))}
           >
             <Cast size={20} />
           </button>
@@ -229,10 +233,10 @@ export function VideoPlayer() {
         <div className="absolute top-14 left-0 right-0 z-[15] bg-green-600/90 backdrop-blur-sm px-4 py-1.5 flex items-center justify-between">
           <div className="flex items-center gap-2 text-white text-xs">
             <Wifi size={12} />
-            <span>Conectado a <b>{cast.device?.friendlyName || 'Chromecast'}</b></span>
+            <span>{t('player.connectedTo')} <b>{cast.device?.friendlyName || 'Chromecast'}</b></span>
           </div>
           <button onClick={() => cast.disconnect()} className="text-white/80 hover:text-white text-xs">
-            Desconectar
+            {t('player.disconnect')}
           </button>
         </div>
       )}
@@ -247,26 +251,26 @@ export function VideoPlayer() {
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm font-semibold">
                 {supportsEmbedOnTV
-                  ? 'Error al enviar contenido'
-                  : `No compatible con ${cast.device?.friendlyName || 'Chromecast'}`}
+                  ? t('player.castErrorTitle')
+                  : t('player.notCompatible', { device: cast.device?.friendlyName || 'Chromecast' })}
               </p>
               <p className="text-white/80 text-xs mt-0.5 leading-relaxed">
                 {supportsEmbedOnTV
-                  ? 'Hubo un error al enviar el contenido. Intenta con otro servidor.'
-                  : 'Los servidores de películas usan un reproductor web que no funciona en Chromecast estándar. Configura el Custom Receiver en Ajustes para habilitar esta función.'}
+                  ? t('player.castErrorMsg')
+                  : t('player.embedNotSupported')}
               </p>
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 <button
                   onClick={() => setCastBannerDismissed(true)}
                   className="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-full transition-all"
                 >
-                  Entendido
+                  {t('player.understood')}
                 </button>
                 <button
                   onClick={() => { cast.disconnect(); setCastBannerDismissed(true); }}
                   className="text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1 rounded-full transition-all"
                 >
-                  Desconectar
+                  {t('player.disconnect')}
                 </button>
                 {!supportsEmbedOnTV && (
                   <button
@@ -274,7 +278,7 @@ export function VideoPlayer() {
                     className="text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1 rounded-full transition-all flex items-center gap-1"
                   >
                     <Settings size={10} />
-                    Configurar Receiver
+                    {t('player.configReceiver')}
                   </button>
                 )}
                 <button
@@ -282,7 +286,7 @@ export function VideoPlayer() {
                   className="text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1 rounded-full transition-all flex items-center gap-1"
                 >
                   <Tv size={10} />
-                  Probar IPTV
+                  {t('player.tryIPTV')}
                 </button>
               </div>
             </div>
@@ -298,7 +302,7 @@ export function VideoPlayer() {
               <Cast size={36} className="text-red-500" />
             </div>
             <div>
-              <p className="text-white font-bold text-lg">Reproduciendo en TV</p>
+              <p className="text-white font-bold text-lg">{t('player.playingOnTV')}</p>
               <p className="text-gray-400 text-sm mt-1">{cast.device?.friendlyName || 'Chromecast'}</p>
             </div>
             {currentMovie && (
@@ -311,7 +315,7 @@ export function VideoPlayer() {
               onClick={() => cast.disconnect()}
               className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition-all"
             >
-              Detener y ver en PC
+              {t('player.stopAndWatchPC')}
             </button>
           </div>
         </div>
@@ -323,7 +327,7 @@ export function VideoPlayer() {
           <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/80">
             <div className="flex flex-col items-center gap-3">
               <Loader2 size={40} className="text-red-500 animate-spin" />
-              <p className="text-gray-400 text-sm">Cargando servidor...</p>
+              <p className="text-gray-400 text-sm">{t('player.loadingServer')}</p>
             </div>
           </div>
         )}
@@ -332,8 +336,8 @@ export function VideoPlayer() {
           <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/90">
             <div className="flex flex-col items-center gap-3 text-center px-4">
               <AlertTriangle size={40} className="text-yellow-500" />
-              <p className="text-white font-semibold">Este servidor no esta disponible</p>
-              <p className="text-gray-400 text-sm">Intenta con otro servidor de la lista</p>
+              <p className="text-white font-semibold">{t('player.serverUnavailable')}</p>
+              <p className="text-gray-400 text-sm">{t('player.tryAnother')}</p>
             </div>
           </div>
         )}
@@ -342,7 +346,7 @@ export function VideoPlayer() {
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="flex flex-col items-center gap-3 text-center px-4">
               <MonitorPlay size={48} className="text-gray-600" />
-              <p className="text-gray-400">Selecciona un servidor para reproducir</p>
+              <p className="text-gray-400">{t('player.selectServer')}</p>
             </div>
           </div>
         )}
@@ -403,7 +407,7 @@ export function VideoPlayer() {
         <div className="px-4 py-3">
           <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-2">
             <Globe size={12} />
-            Servidores {LANG_LABELS[currentLang] && `(${currentLang})`}
+            {t('player.servers')} {LANG_LABELS[currentLang] && `(${currentLang})`}
           </h3>
           <div className="flex flex-wrap gap-2">
             {currentGroupSources.map(source => (
@@ -428,7 +432,7 @@ export function VideoPlayer() {
             {isLoadingServers && (
               <div className="flex items-center gap-2 px-3 py-2 text-gray-500 text-sm">
                 <Loader2 size={14} className="animate-spin" />
-                Cargando...
+                {t('player.loading')}
               </div>
             )}
           </div>
@@ -443,7 +447,7 @@ export function VideoPlayer() {
               className="px-4 py-2 rounded-xl bg-white/5 text-sm text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               <ChevronLeft size={16} className="inline mr-1" />
-              Anterior
+              {t('player.previous')}
             </button>
             <span className="text-white text-sm font-semibold px-4">
               T{String(currentSeason).padStart(2,'0')}E{String(currentEpisode).padStart(2,'0')}
@@ -455,7 +459,7 @@ export function VideoPlayer() {
               }}
               className="px-4 py-2 rounded-xl bg-white/5 text-sm text-gray-400 hover:bg-white/10 hover:text-white transition-all"
             >
-              Siguiente
+              {t('player.next')}
               <ChevronRight size={16} className="inline ml-1" />
             </button>
           </div>

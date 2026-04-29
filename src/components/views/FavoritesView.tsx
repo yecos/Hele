@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useFavoritesStore, usePlayerStore } from '@/lib/store';
+import { useT } from '@/lib/i18n';
 import type { MovieItem } from '@/lib/tmdb';
 import { Heart, Trash2, Play, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export function FavoritesView() {
   const { favorites } = useFavoritesStore();
   const playMovie = usePlayerStore(s => s.playMovie);
+  const { t } = useT();
   const [movies, setMovies] = useState<MovieItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,7 +63,7 @@ export function FavoritesView() {
     <div className="pt-20 px-4 max-w-[1400px] mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <Heart size={28} className="text-red-500" />
-        <h1 className="text-2xl font-bold text-white">Mi Lista</h1>
+        <h1 className="text-2xl font-bold text-white">{t('favorites.title')}</h1>
         <span className="text-gray-500 text-sm">({favorites.length})</span>
       </div>
 
@@ -98,7 +100,7 @@ export function FavoritesView() {
                   </div>
                 )}
                 <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase">
-                  {movie.mediaType === 'movie' ? 'Peli' : 'Serie'}
+                  {movie.mediaType === 'movie' ? t('misc.peli') : t('misc.serie')}
                 </div>
               </div>
               <p className="text-white text-sm font-medium mt-2 truncate">{movie.title}</p>
@@ -110,8 +112,8 @@ export function FavoritesView() {
         <div className="text-center py-20">
           <img src="/logo.svg" alt="XuperStream" className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <Heart size={48} className="text-gray-700 mx-auto mb-4" />
-          <h3 className="text-gray-400 text-lg font-semibold">Tu lista está vacía</h3>
-          <p className="text-gray-600 text-sm mt-1">Agrega películas y series haciendo clic en el corazón</p>
+          <h3 className="text-gray-400 text-lg font-semibold">{t('favorites.empty')}</h3>
+          <p className="text-gray-600 text-sm mt-1">{t('favorites.emptyDesc')}</p>
         </div>
       )}
 

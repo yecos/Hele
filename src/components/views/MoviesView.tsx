@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useT } from '@/lib/i18n';
 import type { MovieItem } from '@/lib/tmdb';
 import { CategoryRow } from '@/components/streaming/MovieCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,6 +13,7 @@ interface CategoryData {
 }
 
 export function MoviesView() {
+  const { t } = useT();
   const [categories, setCategories] = useState<{ title: string; movies: MovieItem[] }[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,20 +21,20 @@ export function MoviesView() {
     const loadData = async () => {
       try {
         const categoryLoaders: CategoryData[] = [
-          { title: '🎬 Tendencias en Películas', loader: () => fetch('/api/tmdb?endpoint=/trending/movie/week').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '🔥 Populares', loader: () => fetch('/api/tmdb?endpoint=/movie/popular').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '⭐ Mejor Valoradas', loader: () => fetch('/api/tmdb?endpoint=/movie/top_rated').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🆕 En Cartelera', loader: () => fetch('/api/tmdb?endpoint=/movie/now_playing&region=CO').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '🚀 Próximamente', loader: () => fetch('/api/tmdb?endpoint=/movie/upcoming&region=CO').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '💥 Acción', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=28').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '😂 Comedia', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=35').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '😱 Terror', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=27').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🔬 Ciencia Ficción', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=878').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🦸 Animación', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=16').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '💎 Drama', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=18&sort_by=vote_average.desc&vote_count.gte=500').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '💕 Romance', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=10749').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🕵️ Thriller', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=53').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🔍 Misterio', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=9648').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🎬 ' + t('movies.trending'), loader: () => fetch('/api/tmdb?endpoint=/trending/movie/week').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '🔥 ' + t('movies.popular'), loader: () => fetch('/api/tmdb?endpoint=/movie/popular').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '⭐ ' + t('movies.topRated'), loader: () => fetch('/api/tmdb?endpoint=/movie/top_rated').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🆕 ' + t('movies.nowPlaying'), loader: () => fetch('/api/tmdb?endpoint=/movie/now_playing&region=CO').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '🚀 ' + t('movies.upcoming'), loader: () => fetch('/api/tmdb?endpoint=/movie/upcoming&region=CO').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '💥 ' + t('movies.action'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=28').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '😂 ' + t('movies.comedy'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=35').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '😱 ' + t('movies.horror'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=27').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🔬 ' + t('movies.scifi'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=878').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🦸 ' + t('movies.animation'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=16').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '💎 ' + t('movies.drama'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=18&sort_by=vote_average.desc&vote_count.gte=500').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '💕 ' + t('movies.romance'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=10749').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🕵️ ' + t('movies.thriller'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=53').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🔍 ' + t('movies.mystery'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=9648').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
         ];
 
         const results = await Promise.allSettled(categoryLoaders.map(c => c.loader()));
@@ -57,7 +59,7 @@ export function MoviesView() {
       <div className="pt-20 px-4 max-w-[1400px] mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <Film size={28} className="text-red-500" />
-          <h1 className="text-2xl font-bold text-white">Películas</h1>
+          <h1 className="text-2xl font-bold text-white">{t('movies.title')}</h1>
         </div>
         <div className="space-y-8">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -80,7 +82,7 @@ export function MoviesView() {
       <div className="px-4 max-w-[1400px] mx-auto mb-4">
         <div className="flex items-center gap-3">
           <Film size={28} className="text-red-500" />
-          <h1 className="text-2xl font-bold text-white">Películas</h1>
+          <h1 className="text-2xl font-bold text-white">{t('movies.title')}</h1>
         </div>
       </div>
 

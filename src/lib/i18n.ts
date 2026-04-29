@@ -1,0 +1,772 @@
+'use client';
+
+import { create } from 'zustand';
+
+// ==================== LANGUAGE TYPES ====================
+
+export type AppLocale = 'es' | 'en' | 'pt';
+
+export const LOCALE_LABELS: Record<AppLocale, string> = {
+  es: 'Español',
+  en: 'English',
+  pt: 'Português',
+};
+
+export const LOCALE_FLAGS: Record<AppLocale, string> = {
+  es: '🇪🇸',
+  en: '🇺🇸',
+  pt: '🇧🇷',
+};
+
+// ==================== TRANSLATIONS ====================
+
+const translations: Record<AppLocale, Record<string, string>> = {
+  es: {
+    // ---- NAV ----
+    'nav.home': 'Inicio',
+    'nav.movies': 'Películas',
+    'nav.series': 'Series',
+    'nav.iptv': 'IPTV',
+    'nav.search': 'Buscar',
+    'nav.history': 'Historial',
+    'nav.favorites': 'Mi Lista',
+    'nav.settings': 'Ajustes',
+    'nav.searchPlaceholder': 'Buscar...  /',
+    'nav.personalAccount': 'Cuenta personal',
+    'nav.logout': 'Cerrar Sesión',
+    'nav.chromecast': 'Chromecast',
+    'nav.chromecastLoading': 'Cargando Chromecast...',
+    'nav.chromecastUnavailable': 'Chromecast no disponible',
+    'nav.connectedTo': 'Conectado a',
+
+    // ---- LOGIN ----
+    'login.subtitle': 'Ingresa a tu plataforma de streaming',
+    'login.google': 'Continuar con Google',
+    'login.orAccount': 'o inicia sesión con tu cuenta',
+    'login.username': 'Usuario',
+    'login.usernamePlaceholder': 'Escribe tu usuario',
+    'login.password': 'Contraseña',
+    'login.passwordPlaceholder': 'Escribe tu contraseña',
+    'login.submit': 'Iniciar Sesión',
+    'login.loggingIn': 'Ingresando...',
+    'login.fillAll': 'Completa todos los campos',
+    'login.invalidCredentials': 'Usuario o contraseña incorrectos',
+    'login.googleFailed': 'No se pudo iniciar sesión con Google',
+    'login.availableUsers': 'Usuarios disponibles:',
+    'login.defaultPassword': 'Contraseña por defecto:',
+
+    // ---- VIDEO PLAYER ----
+    'player.loadingServer': 'Cargando servidor...',
+    'player.serverUnavailable': 'Este servidor no está disponible',
+    'player.tryAnother': 'Intenta con otro servidor de la lista',
+    'player.selectServer': 'Selecciona un servidor para reproducir',
+    'player.servers': 'Servidores',
+    'player.loading': 'Cargando...',
+    'player.previous': 'Anterior',
+    'player.next': 'Siguiente',
+    'player.disconnect': 'Desconectar',
+    'player.understood': 'Entendido',
+    'player.tryIPTV': 'Probar IPTV',
+    'player.playingOnTV': 'Reproduciendo en TV',
+    'player.stopAndWatchPC': 'Detener y ver en PC',
+    'player.sendToChromecast': 'Enviar a Chromecast',
+    'player.connectedTo': 'Conectado a',
+    'player.disconnectFrom': 'Desconectar de',
+    'player.notCompatible': 'No compatible con',
+    'player.castErrorTitle': 'Error al enviar contenido',
+    'player.castErrorMsg': 'Hubo un error al enviar el contenido. Intenta con otro servidor.',
+    'player.embedNotSupported': 'Los servidores de películas usan un reproductor web que no funciona en Chromecast.',
+    'player.configReceiver': 'Configurar Receiver',
+    'player.subtitulado': 'Subtitulado',
+    'player.latino': 'Español',
+
+    // ---- MOVIE DETAIL ----
+    'detail.serie': 'SERIE',
+    'detail.movie': 'PELÍCULA',
+    'detail.watchMovie': 'Ver Película',
+    'detail.watchEpisode': 'Ver',
+    'detail.inMyList': 'En mi lista',
+    'detail.myList': 'Mi lista',
+    'detail.trailer': 'Trailer',
+    'detail.cast': 'Reparto',
+    'detail.seasons': 'Temporadas',
+    'detail.ep': 'ep',
+
+    // ---- HERO BANNER ----
+    'banner.movie': 'Película',
+    'banner.serie': 'Serie',
+    'banner.watchNow': 'Ver Ahora',
+    'banner.moreInfo': 'Más Info',
+
+    // ---- HOME ----
+    'home.continueWatching': '▶️ Continuar Viendo',
+    'home.trending': '🔥 Tendencias',
+    'home.popularMovies': '🎬 Películas Populares',
+    'home.popularSeries': '📺 Series Populares',
+    'home.topRated': '⭐ Mejor Valoradas',
+    'home.nowPlaying': '🆕 En Cartelera',
+    'home.upcoming': '🚀 Próximamente',
+    'home.topRatedSeries': '🎭 Series Mejor Valoradas',
+    'home.airingToday': '📺 Estrenando Hoy',
+    'home.action': '🎬 Acción',
+    'home.comedy': '😂 Comedia',
+    'home.horror': '😱 Terror',
+    'home.scifi': '🔬 Ciencia Ficción',
+    'home.animation': '🦸 Animación',
+    'home.drama': '💎 Drama',
+
+    // ---- MOVIES ----
+    'movies.title': 'Películas',
+    'movies.trending': '🎬 Tendencias en Películas',
+    'movies.popular': '🔥 Populares',
+    'movies.topRated': '⭐ Mejor Valoradas',
+    'movies.nowPlaying': '🆕 En Cartelera',
+    'movies.upcoming': '🚀 Próximamente',
+    'movies.action': '💥 Acción',
+    'movies.comedy': '😂 Comedia',
+    'movies.horror': '😱 Terror',
+    'movies.scifi': '🔬 Ciencia Ficción',
+    'movies.animation': '🦸 Animación',
+    'movies.drama': '💎 Drama',
+    'movies.romance': '💕 Romance',
+    'movies.thriller': '🕵️ Thriller',
+    'movies.mystery': '🔍 Misterio',
+
+    // ---- SERIES ----
+    'series.title': 'Series',
+    'series.trending': '📺 Tendencias en Series',
+    'series.popular': '🔥 Series Populares',
+    'series.topRated': '⭐ Mejor Valoradas',
+    'series.airingToday': '📡 Estrenando Hoy',
+    'series.onTheAir': '🆕 Series En Emisión',
+    'series.drama': '🎭 Drama',
+    'series.comedy': '😂 Comedia',
+    'series.mystery': '🔍 Misterio',
+    'series.scifi': '🧪 Ciencia Ficción',
+    'series.animation': '📺 Animación',
+    'series.documentary': '📸 Documentales',
+    'series.horror': '🧟 Terror',
+
+    // ---- SEARCH ----
+    'search.placeholder': 'Buscar películas, series, actores...',
+    'search.all': 'Todo',
+    'search.movies': 'Películas',
+    'search.series': 'Series',
+    'search.noResults': 'Sin resultados para "{query}"',
+    'search.tryAnother': 'Intenta con otra búsqueda',
+    'search.searchFavorite': 'Busca tu película o serie favorita',
+    'search.exploreGenres': 'Explorar por género',
+    'search.actionMovies': '🎬 Películas de Acción',
+    'search.comedies': '😂 Comedias',
+    'search.dramaSeries': '📺 Series de Drama',
+    'search.horror': '😱 Terror',
+    'search.movieBadge': 'Peli',
+    'search.serieBadge': 'Serie',
+
+    // ---- HISTORY ----
+    'history.title': 'Historial',
+    'history.clearAll': 'Borrar todo',
+    'history.clearConfirm': '¿Borrar todo el historial de reproducción?',
+    'history.movie': 'Película',
+    'history.serie': 'Serie',
+    'history.momentAgo': 'Hace un momento',
+    'history.hoursAgo': 'Hace {n}h',
+    'history.yesterday': 'Ayer',
+    'history.daysAgo': 'Hace {n} días',
+    'history.empty': 'Sin historial',
+    'history.emptyDesc': 'Las películas y series que veas aparecerán aquí',
+
+    // ---- FAVORITES ----
+    'favorites.title': 'Mi Lista',
+    'favorites.empty': 'Tu lista está vacía',
+    'favorites.emptyDesc': 'Agrega películas y series haciendo clic en el corazón',
+
+    // ---- SETTINGS ----
+    'settings.title': 'Ajustes',
+    'settings.version': 'Versión 0.2.0',
+    'settings.about': 'XuperStream es tu plataforma personal de streaming. Disfruta de películas, series y canales en vivo desde un solo lugar.',
+    'settings.servers': 'Servidores',
+    'settings.serversDesc': 'Se cargan automáticamente al reproducir contenido.',
+    'settings.active': 'Activo',
+    'settings.backup': 'Backup',
+    'settings.chromecast': 'Chromecast',
+    'settings.chromecastDesc': 'Envía películas, series y canales IPTV a tu TV.',
+    'settings.chromecastIPTV': 'IPTV funciona con Chromecast sin configuración adicional.',
+    'settings.iptv': 'IPTV',
+    'settings.iptvDesc': 'Canales en vivo verificados de Colombia y el mundo.',
+    'settings.iptvSources': 'Fuentes: iptv-org, TDTChannels',
+    'settings.iptvOnlyWorking': 'Solo se muestran canales funcionales.',
+    'settings.pwa': 'App Instalable (PWA)',
+    'settings.pwaDesc': 'Instalable como app en Android, iOS y Desktop.',
+    'settings.pwaOffline': 'Funciona sin conexión con contenido en caché.',
+    'settings.pwaCompat': 'Compatible con Chrome, Safari, Edge y Firefox.',
+    'settings.data': 'Datos',
+    'settings.dataDesc': 'Metadatos proporcionados por TMDB (The Movie Database).',
+    'settings.storage': 'Almacenamiento',
+    'settings.storageDesc': 'Tus datos se guardan localmente en tu navegador.',
+    'settings.clearFavorites': 'Borrar favoritos',
+    'settings.clearHistory': 'Borrar historial',
+    'settings.clearAllData': 'Borrar todos los datos',
+    'settings.clearFavoritesConfirm': '¿Borrar toda la lista de favoritos?',
+    'settings.clearHistoryConfirm': '¿Borrar todo el historial?',
+    'settings.clearAllConfirm': '¿Borrar TODOS los datos locales? (favoritos, historial, sesión)',
+    'settings.language': 'Idioma',
+
+    // ---- IPTV ----
+    'iptv.loading': 'Cargando canales...',
+    'iptv.loadingFrom': 'Obteniendo lista de iptv-org',
+    'iptv.verifying': 'Verificando canales...',
+    'iptv.checking': 'Comprobando {checked} de {total} canales',
+    'iptv.onlyWorking': 'Solo se mostrarán los canales que estén funcionando',
+    'iptv.loadingChannel': 'Cargando canal...',
+    'iptv.noSignal': 'Señal no disponible',
+    'iptv.nextChannel': 'Siguiente Canal',
+    'iptv.retry': 'Reintentar',
+    'iptv.live': 'En Vivo',
+    'iptv.channel': 'Canal',
+    'iptv.of': 'de',
+    'iptv.channels': 'Canales',
+    'iptv.ok': 'OK',
+    'iptv.all': 'Todos',
+    'iptv.onlyOK': 'Solo OK',
+    'iptv.searchChannel': 'Buscar canal...',
+    'iptv.noChannels': 'No se encontraron canales',
+    'iptv.mute': 'Mutear',
+    'iptv.unmute': 'Activar sonido',
+    'iptv.pause': 'Pausar',
+    'iptv.resume': 'Reanudar',
+    'iptv.fullscreen': 'Pantalla completa',
+    'iptv.verified': 'Verificado',
+    'iptv.noSignalShort': 'Sin señal',
+    'iptv.offline': 'Offline',
+    'iptv.geoBlocked': 'Geo-bloqueado',
+    'iptv.not24_7': 'No 24/7',
+
+    // ---- OFFLINE ----
+    'offline.title': 'Sin conexión',
+    'offline.desc': 'No hay conexión a internet. Verifica tu red y vuelve a intentar.',
+    'offline.retry': 'Reintentar',
+    'offline.hint': 'El contenido previamente visitado puede estar disponible en caché.',
+
+    // ---- MISC ----
+    'misc.movie': 'Película',
+    'misc.serie': 'Serie',
+    'misc.peli': 'Peli',
+    'min': 'min',
+  },
+
+  en: {
+    // ---- NAV ----
+    'nav.home': 'Home',
+    'nav.movies': 'Movies',
+    'nav.series': 'Series',
+    'nav.iptv': 'IPTV',
+    'nav.search': 'Search',
+    'nav.history': 'History',
+    'nav.favorites': 'My List',
+    'nav.settings': 'Settings',
+    'nav.searchPlaceholder': 'Search...  /',
+    'nav.personalAccount': 'Personal account',
+    'nav.logout': 'Sign Out',
+    'nav.chromecast': 'Chromecast',
+    'nav.chromecastLoading': 'Loading Chromecast...',
+    'nav.chromecastUnavailable': 'Chromecast unavailable',
+    'nav.connectedTo': 'Connected to',
+
+    // ---- LOGIN ----
+    'login.subtitle': 'Sign in to your streaming platform',
+    'login.google': 'Continue with Google',
+    'login.orAccount': 'or sign in with your account',
+    'login.username': 'Username',
+    'login.usernamePlaceholder': 'Enter your username',
+    'login.password': 'Password',
+    'login.passwordPlaceholder': 'Enter your password',
+    'login.submit': 'Sign In',
+    'login.loggingIn': 'Signing in...',
+    'login.fillAll': 'Fill in all fields',
+    'login.invalidCredentials': 'Invalid username or password',
+    'login.googleFailed': 'Could not sign in with Google',
+    'login.availableUsers': 'Available users:',
+    'login.defaultPassword': 'Default password:',
+
+    // ---- VIDEO PLAYER ----
+    'player.loadingServer': 'Loading server...',
+    'player.serverUnavailable': 'This server is unavailable',
+    'player.tryAnother': 'Try another server from the list',
+    'player.selectServer': 'Select a server to play',
+    'player.servers': 'Servers',
+    'player.loading': 'Loading...',
+    'player.previous': 'Previous',
+    'player.next': 'Next',
+    'player.disconnect': 'Disconnect',
+    'player.understood': 'Got it',
+    'player.tryIPTV': 'Try IPTV',
+    'player.playingOnTV': 'Playing on TV',
+    'player.stopAndWatchPC': 'Stop and watch on PC',
+    'player.sendToChromecast': 'Send to Chromecast',
+    'player.connectedTo': 'Connected to',
+    'player.disconnectFrom': 'Disconnect from',
+    'player.notCompatible': 'Not compatible with',
+    'player.castErrorTitle': 'Error sending content',
+    'player.castErrorMsg': 'There was an error sending the content. Try another server.',
+    'player.embedNotSupported': 'Movie servers use a web player that doesn\'t work on Chromecast.',
+    'player.configReceiver': 'Configure Receiver',
+    'player.subtitulado': 'Subtitled',
+    'player.latino': 'Spanish',
+
+    // ---- MOVIE DETAIL ----
+    'detail.serie': 'SERIES',
+    'detail.movie': 'MOVIE',
+    'detail.watchMovie': 'Watch Movie',
+    'detail.watchEpisode': 'Watch',
+    'detail.inMyList': 'In My List',
+    'detail.myList': 'My List',
+    'detail.trailer': 'Trailer',
+    'detail.cast': 'Cast',
+    'detail.seasons': 'Seasons',
+    'detail.ep': 'ep',
+
+    // ---- HERO BANNER ----
+    'banner.movie': 'Movie',
+    'banner.serie': 'Series',
+    'banner.watchNow': 'Watch Now',
+    'banner.moreInfo': 'More Info',
+
+    // ---- HOME ----
+    'home.continueWatching': '▶️ Continue Watching',
+    'home.trending': '🔥 Trending',
+    'home.popularMovies': '🎬 Popular Movies',
+    'home.popularSeries': '📺 Popular Series',
+    'home.topRated': '⭐ Top Rated',
+    'home.nowPlaying': '🆕 Now Playing',
+    'home.upcoming': '🚀 Coming Soon',
+    'home.topRatedSeries': '🎭 Top Rated Series',
+    'home.airingToday': '📺 Airing Today',
+    'home.action': '🎬 Action',
+    'home.comedy': '😂 Comedy',
+    'home.horror': '😱 Horror',
+    'home.scifi': '🔬 Sci-Fi',
+    'home.animation': '🦸 Animation',
+    'home.drama': '💎 Drama',
+
+    // ---- MOVIES ----
+    'movies.title': 'Movies',
+    'movies.trending': '🎬 Trending Movies',
+    'movies.popular': '🔥 Popular',
+    'movies.topRated': '⭐ Top Rated',
+    'movies.nowPlaying': '🆕 Now Playing',
+    'movies.upcoming': '🚀 Coming Soon',
+    'movies.action': '💥 Action',
+    'movies.comedy': '😂 Comedy',
+    'movies.horror': '😱 Horror',
+    'movies.scifi': '🔬 Sci-Fi',
+    'movies.animation': '🦸 Animation',
+    'movies.drama': '💎 Drama',
+    'movies.romance': '💕 Romance',
+    'movies.thriller': '🕵️ Thriller',
+    'movies.mystery': '🔍 Mystery',
+
+    // ---- SERIES ----
+    'series.title': 'Series',
+    'series.trending': '📺 Trending Series',
+    'series.popular': '🔥 Popular Series',
+    'series.topRated': '⭐ Top Rated',
+    'series.airingToday': '📡 Airing Today',
+    'series.onTheAir': '🆕 On the Air',
+    'series.drama': '🎭 Drama',
+    'series.comedy': '😂 Comedy',
+    'series.mystery': '🔍 Mystery',
+    'series.scifi': '🧪 Sci-Fi',
+    'series.animation': '📺 Animation',
+    'series.documentary': '📸 Documentary',
+    'series.horror': '🧟 Horror',
+
+    // ---- SEARCH ----
+    'search.placeholder': 'Search movies, series, actors...',
+    'search.all': 'All',
+    'search.movies': 'Movies',
+    'search.series': 'Series',
+    'search.noResults': 'No results for "{query}"',
+    'search.tryAnother': 'Try a different search',
+    'search.searchFavorite': 'Search for your favorite movie or series',
+    'search.exploreGenres': 'Explore by genre',
+    'search.actionMovies': '🎬 Action Movies',
+    'search.comedies': '😂 Comedies',
+    'search.dramaSeries': '📺 Drama Series',
+    'search.horror': '😱 Horror',
+    'search.movieBadge': 'Movie',
+    'search.serieBadge': 'Series',
+
+    // ---- HISTORY ----
+    'history.title': 'History',
+    'history.clearAll': 'Clear all',
+    'history.clearConfirm': 'Clear all watch history?',
+    'history.movie': 'Movie',
+    'history.serie': 'Series',
+    'history.momentAgo': 'Just now',
+    'history.hoursAgo': '{n}h ago',
+    'history.yesterday': 'Yesterday',
+    'history.daysAgo': '{n} days ago',
+    'history.empty': 'No history',
+    'history.emptyDesc': 'Movies and series you watch will appear here',
+
+    // ---- FAVORITES ----
+    'favorites.title': 'My List',
+    'favorites.empty': 'Your list is empty',
+    'favorites.emptyDesc': 'Add movies and series by tapping the heart',
+
+    // ---- SETTINGS ----
+    'settings.title': 'Settings',
+    'settings.version': 'Version 0.2.0',
+    'settings.about': 'XuperStream is your personal streaming platform. Enjoy movies, series, and live TV channels all in one place.',
+    'settings.servers': 'Servers',
+    'settings.serversDesc': 'Automatically loaded when playing content.',
+    'settings.active': 'Active',
+    'settings.backup': 'Backup',
+    'settings.chromecast': 'Chromecast',
+    'settings.chromecastDesc': 'Send movies, series, and IPTV channels to your TV.',
+    'settings.chromecastIPTV': 'IPTV works with Chromecast without additional configuration.',
+    'settings.iptv': 'IPTV',
+    'settings.iptvDesc': 'Verified live channels from Colombia and around the world.',
+    'settings.iptvSources': 'Sources: iptv-org, TDTChannels',
+    'settings.iptvOnlyWorking': 'Only working channels are shown.',
+    'settings.pwa': 'Installable App (PWA)',
+    'settings.pwaDesc': 'Installable as an app on Android, iOS, and Desktop.',
+    'settings.pwaOffline': 'Works offline with cached content.',
+    'settings.pwaCompat': 'Compatible with Chrome, Safari, Edge, and Firefox.',
+    'settings.data': 'Data',
+    'settings.dataDesc': 'Metadata provided by TMDB (The Movie Database).',
+    'settings.storage': 'Storage',
+    'settings.storageDesc': 'Your data is saved locally in your browser.',
+    'settings.clearFavorites': 'Clear favorites',
+    'settings.clearHistory': 'Clear history',
+    'settings.clearAllData': 'Clear all data',
+    'settings.clearFavoritesConfirm': 'Clear all favorites?',
+    'settings.clearHistoryConfirm': 'Clear all history?',
+    'settings.clearAllConfirm': 'Clear ALL local data? (favorites, history, session)',
+    'settings.language': 'Language',
+
+    // ---- IPTV ----
+    'iptv.loading': 'Loading channels...',
+    'iptv.loadingFrom': 'Getting list from iptv-org',
+    'iptv.verifying': 'Verifying channels...',
+    'iptv.checking': 'Checking {checked} of {total} channels',
+    'iptv.onlyWorking': 'Only working channels will be shown',
+    'iptv.loadingChannel': 'Loading channel...',
+    'iptv.noSignal': 'No signal available',
+    'iptv.nextChannel': 'Next Channel',
+    'iptv.retry': 'Retry',
+    'iptv.live': 'LIVE',
+    'iptv.channel': 'Channel',
+    'iptv.of': 'of',
+    'iptv.channels': 'Channels',
+    'iptv.ok': 'OK',
+    'iptv.all': 'All',
+    'iptv.onlyOK': 'Only OK',
+    'iptv.searchChannel': 'Search channel...',
+    'iptv.noChannels': 'No channels found',
+    'iptv.mute': 'Mute',
+    'iptv.unmute': 'Unmute',
+    'iptv.pause': 'Pause',
+    'iptv.resume': 'Resume',
+    'iptv.fullscreen': 'Fullscreen',
+    'iptv.verified': 'Verified',
+    'iptv.noSignalShort': 'No signal',
+    'iptv.offline': 'Offline',
+    'iptv.geoBlocked': 'Geo-blocked',
+    'iptv.not24_7': 'Not 24/7',
+
+    // ---- OFFLINE ----
+    'offline.title': 'No Connection',
+    'offline.desc': 'No internet connection. Check your network and try again.',
+    'offline.retry': 'Retry',
+    'offline.hint': 'Previously visited content may be available in cache.',
+
+    // ---- MISC ----
+    'misc.movie': 'Movie',
+    'misc.serie': 'Series',
+    'misc.peli': 'Movie',
+    'min': 'min',
+  },
+
+  pt: {
+    // ---- NAV ----
+    'nav.home': 'Início',
+    'nav.movies': 'Filmes',
+    'nav.series': 'Séries',
+    'nav.iptv': 'IPTV',
+    'nav.search': 'Buscar',
+    'nav.history': 'Histórico',
+    'nav.favorites': 'Minha Lista',
+    'nav.settings': 'Configurações',
+    'nav.searchPlaceholder': 'Buscar...  /',
+    'nav.personalAccount': 'Conta pessoal',
+    'nav.logout': 'Sair',
+    'nav.chromecast': 'Chromecast',
+    'nav.chromecastLoading': 'Carregando Chromecast...',
+    'nav.chromecastUnavailable': 'Chromecast indisponível',
+    'nav.connectedTo': 'Conectado a',
+
+    // ---- LOGIN ----
+    'login.subtitle': 'Acesse sua plataforma de streaming',
+    'login.google': 'Continuar com Google',
+    'login.orAccount': 'ou entre com sua conta',
+    'login.username': 'Usuário',
+    'login.usernamePlaceholder': 'Digite seu usuário',
+    'login.password': 'Senha',
+    'login.passwordPlaceholder': 'Digite sua senha',
+    'login.submit': 'Entrar',
+    'login.loggingIn': 'Entrando...',
+    'login.fillAll': 'Preencha todos os campos',
+    'login.invalidCredentials': 'Usuário ou senha incorretos',
+    'login.googleFailed': 'Não foi possível entrar com Google',
+    'login.availableUsers': 'Usuários disponíveis:',
+    'login.defaultPassword': 'Senha padrão:',
+
+    // ---- VIDEO PLAYER ----
+    'player.loadingServer': 'Carregando servidor...',
+    'player.serverUnavailable': 'Este servidor não está disponível',
+    'player.tryAnother': 'Tente outro servidor da lista',
+    'player.selectServer': 'Selecione um servidor para reproduzir',
+    'player.servers': 'Servidores',
+    'player.loading': 'Carregando...',
+    'player.previous': 'Anterior',
+    'player.next': 'Próximo',
+    'player.disconnect': 'Desconectar',
+    'player.understood': 'Entendi',
+    'player.tryIPTV': 'Tentar IPTV',
+    'player.playingOnTV': 'Reproduzindo na TV',
+    'player.stopAndWatchPC': 'Parar e assistir no PC',
+    'player.sendToChromecast': 'Enviar para Chromecast',
+    'player.connectedTo': 'Conectado a',
+    'player.disconnectFrom': 'Desconectar de',
+    'player.notCompatible': 'Incompatível com',
+    'player.castErrorTitle': 'Erro ao enviar conteúdo',
+    'player.castErrorMsg': 'Ocorreu um erro ao enviar o conteúdo. Tente outro servidor.',
+    'player.embedNotSupported': 'Os servidores de filmes usam um player web que não funciona no Chromecast.',
+    'player.configReceiver': 'Configurar Receiver',
+    'player.subtitulado': 'Legendado',
+    'player.latino': 'Espanhol',
+
+    // ---- MOVIE DETAIL ----
+    'detail.serie': 'SÉRIE',
+    'detail.movie': 'FILME',
+    'detail.watchMovie': 'Assistir Filme',
+    'detail.watchEpisode': 'Assistir',
+    'detail.inMyList': 'Na Minha Lista',
+    'detail.myList': 'Minha Lista',
+    'detail.trailer': 'Trailer',
+    'detail.cast': 'Elenco',
+    'detail.seasons': 'Temporadas',
+    'detail.ep': 'ep',
+
+    // ---- HERO BANNER ----
+    'banner.movie': 'Filme',
+    'banner.serie': 'Série',
+    'banner.watchNow': 'Assistir Agora',
+    'banner.moreInfo': 'Mais Info',
+
+    // ---- HOME ----
+    'home.continueWatching': '▶️ Continuar Assistindo',
+    'home.trending': '🔥 Em Alta',
+    'home.popularMovies': '🎬 Filmes Populares',
+    'home.popularSeries': '📺 Séries Populares',
+    'home.topRated': '⭐ Mais Bem Avaliadas',
+    'home.nowPlaying': '🆕 Em Cartaz',
+    'home.upcoming': '🚀 Em Breve',
+    'home.topRatedSeries': '🎭 Séries Mais Bem Avaliadas',
+    'home.airingToday': '📺 Estrelando Hoje',
+    'home.action': '🎬 Ação',
+    'home.comedy': '😂 Comédia',
+    'home.horror': '😱 Terror',
+    'home.scifi': '🔬 Ficção Científica',
+    'home.animation': '🦸 Animação',
+    'home.drama': '💎 Drama',
+
+    // ---- MOVIES ----
+    'movies.title': 'Filmes',
+    'movies.trending': '🎬 Filmes em Alta',
+    'movies.popular': '🔥 Populares',
+    'movies.topRated': '⭐ Mais Bem Avaliados',
+    'movies.nowPlaying': '🆕 Em Cartaz',
+    'movies.upcoming': '🚀 Em Breve',
+    'movies.action': '💥 Ação',
+    'movies.comedy': '😂 Comédia',
+    'movies.horror': '😱 Terror',
+    'movies.scifi': '🔬 Ficção Científica',
+    'movies.animation': '🦸 Animação',
+    'movies.drama': '💎 Drama',
+    'movies.romance': '💕 Romance',
+    'movies.thriller': '🕵️ Suspense',
+    'movies.mystery': '🔍 Mistério',
+
+    // ---- SERIES ----
+    'series.title': 'Séries',
+    'series.trending': '📺 Séries em Alta',
+    'series.popular': '🔥 Séries Populares',
+    'series.topRated': '⭐ Mais Bem Avaliadas',
+    'series.airingToday': '📡 Estrelando Hoje',
+    'series.onTheAir': '🆕 Séries em Exibição',
+    'series.drama': '🎭 Drama',
+    'series.comedy': '😂 Comédia',
+    'series.mystery': '🔍 Mistério',
+    'series.scifi': '🧪 Ficção Científica',
+    'series.animation': '📺 Animação',
+    'series.documentary': '📸 Documentários',
+    'series.horror': '🧟 Terror',
+
+    // ---- SEARCH ----
+    'search.placeholder': 'Buscar filmes, séries, atores...',
+    'search.all': 'Tudo',
+    'search.movies': 'Filmes',
+    'search.series': 'Séries',
+    'search.noResults': 'Sem resultados para "{query}"',
+    'search.tryAnother': 'Tente outra busca',
+    'search.searchFavorite': 'Busque seu filme ou série favorito',
+    'search.exploreGenres': 'Explorar por gênero',
+    'search.actionMovies': '🎬 Filmes de Ação',
+    'search.comedies': '😂 Comédias',
+    'search.dramaSeries': '📺 Séries de Drama',
+    'search.horror': '😱 Terror',
+    'search.movieBadge': 'Filme',
+    'search.serieBadge': 'Série',
+
+    // ---- HISTORY ----
+    'history.title': 'Histórico',
+    'history.clearAll': 'Limpar tudo',
+    'history.clearConfirm': 'Limpar todo o histórico de reprodução?',
+    'history.movie': 'Filme',
+    'history.serie': 'Série',
+    'history.momentAgo': 'Agora mesmo',
+    'history.hoursAgo': '{n}h atrás',
+    'history.yesterday': 'Ontem',
+    'history.daysAgo': '{n} dias atrás',
+    'history.empty': 'Sem histórico',
+    'history.emptyDesc': 'Os filmes e séries que você assistir aparecerão aqui',
+
+    // ---- FAVORITES ----
+    'favorites.title': 'Minha Lista',
+    'favorites.empty': 'Sua lista está vazia',
+    'favorites.emptyDesc': 'Adicione filmes e séries tocando no coração',
+
+    // ---- SETTINGS ----
+    'settings.title': 'Configurações',
+    'settings.version': 'Versão 0.2.0',
+    'settings.about': 'XuperStream é sua plataforma pessoal de streaming. Aproveite filmes, séries e canais ao vivo tudo em um só lugar.',
+    'settings.servers': 'Servidores',
+    'settings.serversDesc': 'Carregados automaticamente ao reproduzir conteúdo.',
+    'settings.active': 'Ativo',
+    'settings.backup': 'Backup',
+    'settings.chromecast': 'Chromecast',
+    'settings.chromecastDesc': 'Envie filmes, séries e canais IPTV para sua TV.',
+    'settings.chromecastIPTV': 'IPTV funciona com Chromecast sem configuração adicional.',
+    'settings.iptv': 'IPTV',
+    'settings.iptvDesc': 'Canais ao vivo verificados da Colômbia e do mundo.',
+    'settings.iptvSources': 'Fontes: iptv-org, TDTChannels',
+    'settings.iptvOnlyWorking': 'Apenas canais funcionais são exibidos.',
+    'settings.pwa': 'App Instalável (PWA)',
+    'settings.pwaDesc': 'Instalável como app no Android, iOS e Desktop.',
+    'settings.pwaOffline': 'Funciona offline com conteúdo em cache.',
+    'settings.pwaCompat': 'Compatível com Chrome, Safari, Edge e Firefox.',
+    'settings.data': 'Dados',
+    'settings.dataDesc': 'Metadados fornecidos pelo TMDB (The Movie Database).',
+    'settings.storage': 'Armazenamento',
+    'settings.storageDesc': 'Seus dados são salvos localmente no navegador.',
+    'settings.clearFavorites': 'Limpar favoritos',
+    'settings.clearHistory': 'Limpar histórico',
+    'settings.clearAllData': 'Limpar todos os dados',
+    'settings.clearFavoritesConfirm': 'Limpar toda a lista de favoritos?',
+    'settings.clearHistoryConfirm': 'Limpar todo o histórico?',
+    'settings.clearAllConfirm': 'Limpar TODOS os dados locais? (favoritos, histórico, sessão)',
+    'settings.language': 'Idioma',
+
+    // ---- IPTV ----
+    'iptv.loading': 'Carregando canais...',
+    'iptv.loadingFrom': 'Obtendo lista do iptv-org',
+    'iptv.verifying': 'Verificando canais...',
+    'iptv.checking': 'Verificando {checked} de {total} canais',
+    'iptv.onlyWorking': 'Apenas canais funcionais serão exibidos',
+    'iptv.loadingChannel': 'Carregando canal...',
+    'iptv.noSignal': 'Sinal indisponível',
+    'iptv.nextChannel': 'Próximo Canal',
+    'iptv.retry': 'Tentar Novamente',
+    'iptv.live': 'AO VIVO',
+    'iptv.channel': 'Canal',
+    'iptv.of': 'de',
+    'iptv.channels': 'Canais',
+    'iptv.ok': 'OK',
+    'iptv.all': 'Todos',
+    'iptv.onlyOK': 'Só OK',
+    'iptv.searchChannel': 'Buscar canal...',
+    'iptv.noChannels': 'Nenhum canal encontrado',
+    'iptv.mute': 'Mutar',
+    'iptv.unmute': 'Ativar som',
+    'iptv.pause': 'Pausar',
+    'iptv.resume': 'Retomar',
+    'iptv.fullscreen': 'Tela cheia',
+    'iptv.verified': 'Verificado',
+    'iptv.noSignalShort': 'Sem sinal',
+    'iptv.offline': 'Offline',
+    'iptv.geoBlocked': 'Bloqueado por região',
+    'iptv.not24_7': 'Não 24/7',
+
+    // ---- OFFLINE ----
+    'offline.title': 'Sem Conexão',
+    'offline.desc': 'Sem conexão com a internet. Verifique sua rede e tente novamente.',
+    'offline.retry': 'Tentar Novamente',
+    'offline.hint': 'O conteúdo visitado anteriormente pode estar disponível em cache.',
+
+    // ---- MISC ----
+    'misc.movie': 'Filme',
+    'misc.serie': 'Série',
+    'misc.peli': 'Filme',
+    'min': 'min',
+  },
+};
+
+// ==================== STORE ====================
+
+interface I18nState {
+  locale: AppLocale;
+  setLocale: (locale: AppLocale) => void;
+}
+
+export const useI18nStore = create<I18nState>((set) => ({
+  locale: (() => {
+    if (typeof window === 'undefined') return 'es';
+    try {
+      const stored = localStorage.getItem('xs-locale');
+      if (stored && stored in translations) return stored as AppLocale;
+      // Auto-detect from browser
+      const browserLang = navigator.language.split('-')[0];
+      if (browserLang === 'pt') return 'pt';
+      if (browserLang === 'en') return 'en';
+      return 'es';
+    } catch {
+      return 'es';
+    }
+  })(),
+  setLocale: (locale) => {
+    try { localStorage.setItem('xs-locale', locale); } catch {}
+    set({ locale });
+  },
+}));
+
+// ==================== HOOK ====================
+
+export function useT() {
+  const locale = useI18nStore(s => s.locale);
+  const dict = translations[locale];
+
+  const t = useCallback((key: string, vars?: Record<string, string | number>): string => {
+    let text = dict[key] || translations.es[key] || key;
+    if (vars) {
+      Object.entries(vars).forEach(([k, v]) => {
+        text = text.replace(`{${k}}`, String(v));
+      });
+    }
+    return text;
+  }, [dict]);
+
+  return { t, locale };
+}

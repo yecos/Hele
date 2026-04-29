@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useT } from '@/lib/i18n';
 import { usePlayerStore, useFavoritesStore, useHistoryStore } from '@/lib/store';
 import type { MovieItem } from '@/lib/tmdb';
 import { HeroBanner } from '@/components/streaming/HeroBanner';
@@ -14,6 +15,7 @@ interface CategoryData {
 }
 
 export function HomeView() {
+  const { t } = useT();
   const playMovie = usePlayerStore(s => s.playMovie);
   const { favorites } = useFavoritesStore();
   const { history } = useHistoryStore();
@@ -26,20 +28,20 @@ export function HomeView() {
     const loadData = async () => {
       try {
         const categoryLoaders: CategoryData[] = [
-          { title: '🔥 Tendencias', loader: () => fetch('/api/tmdb?endpoint=/trending/all/week').then(r => r.json()).then(d => (d.results || []).filter((i: any) => i.media_type === 'movie' || i.media_type === 'tv').map(mapItem)) },
-          { title: '🎬 Películas Populares', loader: () => fetch('/api/tmdb?endpoint=/movie/popular').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '📺 Series Populares', loader: () => fetch('/api/tmdb?endpoint=/tv/popular').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '⭐ Mejor Valoradas', loader: () => fetch('/api/tmdb?endpoint=/movie/top_rated').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🆕 En Cartelera', loader: () => fetch('/api/tmdb?endpoint=/movie/now_playing&region=CO').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '🚀 Próximamente', loader: () => fetch('/api/tmdb?endpoint=/movie/upcoming&region=CO').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '🎭 Series Mejor Valoradas', loader: () => fetch('/api/tmdb?endpoint=/tv/top_rated').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '📺 Estrenando Hoy', loader: () => fetch('/api/tmdb?endpoint=/tv/airing_today').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '🎬 Acción', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=28').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '😂 Comedia', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=35').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '😱 Terror', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=27').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🔬 Ciencia Ficción', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=878').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🦸 Animación', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=16').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '💎 Drama', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=18&sort_by=vote_average.desc&vote_count.gte=500').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🔥 ' + t('home.trending'), loader: () => fetch('/api/tmdb?endpoint=/trending/all/week').then(r => r.json()).then(d => (d.results || []).filter((i: any) => i.media_type === 'movie' || i.media_type === 'tv').map(mapItem)) },
+          { title: '🎬 ' + t('home.popularMovies'), loader: () => fetch('/api/tmdb?endpoint=/movie/popular').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '📺 ' + t('home.popularSeries'), loader: () => fetch('/api/tmdb?endpoint=/tv/popular').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '⭐ ' + t('home.topRated'), loader: () => fetch('/api/tmdb?endpoint=/movie/top_rated').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🆕 ' + t('home.nowPlaying'), loader: () => fetch('/api/tmdb?endpoint=/movie/now_playing&region=CO').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '🚀 ' + t('home.upcoming'), loader: () => fetch('/api/tmdb?endpoint=/movie/upcoming&region=CO').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '🎭 ' + t('home.topRatedSeries'), loader: () => fetch('/api/tmdb?endpoint=/tv/top_rated').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '📺 ' + t('home.airingToday'), loader: () => fetch('/api/tmdb?endpoint=/tv/airing_today').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '🎬 ' + t('home.action'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=28').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '😂 ' + t('home.comedy'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=35').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '😱 ' + t('home.horror'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=27').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🔬 ' + t('home.scifi'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=878').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🦸 ' + t('home.animation'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=16').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '💎 ' + t('home.drama'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=18&sort_by=vote_average.desc&vote_count.gte=500').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
         ];
 
         const results = await Promise.allSettled(categoryLoaders.map(c => c.loader()));
@@ -114,7 +116,7 @@ export function HomeView() {
       {history.length > 0 && (
         <div className="max-w-[1400px] mx-auto px-4 pt-4 pb-2">
           <CategoryRow
-            title="▶️ Continuar Viendo"
+            title={'▶️ ' + t('home.continueWatching')}
             movies={history.slice(0, 10).map(h => ({
               id: h.movieId,
               tmdbId: parseInt(h.movieId) || 0,

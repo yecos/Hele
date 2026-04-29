@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useViewStore, useAuthStore, useCastStore } from '@/lib/store';
 import { useChromecast } from '@/hooks/use-chromecast';
+import { useT } from '@/lib/i18n';
 import { Search, Heart, Home, Settings, Menu, X, Film, Tv, Radio, LogOut, User, Cast, Clock } from 'lucide-react';
 
 export function Navbar() {
@@ -14,6 +15,7 @@ export function Navbar() {
   const [searchInput, setSearchInput] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const { t } = useT();
 
   // Close user menu on click outside
   useEffect(() => {
@@ -53,14 +55,14 @@ export function Navbar() {
   };
 
   const navItems = [
-    { id: 'home' as const, label: 'Inicio', icon: Home },
-    { id: 'movies' as const, label: 'Películas', icon: Film },
-    { id: 'series' as const, label: 'Series', icon: Tv },
-    { id: 'iptv' as const, label: 'IPTV', icon: Radio },
-    { id: 'search' as const, label: 'Buscar', icon: Search },
-    { id: 'history' as const, label: 'Historial', icon: Clock },
-    { id: 'favorites' as const, label: 'Mi Lista', icon: Heart },
-    { id: 'settings' as const, label: 'Ajustes', icon: Settings },
+    { id: 'home' as const, label: t('nav.home'), icon: Home },
+    { id: 'movies' as const, label: t('nav.movies'), icon: Film },
+    { id: 'series' as const, label: t('nav.series'), icon: Tv },
+    { id: 'iptv' as const, label: t('nav.iptv'), icon: Radio },
+    { id: 'search' as const, label: t('nav.search'), icon: Search },
+    { id: 'history' as const, label: t('nav.history'), icon: Clock },
+    { id: 'favorites' as const, label: t('nav.favorites'), icon: Heart },
+    { id: 'settings' as const, label: t('nav.settings'), icon: Settings },
   ];
 
   return (
@@ -113,7 +115,7 @@ export function Navbar() {
                   ? 'bg-white/5 text-gray-500'
                   : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white'
               }`}
-              title={cast.statusMessage || (isActivelyCasting ? `Conectado a ${cast.device?.friendlyName || 'Chromecast'}` : 'Chromecast')}
+              title={cast.statusMessage || (isActivelyCasting ? `${t('nav.connectedTo')} ${cast.device?.friendlyName || 'Chromecast'}` : t('nav.chromecast'))}
             >
               <Cast size={18} />
               {castStatus === 'connecting' && (
@@ -128,7 +130,7 @@ export function Navbar() {
               <Search size={16} className="text-gray-400 mr-2 shrink-0" />
               <input
                 type="text"
-                placeholder="Buscar...  /"
+                placeholder={t('nav.searchPlaceholder')}
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
                 className="bg-transparent text-white text-sm outline-none w-full placeholder:text-gray-500"
@@ -152,21 +154,21 @@ export function Navbar() {
                 <div className="absolute right-0 top-12 bg-gray-900 border border-white/10 rounded-xl shadow-2xl p-2 w-48 z-50">
                   <div className="px-3 py-2 border-b border-white/5 mb-1">
                     <p className="text-white text-sm font-medium">{username}</p>
-                    <p className="text-gray-500 text-xs">Cuenta personal</p>
+                    <p className="text-gray-500 text-xs">{t('nav.personalAccount')}</p>
                   </div>
                   <button
                     onClick={() => { setView('settings'); setShowUserMenu(false); }}
                     className="w-full px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2 transition-all"
                   >
                     <Settings size={14} />
-                    Ajustes
+                    {t('nav.settings')}
                   </button>
                   <button
                     onClick={() => { logout(); setShowUserMenu(false); }}
                     className="w-full px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2 transition-all"
                   >
                     <LogOut size={14} />
-                    Cerrar Sesión
+                    {t('nav.logout')}
                   </button>
                 </div>
               )}
@@ -185,7 +187,7 @@ export function Navbar() {
             <Search size={16} className="text-gray-400 mr-2 shrink-0" />
             <input
               type="text"
-              placeholder="Buscar...  /"
+              placeholder={t('nav.searchPlaceholder')}
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
               className="bg-transparent text-white text-sm outline-none w-full placeholder:text-gray-500"
@@ -229,19 +231,19 @@ export function Navbar() {
               >
                 <Cast size={18} />
                 {cast.status === 'loading'
-                  ? 'Cargando Chromecast...'
+                  ? t('nav.chromecastLoading')
                   : isActivelyCasting
                   ? `Casting: ${cast.device?.friendlyName}`
                   : cast.isAvailable
-                  ? 'Chromecast'
-                  : 'Chromecast no disponible'}
+                  ? t('nav.chromecast')
+                  : t('nav.chromecastUnavailable')}
               </button>
               <button
                 onClick={() => { logout(); setMobileMenuOpen(false); }}
                 className="w-full px-4 py-3 rounded-lg text-left text-sm font-medium text-red-400 hover:bg-red-500/10 flex items-center gap-3 transition-all"
               >
                 <LogOut size={18} />
-                Cerrar Sesión
+                {t('nav.logout')}
               </button>
             </div>
           </div>

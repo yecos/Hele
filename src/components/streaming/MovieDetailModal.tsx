@@ -5,8 +5,10 @@ import { usePlayerStore, useFavoritesStore } from '@/lib/store';
 import type { TMDBMovieDetail, TMDBSeasonDetail } from '@/lib/tmdb';
 import { getPosterUrl, getBackdropUrl } from '@/lib/tmdb';
 import { Star, Heart, Play, Calendar, Clock, X, ChevronLeft, ChevronRight, Tv, Film } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 export function MovieDetailModal() {
+  const { t } = useT();
   const {
     isPlaying, currentMovie, currentDetail,
     setDetail, closePlayer, playMovie, playEpisode,
@@ -103,11 +105,11 @@ export function MovieDetailModal() {
           <div className="flex items-center gap-2 flex-wrap">
             {isTV ? (
               <span className="flex items-center gap-1 bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs font-bold">
-                <Tv size={12} /> SERIE
+                <Tv size={12} /> {t('detail.serie')}
               </span>
             ) : (
               <span className="flex items-center gap-1 bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded text-xs font-bold">
-                <Film size={12} /> PELÍCULA
+                <Film size={12} /> {t('detail.movie')}
               </span>
             )}
             {detail?.runtime && (
@@ -145,7 +147,7 @@ export function MovieDetailModal() {
               className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-semibold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-red-600/20"
             >
               <Play size={18} fill="white" />
-              {isTV ? `Ver T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}` : 'Ver Película'}
+              {isTV ? `Ver T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}` : t('detail.watchMovie')}
             </button>
 
             <button
@@ -155,7 +157,7 @@ export function MovieDetailModal() {
               }`}
             >
               <Heart size={18} className={favorite ? 'fill-red-400' : ''} />
-              {favorite ? 'En mi lista' : 'Mi lista'}
+              {favorite ? t('detail.inMyList') : t('detail.myList')}
             </button>
           </div>
 
@@ -180,7 +182,7 @@ export function MovieDetailModal() {
           {/* Trailer */}
           {trailer && (
             <div className="pt-2">
-              <h3 className="text-white font-semibold text-sm mb-2">Trailer</h3>
+              <h3 className="text-white font-semibold text-sm mb-2">{t('detail.trailer')}</h3>
               <div className="relative w-full max-w-xl aspect-video rounded-xl overflow-hidden bg-gray-900">
                 <iframe
                   src={`https://www.youtube.com/embed/${trailer.key}`}
@@ -196,7 +198,7 @@ export function MovieDetailModal() {
           {/* Cast */}
           {detail?.credits?.cast && detail.credits.cast.length > 0 && (
             <div className="pt-4">
-              <h3 className="text-white font-semibold text-sm mb-3">Reparto</h3>
+              <h3 className="text-white font-semibold text-sm mb-3">{t('detail.cast')}</h3>
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
                 {detail.credits.cast.slice(0, 15).map(person => (
                   <div key={person.id} className="flex-shrink-0 w-20 text-center">
@@ -219,7 +221,7 @@ export function MovieDetailModal() {
         {/* Seasons (TV shows) */}
         {isTV && detail?.seasons && (
           <div className="mt-10">
-            <h2 className="text-xl font-bold text-white mb-4">Temporadas</h2>
+            <h2 className="text-xl font-bold text-white mb-4">{t('detail.seasons')}</h2>
 
             {/* Season tabs */}
             <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
@@ -237,7 +239,7 @@ export function MovieDetailModal() {
                     }`}
                   >
                     T{String(s.season_number).padStart(2, '0')}
-                    <span className="ml-1 text-xs opacity-60">({s.episode_count} ep)</span>
+                    <span className="ml-1 text-xs opacity-60">({s.episode_count} {t('detail.ep')})</span>
                   </button>
                 ))}
             </div>

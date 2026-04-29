@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { useAuthStore } from '@/lib/store';
+import { useT } from '@/lib/i18n';
 import { Eye, EyeOff, LogIn, Loader2 } from 'lucide-react';
 
 export function LoginView() {
   const { login, loginWithGoogle, isLoading } = useAuthStore();
+  const { t } = useT();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -16,13 +18,13 @@ export function LoginView() {
     setError('');
 
     if (!username.trim() || !password.trim()) {
-      setError('Completa todos los campos');
+      setError(t('login.fillAll'));
       return;
     }
 
     const success = await login(username.trim(), password);
     if (!success) {
-      setError('Usuario o contraseña incorrectos');
+      setError(t('login.invalidCredentials'));
     }
   };
 
@@ -30,7 +32,7 @@ export function LoginView() {
     setError('');
     const success = await loginWithGoogle();
     if (!success) {
-      setError('No se pudo iniciar sesión con Google');
+      setError(t('login.googleFailed'));
     }
   };
 
@@ -51,7 +53,7 @@ export function LoginView() {
           <h1 className="text-3xl font-bold text-white">
             Xuper<span className="text-red-500">Stream</span>
           </h1>
-          <p className="text-gray-500 text-sm mt-2">Ingresa a tu plataforma de streaming</p>
+          <p className="text-gray-500 text-sm mt-2">{t('login.subtitle')}</p>
         </div>
 
         {/* Login form */}
@@ -76,7 +78,7 @@ export function LoginView() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            Continuar con Google
+            {t('login.google')}
           </button>
 
           {/* Divider */}
@@ -85,18 +87,18 @@ export function LoginView() {
               <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="px-3 bg-transparent text-gray-500">o inicia sesión con tu cuenta</span>
+              <span className="px-3 bg-transparent text-gray-500">{t('login.orAccount')}</span>
             </div>
           </div>
 
           {/* Username */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Usuario</label>
+            <label className="text-sm font-medium text-gray-300">{t('login.username')}</label>
             <input
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              placeholder="Escribe tu usuario"
+              placeholder={t('login.usernamePlaceholder')}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-red-500/50 transition-colors placeholder:text-gray-500"
               autoComplete="username"
             />
@@ -104,13 +106,13 @@ export function LoginView() {
 
           {/* Password */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Contraseña</label>
+            <label className="text-sm font-medium text-gray-300">{t('login.password')}</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="Escribe tu contraseña"
+                placeholder={t('login.passwordPlaceholder')}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-red-500/50 transition-colors placeholder:text-gray-500 pr-12"
                 autoComplete="current-password"
               />
@@ -133,12 +135,12 @@ export function LoginView() {
             {isLoading ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
-                Ingresando...
+                {t('login.loggingIn')}
               </>
             ) : (
               <>
                 <LogIn size={18} />
-                Iniciar Sesión
+                {t('login.submit')}
               </>
             )}
           </button>
@@ -147,10 +149,10 @@ export function LoginView() {
         {/* Default credentials hint */}
         <div className="mt-6 text-center">
           <p className="text-gray-600 text-xs">
-            Usuarios disponibles: <span className="text-gray-400">admin</span> / <span className="text-gray-400">hele</span> / <span className="text-gray-400">usuario</span>
+            {t('login.availableUsers')} <span className="text-gray-400">admin</span> / <span className="text-gray-400">hele</span> / <span className="text-gray-400">usuario</span>
           </p>
           <p className="text-gray-700 text-xs mt-1">
-            Contraseña por defecto: <span className="text-gray-500">admin123</span> / <span className="text-gray-500">hele123</span> / <span className="text-gray-500">usuario123</span>
+            {t('login.defaultPassword')} <span className="text-gray-500">admin123</span> / <span className="text-gray-500">hele123</span> / <span className="text-gray-500">usuario123</span>
           </p>
         </div>
       </div>

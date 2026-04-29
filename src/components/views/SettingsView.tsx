@@ -3,8 +3,12 @@
 import { useState } from 'react';
 import { useFavoritesStore } from '@/lib/store';
 import { Heart, Trash2, Wifi, WifiOff, Loader2, ExternalLink, Check, X as XIcon } from 'lucide-react';
+import { useI18nStore, useT, LOCALE_FLAGS, LOCALE_LABELS, type AppLocale } from '@/lib/i18n';
 
 export function SettingsView() {
+  const { t } = useT();
+  const { locale, setLocale } = useI18nStore();
+
   const [castAppId, setCastAppId] = useState(() => {
     try { return localStorage.getItem('xs-cast-app-id') || ''; } catch { return ''; }
   });
@@ -12,21 +16,21 @@ export function SettingsView() {
   const [castAppIdError, setCastAppIdError] = useState('');
 
   const clearFavorites = () => {
-    if (confirm('¿Borrar toda la lista de favoritos?')) {
+    if (confirm(t('settings.clearFavoritesConfirm'))) {
       localStorage.removeItem('xuper-favorites');
       window.location.reload();
     }
   };
 
   const clearHistory = () => {
-    if (confirm('¿Borrar todo el historial?')) {
+    if (confirm(t('settings.clearHistoryConfirm'))) {
       localStorage.removeItem('xuper-history');
       window.location.reload();
     }
   };
 
   const clearData = () => {
-    if (confirm('¿Borrar TODOS los datos locales? (favoritos, historial, sesión)')) {
+    if (confirm(t('settings.clearAllConfirm'))) {
       localStorage.removeItem('xuper-favorites');
       localStorage.removeItem('xuper-history');
       localStorage.removeItem('xs-auth');
@@ -63,27 +67,50 @@ export function SettingsView() {
 
   return (
     <div className="pt-20 px-4 max-w-[600px] mx-auto">
-      <h1 className="text-2xl font-bold text-white mb-6">Ajustes</h1>
+      <h1 className="text-2xl font-bold text-white mb-6">{t('settings.title')}</h1>
 
       <div className="space-y-4">
+        {/* Language */}
+        <div className="bg-white/5 rounded-xl p-6 space-y-3">
+          <h2 className="text-white font-semibold text-base flex items-center gap-2">
+            <span className="text-red-500">●</span> {t('settings.language')}
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {(['es', 'en', 'pt'] as AppLocale[]).map(loc => (
+              <button
+                key={loc}
+                onClick={() => setLocale(loc)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  locale === loc
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                    : 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span className="text-base">{LOCALE_FLAGS[loc]}</span>
+                {LOCALE_LABELS[loc]}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* About */}
         <div className="bg-white/5 rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-3">
             <img src="/logo.svg" alt="XuperStream" className="w-10 h-10" />
             <div>
               <h2 className="text-white font-semibold text-base">XuperStream</h2>
-              <p className="text-gray-500 text-xs">Versión 0.2.0</p>
+              <p className="text-gray-500 text-xs">{t('settings.version')}</p>
             </div>
           </div>
           <p className="text-gray-400 text-sm leading-relaxed">
-            XuperStream es tu plataforma personal de streaming. Disfruta de películas, series y canales en vivo desde un solo lugar.
+            {t('settings.about')}
           </p>
         </div>
 
         {/* Servers */}
         <div className="bg-white/5 rounded-xl p-6 space-y-3">
           <h2 className="text-white font-semibold text-base flex items-center gap-2">
-            <span className="text-red-500">●</span> Servidores
+            <span className="text-red-500">●</span> {t('settings.servers')}
           </h2>
           <div className="space-y-2">
             {[
@@ -100,18 +127,18 @@ export function SettingsView() {
                     ? 'bg-green-500/20 text-green-400'
                     : 'bg-white/5 text-gray-500'
                 }`}>
-                  {server.status}
+                  {server.status === 'Activo' ? t('settings.active') : t('settings.backup')}
                 </span>
               </div>
             ))}
           </div>
-          <p className="text-gray-500 text-xs">Se cargan automáticamente al reproducir contenido.</p>
+          <p className="text-gray-500 text-xs">{t('settings.serversDesc')}</p>
         </div>
 
         {/* Chromecast — Enhanced Settings */}
         <div className="bg-white/5 rounded-xl p-6 space-y-4">
           <h2 className="text-white font-semibold text-base flex items-center gap-2">
-            <span className="text-red-500">●</span> Chromecast
+            <span className="text-red-500">●</span> {t('settings.chromecast')}
           </h2>
 
           {/* Current mode indicator */}
@@ -226,62 +253,62 @@ export function SettingsView() {
         {/* IPTV */}
         <div className="bg-white/5 rounded-xl p-6 space-y-3">
           <h2 className="text-white font-semibold text-base flex items-center gap-2">
-            <span className="text-red-500">●</span> IPTV
+            <span className="text-red-500">●</span> {t('settings.iptv')}
           </h2>
-          <p className="text-gray-400 text-sm">Canales en vivo verificados de Colombia y el mundo.</p>
+          <p className="text-gray-400 text-sm">{t('settings.iptvDesc')}</p>
           <div className="text-gray-500 text-xs space-y-1">
-            <p>Fuentes: iptv-org, TDTChannels</p>
-            <p>Solo se muestran canales funcionales.</p>
-            <p>IPTV funciona con Chromecast sin configuración adicional.</p>
+            <p>{t('settings.iptvSources')}</p>
+            <p>{t('settings.iptvOnlyWorking')}</p>
+            <p>{t('settings.chromecastIPTV')}</p>
           </div>
         </div>
 
         {/* PWA */}
         <div className="bg-white/5 rounded-xl p-6 space-y-3">
           <h2 className="text-white font-semibold text-base flex items-center gap-2">
-            <span className="text-red-500">●</span> App Instalable (PWA)
+            <span className="text-red-500">●</span> {t('settings.pwa')}
           </h2>
-          <p className="text-gray-400 text-sm">Instalable como app en Android, iOS y Desktop.</p>
+          <p className="text-gray-400 text-sm">{t('settings.pwaDesc')}</p>
           <div className="text-gray-500 text-xs space-y-1">
-            <p>Funciona sin conexión con contenido en caché.</p>
-            <p>Compatible con Chrome, Safari, Edge y Firefox.</p>
+            <p>{t('settings.pwaOffline')}</p>
+            <p>{t('settings.pwaCompat')}</p>
           </div>
         </div>
 
         {/* Data source */}
         <div className="bg-white/5 rounded-xl p-6 space-y-3">
           <h2 className="text-white font-semibold text-base flex items-center gap-2">
-            <span className="text-red-500">●</span> Datos
+            <span className="text-red-500">●</span> {t('settings.data')}
           </h2>
-          <p className="text-gray-400 text-sm">Metadatos proporcionados por TMDB (The Movie Database).</p>
+          <p className="text-gray-400 text-sm">{t('settings.dataDesc')}</p>
         </div>
 
         {/* Storage management */}
         <div className="bg-white/5 rounded-xl p-6 space-y-3">
           <h2 className="text-white font-semibold text-base flex items-center gap-2">
-            <span className="text-red-500">●</span> Almacenamiento
+            <span className="text-red-500">●</span> {t('settings.storage')}
           </h2>
-          <p className="text-gray-400 text-sm">Tus datos se guardan localmente en tu navegador.</p>
+          <p className="text-gray-400 text-sm">{t('settings.storageDesc')}</p>
           <div className="space-y-2 pt-2">
             <button
               onClick={clearFavorites}
               className="flex items-center gap-2 text-sm text-gray-400 hover:text-red-400 transition-colors"
             >
               <Heart size={14} />
-              Borrar favoritos
+              {t('settings.clearFavorites')}
             </button>
             <button
               onClick={clearHistory}
               className="flex items-center gap-2 text-sm text-gray-400 hover:text-red-400 transition-colors"
             >
               <Trash2 size={14} />
-              Borrar historial
+              {t('settings.clearHistory')}
             </button>
             <button
               onClick={clearData}
               className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors font-medium"
             >
-              Borrar todos los datos
+              {t('settings.clearAllData')}
             </button>
           </div>
         </div>

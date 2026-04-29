@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useT } from '@/lib/i18n';
 import type { MovieItem } from '@/lib/tmdb';
 import { CategoryRow } from '@/components/streaming/MovieCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,6 +13,7 @@ interface CategoryData {
 }
 
 export function SeriesView() {
+  const { t } = useT();
   const [categories, setCategories] = useState<{ title: string; movies: MovieItem[] }[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,18 +21,18 @@ export function SeriesView() {
     const loadData = async () => {
       try {
         const categoryLoaders: CategoryData[] = [
-          { title: '📺 Tendencias en Series', loader: () => fetch('/api/tmdb?endpoint=/trending/tv/week').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '🔥 Series Populares', loader: () => fetch('/api/tmdb?endpoint=/tv/popular').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '⭐ Mejor Valoradas', loader: () => fetch('/api/tmdb?endpoint=/tv/top_rated').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '📡 Estrenando Hoy', loader: () => fetch('/api/tmdb?endpoint=/tv/airing_today').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '🆕 Series En Emisión', loader: () => fetch('/api/tmdb?endpoint=/tv/on_the_air').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '🎭 Drama', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=18&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '😂 Comedia', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=35').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🔍 Misterio', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=9648').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🧪 Ciencia Ficción', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10765').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '📺 Animación', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=16').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '📸 Documentales', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=99').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🧟 Terror', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=27').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '📺 ' + t('series.trending'), loader: () => fetch('/api/tmdb?endpoint=/trending/tv/week').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '🔥 ' + t('series.popular'), loader: () => fetch('/api/tmdb?endpoint=/tv/popular').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '⭐ ' + t('series.topRated'), loader: () => fetch('/api/tmdb?endpoint=/tv/top_rated').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '📡 ' + t('series.airingToday'), loader: () => fetch('/api/tmdb?endpoint=/tv/airing_today').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '🆕 ' + t('series.onTheAir'), loader: () => fetch('/api/tmdb?endpoint=/tv/on_the_air').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '🎭 ' + t('series.drama'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=18&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '😂 ' + t('series.comedy'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=35').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🔍 ' + t('series.mystery'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=9648').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🧪 ' + t('series.scifi'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10765').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '📺 ' + t('series.animation'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=16').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '📸 ' + t('series.documentary'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=99').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🧟 ' + t('series.horror'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=27').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
         ];
 
         const results = await Promise.allSettled(categoryLoaders.map(c => c.loader()));
@@ -55,7 +57,7 @@ export function SeriesView() {
       <div className="pt-20 px-4 max-w-[1400px] mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <Tv size={28} className="text-blue-500" />
-          <h1 className="text-2xl font-bold text-white">Series</h1>
+          <h1 className="text-2xl font-bold text-white">{t('series.title')}</h1>
         </div>
         <div className="space-y-8">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -78,7 +80,7 @@ export function SeriesView() {
       <div className="px-4 max-w-[1400px] mx-auto mb-4">
         <div className="flex items-center gap-3">
           <Tv size={28} className="text-blue-500" />
-          <h1 className="text-2xl font-bold text-white">Series</h1>
+          <h1 className="text-2xl font-bold text-white">{t('series.title')}</h1>
         </div>
       </div>
 

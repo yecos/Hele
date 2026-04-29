@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { MovieItem } from '@/lib/tmdb';
 import { usePlayerStore } from '@/lib/store';
+import { useT } from '@/lib/i18n';
 import { Play, Star, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface HeroBannerProps {
@@ -10,6 +11,7 @@ interface HeroBannerProps {
 }
 
 export function HeroBanner({ movies }: HeroBannerProps) {
+  const { t } = useT();
   const [current, setCurrent] = useState(0);
   const [prevIndex, setPrevIndex] = useState(-1);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -72,7 +74,7 @@ export function HeroBanner({ movies }: HeroBannerProps) {
               </div>
             )}
             <span className="text-gray-400 text-sm capitalize">
-              {movie.mediaType === 'movie' ? 'Película' : 'Serie'}
+              {movie.mediaType === 'movie' ? t('banner.movie') : t('banner.serie')}
             </span>
             {movie.year > 0 && <span className="text-gray-400 text-sm">{movie.year}</span>}
           </div>
@@ -94,7 +96,7 @@ export function HeroBanner({ movies }: HeroBannerProps) {
               aria-label="Ver ahora"
             >
               <Play size={20} fill="white" />
-              Ver Ahora
+              {t('banner.watchNow')}
             </button>
             <button
               onClick={() => {
@@ -105,7 +107,7 @@ export function HeroBanner({ movies }: HeroBannerProps) {
               aria-label="Más información"
             >
               <Info size={18} />
-              Más Info
+              {t('banner.moreInfo')}
             </button>
           </div>
         </div>

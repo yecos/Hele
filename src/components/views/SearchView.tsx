@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useT } from '@/lib/i18n';
 import { useViewStore, usePlayerStore } from '@/lib/store';
 import type { MovieItem } from '@/lib/tmdb';
 import { CategoryRow } from '@/components/streaming/MovieCard';
@@ -8,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Search as SearchIcon, SlidersHorizontal, X, Star } from 'lucide-react';
 
 export function SearchView() {
+  const { t } = useT();
   const { searchQuery, setSearchQuery } = useViewStore();
   const playMovie = usePlayerStore(s => s.playMovie);
   const [results, setResults] = useState<MovieItem[]>([]);
@@ -57,10 +59,10 @@ export function SearchView() {
   const filteredResults = filter === 'all' ? results : results.filter(m => m.mediaType === filter);
 
   const discoverCategories = [
-    { title: '🎬 Películas de Acción', endpoint: '/discover/movie&with_genres=28' },
-    { title: '😂 Comedias', endpoint: '/discover/movie&with_genres=35' },
-    { title: '📺 Series de Drama', endpoint: '/discover/tv&with_genres=18' },
-    { title: '😱 Terror', endpoint: '/discover/movie&with_genres=27' },
+    { title: '🎬 ' + t('search.actionMovies'), endpoint: '/discover/movie&with_genres=28' },
+    { title: '😂 ' + t('search.comedies'), endpoint: '/discover/movie&with_genres=35' },
+    { title: '📺 ' + t('search.dramaSeries'), endpoint: '/discover/tv&with_genres=18' },
+    { title: '😱 ' + t('search.horror'), endpoint: '/discover/movie&with_genres=27' },
   ];
 
   return (
@@ -71,7 +73,7 @@ export function SearchView() {
           <SearchIcon size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar películas, series, actores..."
+            placeholder={t('search.placeholder')}
             value={inputValue}
             onChange={e => { setInputValue(e.target.value); setSearchQuery(e.target.value); }}
             className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-12 py-4 text-white text-base outline-none focus:border-red-500/50 transition-colors placeholder:text-gray-500"
@@ -91,9 +93,9 @@ export function SearchView() {
         {results.length > 0 && (
           <div className="flex items-center gap-2 mt-3 justify-center">
             {[
-              { id: 'all' as const, label: 'Todo' },
-              { id: 'movie' as const, label: 'Películas' },
-              { id: 'tv' as const, label: 'Series' },
+              { id: 'all' as const, label: t('search.all') },
+              { id: 'movie' as const, label: t('search.movies') },
+              { id: 'tv' as const, label: t('search.series') },
             ].map(f => (
               <button
                 key={f.id}
@@ -127,20 +129,20 @@ export function SearchView() {
       ) : debouncedQuery ? (
         <div className="text-center py-20">
           <SearchIcon size={48} className="text-gray-700 mx-auto mb-4" />
-          <h3 className="text-gray-400 text-lg font-semibold">Sin resultados para &quot;{debouncedQuery}&quot;</h3>
-          <p className="text-gray-600 text-sm mt-1">Intenta con otra búsqueda</p>
+          <h3 className="text-gray-400 text-lg font-semibold">{t('search.noResults', { query: debouncedQuery })}</h3>
+          <p className="text-gray-600 text-sm mt-1">{t('search.tryAnother')}</p>
         </div>
       ) : (
         <div className="text-center py-16">
           <SearchIcon size={48} className="text-gray-700 mx-auto mb-4" />
-          <h3 className="text-gray-400 text-lg font-semibold">Busca tu película o serie favorita</h3>
+          <h3 className="text-gray-400 text-lg font-semibold">{t('search.searchFavorite')}</h3>
         </div>
       )}
 
       {/* Discover when no search */}
       {!debouncedQuery && (
         <div className="mt-12 space-y-8">
-          <h2 className="text-xl font-bold text-white">Explorar por género</h2>
+          <h2 className="text-xl font-bold text-white">{t('search.exploreGenres')}</h2>
           {discoverCategories.map(cat => (
             <DiscoverRow key={cat.title} title={cat.title} endpoint={cat.endpoint} />
           ))}
@@ -153,6 +155,7 @@ export function SearchView() {
 }
 
 function SearchResultCard({ movie }: { movie: MovieItem }) {
+  const { t } = useT();
   const playMovie = usePlayerStore(s => s.playMovie);
   const [imgError, setImgError] = useState(false);
 
@@ -177,7 +180,7 @@ function SearchResultCard({ movie }: { movie: MovieItem }) {
           </div>
         </div>
         <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase">
-          {movie.mediaType === 'movie' ? 'Peli' : 'Serie'}
+          {movie.mediaType === 'movie' ? t('search.movieBadge') : t('search.serieBadge')}
         </div>
         {movie.rating > 0 && (
           <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-yellow-400 px-2 py-0.5 rounded-md text-xs font-bold">

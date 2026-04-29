@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useHistoryStore, usePlayerStore } from '@/lib/store';
+import { useT } from '@/lib/i18n';
 import { Clock, Play, Trash2, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function HistoryView() {
   const { history, removeFromHistory } = useHistoryStore();
+  const { t } = useT();
   const playMovie = usePlayerStore(s => s.playMovie);
 
   const formatTime = (timestamp: number) => {
@@ -16,15 +18,15 @@ export function HistoryView() {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffHours < 1) return 'Hace un momento';
-    if (diffHours < 24) return `Hace ${diffHours}h`;
-    if (diffDays === 1) return 'Ayer';
-    if (diffDays < 7) return `Hace ${diffDays} días`;
+    if (diffHours < 1) return t('history.momentAgo');
+    if (diffHours < 24) return t('history.hoursAgo', { n: diffHours });
+    if (diffDays === 1) return t('history.yesterday');
+    if (diffDays < 7) return t('history.daysAgo', { n: diffDays });
     return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
   };
 
   const clearHistory = () => {
-    if (confirm('¿Borrar todo el historial de reproducción?')) {
+    if (confirm(t('history.clearConfirm'))) {
       localStorage.removeItem('xuper-history');
       window.location.reload();
     }
@@ -35,7 +37,7 @@ export function HistoryView() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Clock size={28} className="text-red-500" />
-          <h1 className="text-2xl font-bold text-white">Historial</h1>
+          <h1 className="text-2xl font-bold text-white">{t('history.title')}</h1>
           <span className="text-gray-500 text-sm">({history.length})</span>
         </div>
         {history.length > 0 && (
@@ -43,7 +45,7 @@ export function HistoryView() {
             onClick={clearHistory}
             className="text-gray-500 hover:text-red-400 text-xs font-medium transition-colors"
           >
-            Borrar todo
+            {t('history.clearAll')}
           </button>
         )}
       </div>
@@ -98,7 +100,7 @@ export function HistoryView() {
                 <h3 className="text-white text-sm font-semibold truncate">{item.title}</h3>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-gray-500 text-xs capitalize">
-                    {item.mediaType === 'movie' ? 'Película' : 'Serie'}
+                    {item.mediaType === 'movie' ? t('history.movie') : t('history.serie')}
                   </span>
                   <span className="text-gray-600 text-xs">·</span>
                   <span className="text-gray-500 text-xs">{formatTime(item.timestamp)}</span>
@@ -119,8 +121,8 @@ export function HistoryView() {
         <div className="text-center py-20">
           <img src="/logo.svg" alt="XuperStream" className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <Clock size={48} className="text-gray-700 mx-auto mb-4" />
-          <h3 className="text-gray-400 text-lg font-semibold">Sin historial</h3>
-          <p className="text-gray-600 text-sm mt-1">Las películas y series que veas aparecerán aquí</p>
+          <h3 className="text-gray-400 text-lg font-semibold">{t('history.empty')}</h3>
+          <p className="text-gray-600 text-sm mt-1">{t('history.emptyDesc')}</p>
         </div>
       )}
 

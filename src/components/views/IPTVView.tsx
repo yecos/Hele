@@ -5,6 +5,7 @@ import { useViewStore } from '@/lib/store';
 import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast } from 'lucide-react';
 import Hls from 'hls.js';
 import { useChromecast } from '@/hooks/use-chromecast';
+import { useT } from '@/lib/i18n';
 
 interface IPTVChannel {
   id: string;
@@ -62,6 +63,7 @@ export function IPTVView() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const cast = useChromecast();
+  const { t } = useT();
   const isActivelyCasting = cast.isCasting && cast.isConnected;
 
   // Verify channels against the API
@@ -451,9 +453,9 @@ export function IPTVView() {
               <Loader2 size={48} className="text-red-500 animate-spin" />
               {isVerifying ? (
                 <>
-                  <p className="text-gray-400 text-lg">Verificando canales...</p>
+                  <p className="text-gray-400 text-lg">{t('iptv.verifying')}</p>
                   <p className="text-gray-500 text-sm">
-                    Comprobando {verifyProgress.checked} de {verifyProgress.total} canales
+                    {t('iptv.checking', { checked: verifyProgress.checked, total: verifyProgress.total })}
                   </p>
                   {/* Progress bar */}
                   <div className="w-full max-w-xs h-2 bg-gray-800 rounded-full overflow-hidden">
@@ -463,13 +465,13 @@ export function IPTVView() {
                     />
                   </div>
                   <p className="text-gray-600 text-xs">
-                    Solo se mostrarán los canales que estén funcionando
+                    {t('iptv.onlyWorking')}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-gray-400 text-lg">Cargando canales...</p>
-                  <p className="text-gray-600 text-sm">Obteniendo lista de iptv-org</p>
+                  <p className="text-gray-400 text-lg">{t('iptv.loading')}</p>
+                  <p className="text-gray-600 text-sm">{t('iptv.loadingFrom')}</p>
                 </>
               )}
             </div>
@@ -481,7 +483,7 @@ export function IPTVView() {
           <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/80">
             <div className="flex flex-col items-center gap-3">
               <Loader2 size={40} className="text-red-500 animate-spin" />
-              <p className="text-gray-400 text-sm">Cargando canal...</p>
+              <p className="text-gray-400 text-sm">{t('iptv.loadingChannel')}</p>
               <p className="text-gray-600 text-xs">{activeChannel.name}</p>
             </div>
           </div>
@@ -492,7 +494,7 @@ export function IPTVView() {
           <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/90">
             <div className="flex flex-col items-center gap-3 text-center px-4">
               <WifiOff size={48} className="text-red-500" />
-              <p className="text-white font-semibold">Señal no disponible</p>
+              <p className="text-white font-semibold">{t('iptv.noSignal')}</p>
               <p className="text-gray-400 text-sm">{activeChannel.name}</p>
               <div className="flex items-center gap-3 mt-2">
                 <button
@@ -500,14 +502,14 @@ export function IPTVView() {
                   className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
                 >
                   <ChevronDown size={16} />
-                  Siguiente Canal
+                  {t('iptv.nextChannel')}
                 </button>
                 <button
                   onClick={() => { setRetryCount(0); setChannelError(false); setIsChannelLoading(true); if (videoRef.current && activeChannel) { const url = activeChannel.url; if (url.includes('.m3u8') && Hls.isSupported()) { if (hlsRef.current) hlsRef.current.destroy(); const hls = new Hls({ enableWorker: true, lowLatencyMode: true }); hlsRef.current = hls; hls.loadSource(url); hls.attachMedia(videoRef.current); hls.on(Hls.Events.MANIFEST_PARSED, () => { videoRef.current?.play().catch(() => {}); }); } else { videoRef.current.load(); videoRef.current.play().catch(() => {}); } } }}
                   className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg text-sm hover:bg-white/20 transition-colors"
                 >
                   <RefreshCw size={16} />
-                  Reintentar
+                  {t('iptv.retry')}
                 </button>
               </div>
             </div>
@@ -555,7 +557,7 @@ export function IPTVView() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <Signal size={14} className="text-green-400" />
-                  <span className="text-green-400 text-xs font-semibold uppercase tracking-wider">En Vivo</span>
+                  <span className="text-green-400 text-xs font-semibold uppercase tracking-wider">{t('iptv.live')}</span>
                   <span className="text-gray-600 text-xs">|</span>
                   <span className="text-gray-400 text-xs">{activeChannel.group}</span>
                   {activeChannel.country && (
@@ -575,7 +577,7 @@ export function IPTVView() {
                 </div>
                 <h2 className="text-white text-xl sm:text-2xl font-bold truncate">{activeChannel.name}</h2>
                 <p className="text-gray-500 text-xs mt-0.5">
-                  Canal {currentIndex + 1} de {onlineChannels.length}
+                  {t('iptv.channel')} {currentIndex + 1} {t('iptv.of')} {onlineChannels.length}
                   {isActivelyCasting && (
                     <span className="text-green-400 ml-2">Casting en {cast.device?.friendlyName}</span>
                   )}
@@ -699,7 +701,7 @@ export function IPTVView() {
                   className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm transition-all"
                 >
                   <Tv size={16} />
-                  <span className="hidden sm:inline">Canales</span>
+                  <span className="hidden sm:inline">{t('iptv.channels')}</span>
                 </button>
               </div>
             </div>
@@ -743,9 +745,9 @@ export function IPTVView() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
               <h2 className="text-white font-bold flex items-center gap-2">
                 <Tv size={18} />
-                Canales
+                {t('iptv.channels')}
                 <span className="text-green-400 text-sm font-normal">
-                  {workingCount}/{totalCount} OK
+                  {workingCount}/{totalCount} {t('iptv.ok')}
                 </span>
               </h2>
               <div className="flex items-center gap-2">
@@ -759,7 +761,7 @@ export function IPTVView() {
                   }`}
                 >
                   <Signal size={10} />
-                  {showOnlyWorking ? 'Solo OK' : 'Todos'}
+                  {showOnlyWorking ? t('iptv.onlyOK') : t('iptv.all')}
                 </button>
                 <button
                   onClick={() => setShowChannelList(false)}
@@ -792,7 +794,7 @@ export function IPTVView() {
               <div className="mt-3 relative">
                 <input
                   type="text"
-                  placeholder="Buscar canal..."
+                  placeholder={t('iptv.searchChannel')}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-green-500/50 transition-colors placeholder:text-gray-600"
@@ -836,20 +838,20 @@ export function IPTVView() {
                           {verifiedUrls.has(channel.url) ? (
                             <span className="flex items-center gap-1 text-green-400 text-[10px]">
                               <Signal size={8} />
-                              Verificado
+                              {t('iptv.verified')}
                             </span>
                           ) : verifiedUrls.size > 0 ? (
-                            <span className="text-red-400/60 text-[10px]">Sin señal</span>
+                            <span className="text-red-400/60 text-[10px]">{t('iptv.noSignalShort')}</span>
                           ) : channel.status === 'offline' ? (
-                            <span className="text-red-400 text-[10px]">Offline</span>
+                            <span className="text-red-400 text-[10px]">{t('iptv.offline')}</span>
                           ) : channel.status === 'geo-blocked' ? (
-                            <span className="text-yellow-400 text-[10px]">Geo-bloqueado</span>
+                            <span className="text-yellow-400 text-[10px]">{t('iptv.geoBlocked')}</span>
                           ) : channel.status === 'partial' ? (
-                            <span className="text-yellow-400 text-[10px]">No 24/7</span>
+                            <span className="text-yellow-400 text-[10px]">{t('iptv.not24_7')}</span>
                           ) : (
                             <span className="flex items-center gap-1 text-green-400 text-[10px]">
                               <Signal size={8} />
-                              En Vivo
+                              {t('iptv.live')}
                             </span>
                           )}
                           {channel.quality !== 'SD' && (
@@ -870,7 +872,7 @@ export function IPTVView() {
               {filteredChannels.length === 0 && (
                 <div className="text-center py-12">
                   <Tv size={40} className="text-gray-700 mx-auto mb-3" />
-                  <p className="text-gray-500 text-sm">No se encontraron canales</p>
+                  <p className="text-gray-500 text-sm">{t('iptv.noChannels')}</p>
                 </div>
               )}
             </div>

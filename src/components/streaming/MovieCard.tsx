@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import type { MovieItem } from '@/lib/tmdb';
 import { usePlayerStore, useFavoritesStore } from '@/lib/store';
+import { useT } from '@/lib/i18n';
 import { Play, Heart, Star, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 
 interface MovieCardProps {
@@ -12,6 +13,7 @@ interface MovieCardProps {
 }
 
 export function MovieCard({ movie, showProgress, progress }: MovieCardProps) {
+  const { t } = useT();
   const playMovie = usePlayerStore(s => s.playMovie);
   const { openDetail } = usePlayerStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
@@ -95,7 +97,7 @@ export function MovieCard({ movie, showProgress, progress }: MovieCardProps) {
 
         {/* Type badge */}
         <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase">
-          {movie.mediaType === 'movie' ? 'Peli' : 'Serie'}
+          {movie.mediaType === 'movie' ? t('misc.peli') : t('misc.serie')}
         </div>
 
         {/* Progress bar */}
