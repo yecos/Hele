@@ -661,12 +661,15 @@ export function IPTVView() {
               <div className="flex items-center gap-2 pointer-events-auto">
                 {/* Chromecast button */}
                 <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (isActivelyCasting) {
                         cast.disconnect();
                       } else if (activeChannel) {
                         if (!cast.isConnected) {
-                          cast.connect();
+                          const connected = await cast.connect();
+                          if (connected && activeChannel.url.includes('.m3u8')) {
+                            cast.castHLS(activeChannel.url, activeChannel.name, `${activeChannel.group} - ${activeChannel.country}`);
+                          }
                         } else {
                           cast.castHLS(activeChannel.url, activeChannel.name, `${activeChannel.group} - ${activeChannel.country}`);
                         }
@@ -677,11 +680,19 @@ export function IPTVView() {
                     className={`p-2 rounded-full transition-all ${
                       isActivelyCasting
                         ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                        : cast.status === 'connecting'
+                        ? 'bg-yellow-500/20 text-yellow-400 animate-pulse'
                         : 'bg-white/10 hover:bg-white/20 text-white'
                     }`}
                     title={isActivelyCasting ? `Desconectar de ${cast.device?.friendlyName}` : 'Enviar a Chromecast'}
                   >
                     <Cast size={18} />
+                    {cast.status === 'connecting' && (
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-500 rounded-full animate-ping" />
+                    )}
+                    {isActivelyCasting && (
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full" />
+                    )}
                   </button>
                 <button
                   onClick={() => setShowChannelList(true)}

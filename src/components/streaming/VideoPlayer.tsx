@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore, useHistoryStore, useViewStore } from '@/lib/store';
 import { LANG_LABELS, SERVER_ICONS, TMDB_SERVERS, type StreamSource, type ServerGroup, type AudioLang } from '@/lib/sources';
-import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight, Cast, Tv, Wifi } from 'lucide-react';
+import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight, Cast, Tv, Wifi, Settings } from 'lucide-react';
 import { useChromecast } from '@/hooks/use-chromecast';
 
 function buildServerGroups(
@@ -53,6 +53,7 @@ export function VideoPlayer() {
 
   const cast = useChromecast();
   const isActivelyCasting = cast.isConnected;
+  const supportsEmbedOnTV = cast.castMode === 'custom';
 
   // Fetch servers when movie changes
   const fetchServers = useCallback(async () => {
@@ -128,14 +129,18 @@ export function VideoPlayer() {
         : '';
 
       setCastTried(true);
-      cast.castEmbed(currentServerUrl, title, subtitle).then((success) => {
-        if (!success) {
-          // Cast failed — the banner will show automatically via castError
-          setCastBannerDismissed(false);
-        }
-      });
+
+      if (supportsEmbedOnTV) {
+        // Custom receiver — embed URLs work on TV
+        cast.castEmbed(currentServerUrl, title, subtitle).then((success) => {
+          if (!success) setCastBannerDismissed(false);
+        });
+      } else {
+        // Default receiver — embeds don't work, show warning
+        setCastBannerDismissed(false);
+      }
     }
-  }, [currentServerUrl, cast.isConnected, isPlaying, castTried]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentServerUrl, cast.isConnected, isPlaying, castTried, supportsEmbedOnTV]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track watch history when movie starts playing
   useEffect(() => {
@@ -185,7 +190,7 @@ export function VideoPlayer() {
 
         {/* Cast button */}
         <button
-            onClick={() => {
+            onClick={async () => {
               if (isActivelyCasting) {
                 cast.disconnect();
               } else if (currentServerUrl) {
@@ -193,7 +198,10 @@ export function VideoPlayer() {
                   ? `T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}`
                   : '';
                 if (!cast.isConnected) {
-                  cast.connect();
+                  const connected = await cast.connect();
+                  if (connected && supportsEmbedOnTV) {
+                    cast.castEmbed(currentServerUrl, currentMovie.title, subtitle);
+                  }
                 } else {
                   cast.castEmbed(currentServerUrl, currentMovie.title, subtitle).then(() => {
                     setCastBannerDismissed(false);
@@ -229,7 +237,7 @@ export function VideoPlayer() {
         </div>
       )}
 
-      {/* Chromecast error banner — explains why movie can't be sent to TV */}
+      {/* Chromecast warning banner — different messages based on cast mode */}
       {showCastBanner && (
         <div className="absolute top-14 left-0 right-0 z-[15] bg-amber-600/95 backdrop-blur-sm px-4 py-3">
           <div className="flex items-start gap-3">
@@ -238,13 +246,16 @@ export function VideoPlayer() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm font-semibold">
-                No se pudo enviar a {cast.device?.friendlyName || 'Chromecast'}
+                {supportsEmbedOnTV
+                  ? 'Error al enviar contenido'
+                  : `No compatible con ${cast.device?.friendlyName || 'Chromecast'}`}
               </p>
               <p className="text-white/80 text-xs mt-0.5 leading-relaxed">
-                Los servidores de películas usan un reproductor web que no es compatible con Chromecast.
-                El contenido se reproduce en tu dispositivo.
+                {supportsEmbedOnTV
+                  ? 'Hubo un error al enviar el contenido. Intenta con otro servidor.'
+                  : 'Los servidores de películas usan un reproductor web que no funciona en Chromecast estándar. Configura el Custom Receiver en Ajustes para habilitar esta función.'}
               </p>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex flex-wrap items-center gap-2 mt-2">
                 <button
                   onClick={() => setCastBannerDismissed(true)}
                   className="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-full transition-all"
@@ -257,6 +268,15 @@ export function VideoPlayer() {
                 >
                   Desconectar
                 </button>
+                {!supportsEmbedOnTV && (
+                  <button
+                    onClick={() => { closePlayer(); setView('settings'); }}
+                    className="text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1 rounded-full transition-all flex items-center gap-1"
+                  >
+                    <Settings size={10} />
+                    Configurar Receiver
+                  </button>
+                )}
                 <button
                   onClick={() => { closePlayer(); setView('iptv'); }}
                   className="text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1 rounded-full transition-all flex items-center gap-1"

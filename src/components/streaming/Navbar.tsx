@@ -35,11 +35,11 @@ export function Navbar() {
   const isActivelyCasting = cast.isConnected;
   const castStatus = cast.status;
 
-  const handleCastClick = () => {
+  const handleCastClick = async () => {
     if (isActivelyCasting) {
       cast.disconnect();
     } else {
-      cast.connect();
+      await cast.connect();
     }
   };
 
@@ -218,15 +218,23 @@ export function Navbar() {
             {/* Logout in mobile */}
             <div className="border-t border-white/5 mt-3 pt-3">
               <button
-                onClick={() => { handleCastClick(); setMobileMenuOpen(false); }}
+                onClick={async () => { await handleCastClick(); setMobileMenuOpen(false); }}
                 className={`w-full px-4 py-3 rounded-lg text-left text-sm font-medium transition-all flex items-center gap-3 mb-1 ${
                   isActivelyCasting
                     ? 'text-green-400 bg-green-600/10'
+                    : cast.status === 'loading'
+                    ? 'text-gray-500'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 <Cast size={18} />
-                {isActivelyCasting ? `Casting: ${cast.device?.friendlyName}` : 'Chromecast'}
+                {cast.status === 'loading'
+                  ? 'Cargando Chromecast...'
+                  : isActivelyCasting
+                  ? `Casting: ${cast.device?.friendlyName}`
+                  : cast.isAvailable
+                  ? 'Chromecast'
+                  : 'Chromecast no disponible'}
               </button>
               <button
                 onClick={() => { logout(); setMobileMenuOpen(false); }}
