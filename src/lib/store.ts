@@ -21,20 +21,68 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (username, password) => {
     set({ isLoading: true });
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/api/auth/callback/credentials', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+        redirect: 'false',
+        username,
+        password,
+        csrfToken: '',
+        callbackUrl: '/',
+      }).toString(),
       });
-      const data = await res.json();
-      if (data.success) {
-        localStorage.setItem('xs-auth', JSON.stringify({ username: data.username, token: data.token }));
-        set({ isLoggedIn: true, username: data.username, isLoading: false });
-        return true;
+
+      if (res.ok) {
+        // Try NextAuth sign in
+        try {
+          const signInRes = await fetch('/api/auth/signin/credentials', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, redirect: false }),
+          });
+          if (signInRes.ok) {
+            const data = await signInRes.json();
+            if (data.url) {
+              set({ isLoggedIn: true, username: username.toLowerCase(), isLoading: false });
+              return true;
+            }
+          }
+        } catch {
+          // Fallback: use legacy login endpoint
+        }
+
+        // Fallback to legacy auth
+        const legacyRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await legacyRes.json();
+        if (data.success) {
+          localStorage.setItem('xs-auth', JSON.stringify({ username: data.username, token: data.token }));
+          set({ isLoggedIn: true, username: data.username, isLoading: false });
+          return true;
+        }
       }
+
       set({ isLoading: false });
       return false;
     } catch {
+      // Fallback to legacy
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          localStorage.setItem('xs-auth', JSON.stringify({ username: data.username, token: data.token }));
+          set({ isLoggedIn: true, username: data.username, isLoading: false });
+          return true;
+        }
+      } catch {}
       set({ isLoading: false });
       return false;
     }
@@ -43,42 +91,24 @@ export const useAuthStore = create<AuthState>((set) => ({
   loginWithGoogle: async () => {
     set({ isLoading: true });
     try {
-      // Try Google Identity Services if available (for production with proper client ID)
-      if (typeof window !== 'undefined' && window.google?.accounts) {
-        return new Promise((resolve) => {
-          window.google.accounts.id.initialize({
-            client_id: '',
-            callback: (response) => {
-              // Decode JWT token for user info
-              const payload = JSON.parse(atob(response.credential.split('.')[1]));
-              const googleUser = {
-                username: payload.name || payload.email?.split('@')[0] || 'Google User',
-                email: payload.email,
-                picture: payload.picture,
-              };
-              localStorage.setItem('xs-auth', JSON.stringify({
-                username: googleUser.username,
-                token: response.credential,
-                provider: 'google',
-                picture: googleUser.picture,
-              }));
-              set({ isLoggedIn: true, username: googleUser.username, isLoading: false });
-              resolve(true);
-            },
-          });
-          window.google.accounts.id.prompt();
-          // Fallback: if prompt is dismissed, resolve false after timeout
-          setTimeout(() => {
-            if (window.google?.accounts) {
-              set({ isLoading: false });
-              resolve(true); // Show UI anyway for demo purposes
-            }
-          }, 2000);
-        });
+      // Use NextAuth signIn with Google
+      const res = await fetch('/api/auth/signin/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ redirect: false, callbackUrl: '/' }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) {
+          // Redirect to Google OAuth
+          window.location.href = data.url;
+          return true;
+        }
       }
 
-      // Demo mode: create a Google-like session without actual OAuth
-      // This works immediately and simulates Google login
+      // If NextAuth Google is not configured, fallback to demo
+      console.log('Google OAuth not configured (missing GOOGLE_CLIENT_ID). Using demo mode.');
       const googleUser = {
         username: 'Google User',
         provider: 'google',

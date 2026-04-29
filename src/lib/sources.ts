@@ -53,14 +53,6 @@ export const TMDB_SERVERS: TMDBServer[] = [
       return `https://moviesapi.to/tv/${tmdbId}-${season}-${episode}`;
     },
   },
-  {
-    id: 'vidsrc-dev',
-    name: 'VidSrc Dev',
-    getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'movie') return `https://vidsrc.dev/embed/movie/${tmdbId}`;
-      return `https://vidsrc.dev/embed/tv/${tmdbId}/${season}/${episode}`;
-    },
-  },
 ];
 
 // Genera fuentes fallback basadas en TMDB ID
@@ -97,9 +89,7 @@ export const SERVER_ICONS: Record<string, string> = {
   '1fichier': '📥',
   moviesapi: '🎥',
   'vidsrc-io': '📺',
-  'vidsrc-dev': '🖥️',
   vidlink: '🔗',
-  smashystream: '🥝',
   default: '🖥️',
 };
 

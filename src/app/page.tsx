@@ -5,6 +5,7 @@ import { useViewStore, usePlayerStore, useAuthStore } from '@/lib/store';
 import { Navbar } from '@/components/streaming/Navbar';
 import { VideoPlayer } from '@/components/streaming/VideoPlayer';
 import { LoginView } from '@/components/views/LoginView';
+import { OfflinePage } from '@/components/views/OfflinePage';
 import { HomeView } from '@/components/views/HomeView';
 import { MoviesView } from '@/components/views/MoviesView';
 import { SeriesView } from '@/components/views/SeriesView';
@@ -29,6 +30,7 @@ export default function Page() {
 
   return (
     <main className="min-h-screen bg-[#0a0a0a]">
+      <OfflinePage />
       <Navbar />
       <VideoPlayer />
 
@@ -51,7 +53,7 @@ export default function Page() {
               <div>
                 <h3 className="text-white font-semibold text-sm">Servidores</h3>
                 <p className="text-gray-400 text-sm mt-1">
-                  SmashyStream, VidSrc IO, MoviesAPI, VidLink
+                  VidSrc IO, VidLink, MoviesAPI
                 </p>
                 <p className="text-gray-500 text-xs mt-1">
                   Los servidores se cargan automáticamente al reproducir contenido.
@@ -59,9 +61,23 @@ export default function Page() {
               </div>
               <div>
                 <h3 className="text-white font-semibold text-sm">IPTV</h3>
-                <p className="text-gray-400 text-sm mt-1">Canales en vivo de Colombia y el mundo</p>
+                <p className="text-gray-400 text-sm mt-1">Canales en vivo verificados de Colombia y el mundo</p>
                 <p className="text-gray-500 text-xs mt-1">
-                  Canales nacionales, noticias, deportes, música y más.
+                  Fuentes: iptv-org, TDTChannels. Solo se muestran canales funcionales.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-white font-semibold text-sm">Chromecast</h3>
+                <p className="text-gray-400 text-sm mt-1">Envía películas, series y canales IPTV a tu TV</p>
+                <p className="text-gray-500 text-xs mt-1">
+                  Soporte nativo HLS para IPTV. Busca el ícono de Cast en la barra superior.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-white font-semibold text-sm">PWA</h3>
+                <p className="text-gray-400 text-sm mt-1">Instalable como app en Android, iOS y Desktop</p>
+                <p className="text-gray-500 text-xs mt-1">
+                  Funciona sin conexión con contenido en caché.
                 </p>
               </div>
               <div>

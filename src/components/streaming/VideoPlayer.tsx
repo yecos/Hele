@@ -15,8 +15,6 @@ function getServerUrl(serverId: string, tmdbId: number, type: 'movie' | 'tv', se
       return type === 'movie' ? `https://vidlink.pro/movie/${tmdbId}` : `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`;
     case 'moviesapi':
       return type === 'movie' ? `https://moviesapi.to/movie/${tmdbId}` : `https://moviesapi.to/tv/${tmdbId}-${season}-${episode}`;
-    case 'vidsrc-dev':
-      return type === 'movie' ? `https://vidsrc.dev/embed/movie/${tmdbId}` : `https://vidsrc.dev/embed/tv/${tmdbId}/${season}/${episode}`;
     default:
       return '';
   }
@@ -27,7 +25,6 @@ const SERVER_CONFIG = [
   { id: 'vidsrc-io', name: 'VidSrc IO', quality: 'HD' },
   { id: 'vidlink', name: 'VidLink', quality: 'HD' },
   { id: 'moviesapi', name: 'MoviesAPI', quality: 'Auto' },
-  { id: 'vidsrc-dev', name: 'VidSrc Dev', quality: 'Auto' },
 ];
 
 function buildServerGroups(
