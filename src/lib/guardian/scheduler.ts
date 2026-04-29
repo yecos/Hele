@@ -1,24 +1,21 @@
 /**
  * IPTV Guardian - Programador de tareas automáticas
  * Se inicia automáticamente con Next.js (instrumentation.ts)
- * Ejecuta el escaneo 2 veces al día: 6:00 AM y 6:00 PM (hora de Bogotá)
+ * 
+ * Tareas programadas:
+ * - 06:00 AM → Escaneo de validación de canales
+ * - 12:00 PM → Escaneo de validación + Búsqueda web de nuevas fuentes
+ * - 06:00 PM → Escaneo de validación de canales
+ * - 03:00 AM → Búsqueda web de nuevas fuentes (horario de baja actividad)
  */
 
 import cron from 'node-cron';
 import { runFullScan } from './scanner';
+import { runDiscovery } from './discovery';
 
 let scheduledTasks: cron.ScheduledTask[] = [];
 let initialized = false;
 
-/**
- * Inicia el programador del Guardian.
- * Los horarios usan la hora de Bogotá (America/Bogota).
- *
- * Escaneos programados:
- * - 06:00 AM → Refresca canales para la mañana
- * - 06:00 PM → Refresca canales para la tarde/noche
- * - 12:00 PM (mediodía) → Verificación adicional
- */
 export function startGuardianScheduler() {
   if (initialized) {
     console.log('[Guardian] Scheduler ya está inicializado');
@@ -27,38 +24,48 @@ export function startGuardianScheduler() {
 
   initialized = true;
   console.log('[Guardian] Iniciando scheduler automático...');
-  console.log('[Guardian] Horarios: 06:00 AM, 12:00 PM, 06:00 PM (America/Bogota)');
+  console.log('[Guardian] Tareas:');
+  console.log('  - 06:00 AM: Escaneo de validación');
+  console.log('  - 12:00 PM: Escaneo + Descubrimiento web');
+  console.log('  - 06:00 PM: Escaneo de validación');
+  console.log('  - 03:00 AM: Descubrimiento web (busca nuevas fuentes)');
+  console.log('[Guardian] Zona horaria: America/Bogota');
 
   // Escaneo de las 6:00 AM - actualización matutina
   const morningTask = cron.schedule('0 6 * * *', async () => {
-    console.log('[Guardian] Ejecutando escaneo programado de las 6:00 AM...');
+    console.log('[Guardian] Escaneo programado de las 6:00 AM...');
     await runFullScan('scheduled');
-  }, {
-    timezone: 'America/Bogota',
-  });
+  }, { timezone: 'America/Bogota' });
 
-  // Escaneo del mediodía - verificación adicional
+  // Mediodía: escaneo + descubrimiento
   const noonTask = cron.schedule('0 12 * * *', async () => {
-    console.log('[Guardian] Ejecutando escaneo programado del mediodía...');
+    console.log('[Guardian] Escaneo programado del mediodía...');
     await runFullScan('scheduled');
-  }, {
-    timezone: 'America/Bogota',
-  });
+    console.log('[Discovery] Descubrimiento web programado del mediodía...');
+    await runDiscovery('scheduled');
+  }, { timezone: 'America/Bogota' });
 
   // Escaneo de las 6:00 PM - actualización vespertina
   const eveningTask = cron.schedule('0 18 * * *', async () => {
-    console.log('[Guardian] Ejecutando escaneo programado de las 6:00 PM...');
+    console.log('[Guardian] Escaneo programado de las 6:00 PM...');
     await runFullScan('scheduled');
-  }, {
-    timezone: 'America/Bogota',
-  });
+  }, { timezone: 'America/Bogota' });
 
-  scheduledTasks = [morningTask, noonTask, eveningTask];
+  // Descubrimiento web a las 3 AM (baja actividad)
+  const discoveryTask = cron.schedule('0 3 * * *', async () => {
+    console.log('[Discovery] Descubrimiento web programado de las 3:00 AM...');
+    await runDiscovery('scheduled');
+    // Después de descubrir, escanear las nuevas fuentes
+    console.log('[Guardian] Escaneo post-descubrimiento...');
+    await runFullScan('scheduled');
+  }, { timezone: 'America/Bogota' });
 
-  console.log('[Guardian] 3 tareas programadas activas');
-  console.log('[Guardian] El sistema validará canales en segundo plano sin intervención del usuario');
+  scheduledTasks = [morningTask, noonTask, eveningTask, discoveryTask];
 
-  // Escaneo inicial: se ejecuta 60 segundos después de iniciar (para no bloquear el arranque)
+  console.log('[Guardian] 4 tareas programadas activas');
+  console.log('[Guardian] El sistema validará y descubrirá canales automáticamente');
+
+  // Escaneo inicial: 60 segundos después de iniciar
   setTimeout(async () => {
     console.log('[Guardian] Ejecutando escaneo inicial...');
     try {
@@ -66,12 +73,19 @@ export function startGuardianScheduler() {
     } catch (err) {
       console.error('[Guardian] Error en escaneo inicial:', err);
     }
-  }, 60_000); // 1 minuto después del arranque
+
+    // Primer descubrimiento web 3 minutos después
+    setTimeout(async () => {
+      console.log('[Discovery] Primer descubrimiento web...');
+      try {
+        await runDiscovery('scheduled');
+      } catch (err) {
+        console.error('[Discovery] Error en primer descubrimiento:', err);
+      }
+    }, 180_000); // 3 min después
+  }, 60_000); // 1 min después del arranque
 }
 
-/**
- * Detiene todas las tareas programadas
- */
 export function stopGuardianScheduler() {
   for (const task of scheduledTasks) {
     task.stop();
@@ -81,17 +95,15 @@ export function stopGuardianScheduler() {
   console.log('[Guardian] Scheduler detenido');
 }
 
-/**
- * Obtiene el estado de las tareas programadas
- */
 export function getSchedulerStatus() {
   return {
     initialized,
     activeTasks: scheduledTasks.length,
     tasks: [
-      { name: 'Mañana (6:00 AM)', cron: '0 6 * * *', timezone: 'America/Bogota' },
-      { name: 'Mediodía (12:00 PM)', cron: '0 12 * * *', timezone: 'America/Bogota' },
-      { name: 'Tarde (6:00 PM)', cron: '0 18 * * *', timezone: 'America/Bogota' },
+      { name: 'Mañana (6:00 AM)', cron: '0 6 * * *', type: 'scan' },
+      { name: 'Mediodía (12:00 PM)', cron: '0 12 * * *', type: 'scan+discovery' },
+      { name: 'Tarde (6:00 PM)', cron: '0 18 * * *', type: 'scan' },
+      { name: 'Madrugada (3:00 AM)', cron: '0 3 * * *', type: 'discovery+scan' },
     ],
   };
 }

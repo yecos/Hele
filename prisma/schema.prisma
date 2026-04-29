@@ -58,6 +58,19 @@ model GuardianScan {
   trigger         String   @default("scheduled") // "scheduled" | "manual"
 }
 
+/// Fuentes M3U descubiertas por búsqueda web
+model DiscoveredSource {
+  id              String   @id @default(cuid())
+  url             String   @unique              // URL del M3U (única)
+  name            String   @default("")         // Nombre del sitio/página donde se encontró
+  sourceUrl       String   @default("")         // URL de la página que la contenía
+  channelCount    Int      @default(0)          // Canales encontrados en la última validación
+  isValid         Boolean  @default(false)      // Si la URL devuelve un M3U válido
+  addedToGuardian Boolean  @default(false)      // Si fue promovida al Guardian
+  lastChecked     DateTime @default(now())       // Última vez que se verificó
+  createdAt       DateTime @default(now())
+}
+
 /// Canales verificados como funcionales (se limpia y regenera cada escaneo)
 model VerifiedChannel {
   id        String   @id @default(cuid())
