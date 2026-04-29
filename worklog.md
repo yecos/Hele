@@ -154,3 +154,34 @@ Stage Summary:
 - Continue Watching section appears on home when history exists
 - Poster images gracefully fall back to placeholder SVG
 - Play button still directly starts playback for quick access
+
+---
+Task ID: 7
+Agent: Main
+Task: IPTV Guardian - Sistema de validación automática en segundo plano
+
+Work Log:
+- Installed node-cron for scheduled task execution
+- Updated Prisma schema with 3 new models: GuardianSource, GuardianScan, VerifiedChannel
+- Created /src/lib/guardian/sources.ts: 46 pre-loaded M3U sources (20 countries, 12 categories, 5 TDT, 9 extras)
+- Created /src/lib/guardian/scanner.ts: Full scan engine with M3U parser, stream validator (5s timeout, 20 concurrent)
+- Created /src/lib/guardian/scheduler.ts: Cron scheduler with 3 daily scans (6AM, 12PM, 6PM America/Bogota)
+- Created /src/instrumentation.ts: Next.js instrumentation hook to auto-start Guardian on server boot
+- Created /api/guardian/status: Returns Guardian status, scheduler info, last scan stats
+- Created /api/guardian/scan: Triggers manual scan
+- Created /api/guardian/channels: Returns verified channels (JSON or M3U format), supports filtering
+- Modified /api/iptv/route.ts: IPTV API now prefers Guardian-verified channels when available
+- Modified IPTVView.tsx: Added Guardian status badge (shield icon + verified count) in top bar
+- Build: SUCCESS (compiled in 6.2s, all 12 routes including 3 Guardian routes)
+
+Stage Summary:
+- Guardian runs completely in the background ("en las sombras") - no user interaction needed
+- 3 automatic scans daily: 6:00 AM, 12:00 PM, 6:00 PM (America/Bogota timezone)
+- Initial scan runs 60 seconds after server start
+- 46 M3U sources monitored automatically
+- Stream validation with 5s timeout, 20 concurrent connections, 500 channels per source limit
+- Verified channels stored in SQLite, served to IPTV API automatically
+- Fallback: if no Guardian data exists, IPTV API uses direct M3U fetching as before
+- UI shows subtle green badge with Guardian status and verified channel count
+- Manual scan available via POST /api/guardian/scan
+- Clean M3U export at /api/guardian/channels?format=m3u

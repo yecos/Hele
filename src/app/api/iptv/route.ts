@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const db = new PrismaClient();
 
 interface IPTVChannel {
   id: string;
@@ -9,6 +12,7 @@ interface IPTVChannel {
   country: string;
   quality: string;
   status: string;
+  verified?: boolean;
 }
 
 const cache: Record<string, { data: IPTVChannel[]; timestamp: number }> = {};
@@ -135,67 +139,121 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const playlist = searchParams.get('playlist') || 'co';
+    const useGuardian = searchParams.get('guardian') !== 'false'; // Por defecto usa guardian
 
+    // ===== SI HAY CANALES VERIFICADOS POR EL GUARDIAN, USARLOS =====
+    if (useGuardian) {
+      try {
+        const playlists = playlist.split(',').map(p => p.trim().toLowerCase());
+        const guardianChannels: IPTVChannel[] = [];
+
+        // Construir condiciones OR para playlists
+        const conditions = playlists.map(pl => ({ playlist: pl }));
+
+        const verified = await db.verifiedChannel.findMany({
+          where: {
+            OR: conditions.length > 0 ? conditions : undefined,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 2000,
+        });
+
+        if (verified.length > 0) {
+          // Marcar URLs verificadas
+          const verifiedUrls = new Set(verified.map(c => c.url));
+
+          for (const ch of verified) {
+            guardianChannels.push({
+              id: ch.id,
+              name: ch.name,
+              logo: ch.logo,
+              group: ch.group,
+              url: ch.url,
+              country: ch.country,
+              quality: ch.quality,
+              status: 'online',
+              verified: true,
+            });
+          }
+
+          // Agregar canales personalizados
+          if (playlists.includes('co')) guardianChannels.unshift(...CUSTOM_CHANNELS_CO);
+
+          return NextResponse.json({
+            success: true,
+            channels: guardianChannels,
+            total: guardianChannels.length,
+            playlists,
+            source: 'guardian',
+            guardianVerified: verifiedUrls.size,
+          });
+        }
+      } catch (err) {
+        console.error('Error consultando Guardian, fallback a IPTV normal:', err);
+      }
+    }
+
+    // ===== FALLBACK: IPTV normal (sin Guardian) =====
     const playlistUrls: Record<string, string> = {
       // ===== PAÍSES HISPANOS =====
-      co: 'https://iptv-org.github.io/iptv/countries/co.m3u',          // Colombia
-      mx: 'https://iptv-org.github.io/iptv/countries/mx.m3u',          // México
-      ar: 'https://iptv-org.github.io/iptv/countries/ar.m3u',          // Argentina
-      es: 'https://iptv-org.github.io/iptv/countries/es.m3u',          // España
-      cl: 'https://iptv-org.github.io/iptv/countries/cl.m3u',          // Chile
-      ve: 'https://iptv-org.github.io/iptv/countries/ve.m3u',          // Venezuela
-      pe: 'https://iptv-org.github.io/iptv/countries/pe.m3u',          // Perú
-      bo: 'https://iptv-org.github.io/iptv/countries/bo.m3u',          // Bolivia
-      cr: 'https://iptv-org.github.io/iptv/countries/cr.m3u',          // Costa Rica
-      cu: 'https://iptv-org.github.io/iptv/countries/cu.m3u',          // Cuba
-      do: 'https://iptv-org.github.io/iptv/countries/do.m3u',          // Rep. Dominicana
-      ec: 'https://iptv-org.github.io/iptv/countries/ec.m3u',          // Ecuador
-      sv: 'https://iptv-org.github.io/iptv/countries/sv.m3u',          // El Salvador
-      gt: 'https://iptv-org.github.io/iptv/countries/gt.m3u',          // Guatemala
-      hn: 'https://iptv-org.github.io/iptv/countries/hn.m3u',          // Honduras
-      ni: 'https://iptv-org.github.io/iptv/countries/ni.m3u',          // Nicaragua
-      pa: 'https://iptv-org.github.io/iptv/countries/pa.m3u',          // Panamá
-      py: 'https://iptv-org.github.io/iptv/countries/py.m3u',          // Paraguay
-      uy: 'https://iptv-org.github.io/iptv/countries/uy.m3u',          // Uruguay
-      pr: 'https://iptv-org.github.io/iptv/countries/pr.m3u',          // Puerto Rico
+      co: 'https://iptv-org.github.io/iptv/countries/co.m3u',
+      mx: 'https://iptv-org.github.io/iptv/countries/mx.m3u',
+      ar: 'https://iptv-org.github.io/iptv/countries/ar.m3u',
+      es: 'https://iptv-org.github.io/iptv/countries/es.m3u',
+      cl: 'https://iptv-org.github.io/iptv/countries/cl.m3u',
+      ve: 'https://iptv-org.github.io/iptv/countries/ve.m3u',
+      pe: 'https://iptv-org.github.io/iptv/countries/pe.m3u',
+      bo: 'https://iptv-org.github.io/iptv/countries/bo.m3u',
+      cr: 'https://iptv-org.github.io/iptv/countries/cr.m3u',
+      cu: 'https://iptv-org.github.io/iptv/countries/cu.m3u',
+      do: 'https://iptv-org.github.io/iptv/countries/do.m3u',
+      ec: 'https://iptv-org.github.io/iptv/countries/ec.m3u',
+      sv: 'https://iptv-org.github.io/iptv/countries/sv.m3u',
+      gt: 'https://iptv-org.github.io/iptv/countries/gt.m3u',
+      hn: 'https://iptv-org.github.io/iptv/countries/hn.m3u',
+      ni: 'https://iptv-org.github.io/iptv/countries/ni.m3u',
+      pa: 'https://iptv-org.github.io/iptv/countries/pa.m3u',
+      py: 'https://iptv-org.github.io/iptv/countries/py.m3u',
+      uy: 'https://iptv-org.github.io/iptv/countries/uy.m3u',
+      pr: 'https://iptv-org.github.io/iptv/countries/pr.m3u',
 
       // ===== IDIOMA / REGIÓN =====
-      spa: 'https://iptv-org.github.io/iptv/languages/spa.m3u',        // Todos en español
-      latam: 'https://iptv-org.github.io/iptv/regions/latam.m3u',      // Toda Latinoamérica
+      spa: 'https://iptv-org.github.io/iptv/languages/spa.m3u',
+      latam: 'https://iptv-org.github.io/iptv/regions/latam.m3u',
 
       // ===== CATEGORÍAS (iptv-org) =====
-      news: 'https://iptv-org.github.io/iptv/categories/news.m3u',     // Noticias
-      sports: 'https://iptv-org.github.io/iptv/categories/sports.m3u', // Deportes
-      music: 'https://iptv-org.github.io/iptv/categories/music.m3u',   // Música
-      kids: 'https://iptv-org.github.io/iptv/categories/kids.m3u',     // Infantil
-      documentary: 'https://iptv-org.github.io/iptv/categories/documentary.m3u', // Documentales
-      entertainment: 'https://iptv-org.github.io/iptv/categories/entertainment.m3u', // Entretenimiento
-      lifestyle: 'https://iptv-org.github.io/iptv/categories/lifestyle.m3u', // Estilo de vida
-      education: 'https://iptv-org.github.io/iptv/categories/education.m3u', // Educación
-      religious: 'https://iptv-org.github.io/iptv/categories/religious.m3u', // Religión
-      comedy: 'https://iptv-org.github.io/iptv/categories/comedy.m3u', // Comedia
-      movies: 'https://iptv-org.github.io/iptv/categories/movies.m3u', // Películas
-      general: 'https://iptv-org.github.io/iptv/categories/general.m3u', // General
+      news: 'https://iptv-org.github.io/iptv/categories/news.m3u',
+      sports: 'https://iptv-org.github.io/iptv/categories/sports.m3u',
+      music: 'https://iptv-org.github.io/iptv/categories/music.m3u',
+      kids: 'https://iptv-org.github.io/iptv/categories/kids.m3u',
+      documentary: 'https://iptv-org.github.io/iptv/categories/documentary.m3u',
+      entertainment: 'https://iptv-org.github.io/iptv/categories/entertainment.m3u',
+      lifestyle: 'https://iptv-org.github.io/iptv/categories/lifestyle.m3u',
+      education: 'https://iptv-org.github.io/iptv/categories/education.m3u',
+      religious: 'https://iptv-org.github.io/iptv/categories/religious.m3u',
+      comedy: 'https://iptv-org.github.io/iptv/categories/comedy.m3u',
+      movies: 'https://iptv-org.github.io/iptv/categories/movies.m3u',
+      general: 'https://iptv-org.github.io/iptv/categories/general.m3u',
 
       // ===== TDTChannels (España - Legal) =====
-      tdt: 'https://www.tdtchannels.com/lists/tv.m3u',                 // TDT TV España
-      tdt8: 'https://www.tdtchannels.com/lists/tv.m3u8',               // TDT TV España (m3u8)
-      'tdt-radio': 'https://www.tdtchannels.com/lists/radio.m3u',      // TDT Radio España
-      'tdt-radio8': 'https://www.tdtchannels.com/lists/radio.m3u8',      // TDT Radio España (m3u8)
-      'tdt-all': 'https://www.tdtchannels.com/lists/tvradio.m3u8',     // TDT TV + Radio
+      tdt: 'https://www.tdtchannels.com/lists/tv.m3u',
+      tdt8: 'https://www.tdtchannels.com/lists/tv.m3u8',
+      'tdt-radio': 'https://www.tdtchannels.com/lists/radio.m3u',
+      'tdt-radio8': 'https://www.tdtchannels.com/lists/radio.m3u8',
+      'tdt-all': 'https://www.tdtchannels.com/lists/tvradio.m3u8',
 
       // ===== FUENTES ADICIONALES =====
-      'free-tv': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u', // Free-TV Global
-      'free-tv-es': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_spain.m3u8', // Free-TV España
-      'free-tv-mx': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_mexico.m3u8', // Free-TV México
-      'free-tv-ar': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_argentina.m3u8', // Free-TV Argentina
-      'free-tv-cl': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_chile.m3u8', // Free-TV Chile
-      'free-tv-co': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_colombia.m3u8', // Free-TV Colombia
-      'free-tv-pe': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_peru.m3u8', // Free-TV Perú
-      'free-tv-ve': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_venezuela.m3u8', // Free-TV Venezuela
-      'm3ucl-total': 'https://www.m3u.cl/lista/total.m3u',            // M3U.CL Todos
-      'm3ucl-music': 'https://www.m3u.cl/lista/musica.m3u',            // M3U.CL Música
-      'telechancho': 'https://telechancho.github.io/telechancho-iptv/telechancho-infinity.m3u', // telechancho
+      'free-tv': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u',
+      'free-tv-es': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_spain.m3u8',
+      'free-tv-mx': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_mexico.m3u8',
+      'free-tv-ar': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_argentina.m3u8',
+      'free-tv-cl': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_chile.m3u8',
+      'free-tv-co': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_colombia.m3u8',
+      'free-tv-pe': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_peru.m3u8',
+      'free-tv-ve': 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_venezuela.m3u8',
+      'm3ucl-total': 'https://www.m3u.cl/lista/total.m3u',
+      'm3ucl-music': 'https://www.m3u.cl/lista/musica.m3u',
+      'telechancho': 'https://telechancho.github.io/telechancho-iptv/telechancho-infinity.m3u',
     };
 
     const playlists = playlist.split(',').map(p => p.trim().toLowerCase());
@@ -245,6 +303,7 @@ export async function GET(request: NextRequest) {
       channels: allChannels,
       total: allChannels.length,
       playlists: playlists,
+      source: 'direct',
     });
   } catch (error) {
     console.error('IPTV API error:', error);

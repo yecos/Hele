@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useViewStore } from '@/lib/store';
-import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast } from 'lucide-react';
+import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity } from 'lucide-react';
 import Hls from 'hls.js';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
@@ -126,6 +126,14 @@ export function IPTVView() {
   const [showOnlyWorking, setShowOnlyWorking] = useState(true);
   const [verifiedUrls, setVerifiedUrls] = useState<Set<string>>(new Set());
   const verifyAbortRef = useRef<AbortController | null>(null);
+
+  // Guardian state
+  const [guardianStatus, setGuardianStatus] = useState<{
+    totalVerified: number;
+    isScanning: boolean;
+    latestScan: { status: string; workingChannels: number; totalChannels: number; completedAt: string } | null;
+    scheduler: { initialized: boolean; activeTasks: number };
+  } | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -254,6 +262,22 @@ export function IPTVView() {
       }
     };
   }, [selectedPlaylist, verifyChannels]);
+
+  // Fetch Guardian status
+  useEffect(() => {
+    const fetchGuardianStatus = async () => {
+      try {
+        const res = await fetch('/api/guardian/status');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) setGuardianStatus(data.guardian);
+        }
+      } catch {}
+    };
+    fetchGuardianStatus();
+    const interval = setInterval(fetchGuardianStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Filter channels by search
   useEffect(() => {
@@ -679,6 +703,18 @@ export function IPTVView() {
                 <div className="flex items-center gap-2">
                   <Radio size={20} className="text-green-500" />
                   <span className="text-white font-bold">IPTV</span>
+                  {guardianStatus && guardianStatus.scheduler.initialized && (
+                    <span className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1">
+                      {guardianStatus.isScanning ? (
+                        <Activity size={10} className="text-green-400 animate-pulse" />
+                      ) : (
+                        <ShieldCheck size={10} className="text-green-400" />
+                      )}
+                      <span className="text-green-400 text-[10px] font-medium">
+                        {guardianStatus.isScanning ? 'Escaneando...' : guardianStatus.totalVerified > 0 ? `${guardianStatus.totalVerified} OK` : 'Guardian'}
+                      </span>
+                    </span>
+                  )}
                 </div>
               </div>
 
