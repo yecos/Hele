@@ -710,24 +710,28 @@ export function IPTVView() {
                 <div className="flex items-center gap-2">
                   <Radio size={20} className="text-green-500" />
                   <span className="text-white font-bold">IPTV</span>
-                  {guardianStatus && guardianStatus.scheduler.initialized && (
+                  {/* Admin: siempre visible. No-admin: solo si scheduler inicializado */}
+                  {isAdmin ? (
                     <button
-                      onClick={() => isAdmin && setShowAdminPanel(true)}
-                      className={`pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1 transition-colors ${isAdmin ? 'hover:bg-green-500/30 cursor-pointer' : ''}`}
-                      title={isAdmin ? 'Abrir Panel Admin' : 'Guardian activo'}
+                      onClick={() => setShowAdminPanel(true)}
+                      className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 ml-1 hover:bg-emerald-500/30 cursor-pointer transition-colors"
+                      title="Abrir Panel Admin"
                     >
+                      <Shield size={12} className="text-emerald-400" />
+                      <span className="text-emerald-400 text-[11px] font-bold">Admin</span>
+                    </button>
+                  ) : guardianStatus && guardianStatus.scheduler.initialized ? (
+                    <span className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1">
                       {guardianStatus.isScanning ? (
                         <Activity size={10} className="text-green-400 animate-pulse" />
-                      ) : isAdmin ? (
-                        <Shield size={10} className="text-green-400" />
                       ) : (
                         <ShieldCheck size={10} className="text-green-400" />
                       )}
                       <span className="text-green-400 text-[10px] font-medium">
-                        {guardianStatus.isScanning ? 'Escaneando...' : guardianStatus.totalVerified > 0 ? `${guardianStatus.totalVerified} OK` : isAdmin ? 'Admin' : 'Guardian'}
+                        {guardianStatus.isScanning ? 'Escaneando...' : guardianStatus.totalVerified > 0 ? `${guardianStatus.totalVerified} OK` : 'Guardian'}
                       </span>
-                    </button>
-                  )}
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
