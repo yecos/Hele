@@ -3,19 +3,7 @@ import { requireAdmin } from '@/lib/admin-guard';
 import { runDiscovery, promoteToGuardian, getDiscoveredSources, getDiscoveryStats, getDiscoveryStatus } from '@/lib/guardian/discovery';
 import { runFullScan, getGuardianStats, getVerifiedChannels } from '@/lib/guardian/scanner';
 import { getSchedulerStatus } from '@/lib/guardian/scheduler';
-
-// Lazy Prisma — usa el singleton centralizado de db.ts
-let _db: any = null;
-function getDb() {
-  if (!_db) {
-    try {
-      _db = require('@/lib/db').db;
-    } catch {
-      return null;
-    }
-  }
-  return _db;
-}
+import { db } from '@/lib/db';
 
 const EMPTY_DASHBOARD = {
   guardian: {
@@ -44,7 +32,7 @@ const EMPTY_DASHBOARD = {
 export async function GET(request: NextRequest) {
   try {
     const admin = requireAdmin(request);
-    const database = getDb();
+    const database = db;
 
     if (!database) {
       return NextResponse.json({
@@ -99,7 +87,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const admin = requireAdmin(request);
-    const database = getDb();
+    const database = db;
 
     if (!database) {
       return NextResponse.json({

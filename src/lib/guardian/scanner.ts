@@ -4,17 +4,7 @@
  */
 
 import { GUARDIAN_SOURCES } from './sources';
-
-// Lazy Prisma init — usa el singleton centralizado de db.ts
-let _db: any = null;
-function db() {
- if (!_db) {
-   try {
-     _db = require('@/lib/db').db;
-   } catch { _db = null; }
- }
- return _db;
-}
+import { db } from '@/lib/db';
 
 // ===== Configuración del scanner =====
 const CHECK_TIMEOUT = 5000;        // 5 segundos por stream
@@ -223,7 +213,7 @@ export async function runFullScan(trigger: 'scheduled' | 'manual' = 'scheduled')
     return { status: 'already_running', message: 'Un escaneo ya está en progreso' };
   }
 
-  const database = db();
+  const database = db;
   if (!database) {
     return { status: 'error', message: 'DATABASE_URL no configurada. No se puede escanear sin base de datos.' };
   }
@@ -232,7 +222,7 @@ export async function runFullScan(trigger: 'scheduled' | 'manual' = 'scheduled')
   const startTime = Date.now();
 
   // Crear registro del escaneo
-  const scan = await db().guardianScan.create({
+  const scan = await db.guardianScan.create({
     data: {
       status: 'running',
       trigger,
@@ -249,10 +239,10 @@ export async function runFullScan(trigger: 'scheduled' | 'manual' = 'scheduled')
 
   try {
     // Limpiar canales verificados anteriores
-    await db().verifiedChannel.deleteMany({});
+    await db.verifiedChannel.deleteMany({});
 
     // Obtener fuentes habilitadas de la DB, o usar las predefinidas
-    const dbSources = await db().guardianSource.findMany({
+    const dbSources = await db.guardianSource.findMany({
       where: { enabled: true },
       orderBy: { priority: 'desc' },
     });
@@ -264,7 +254,7 @@ export async function runFullScan(trigger: 'scheduled' | 'manual' = 'scheduled')
     // Seed las fuentes en la DB si no existen
     if (dbSources.length === 0) {
       console.log('[Guardian] Seeding fuentes predefinidas...');
-      await db().guardianSource.createMany({
+      await db.guardianSource.createMany({
         data: GUARDIAN_SOURCES.map(s => ({
           name: s.name,
           url: s.url,
@@ -301,7 +291,7 @@ export async function runFullScan(trigger: 'scheduled' | 'manual' = 'scheduled')
           if (working.has(channel.url)) {
             workingChannels++;
             try {
-              await db().verifiedChannel.create({
+              await db.verifiedChannel.create({
                 data: {
                   scanId: scan.id,
                   sourceId: source.id,
@@ -326,7 +316,7 @@ export async function runFullScan(trigger: 'scheduled' | 'manual' = 'scheduled')
         console.log(`[Guardian] ${source.name}: ${working.size} OK de ${channels.length} totales`);
 
         // Actualizar registro de la fuente
-        await db().guardianSource.updateMany({
+        await db.guardianSource.updateMany({
           where: { name: source.name },
           data: { updatedAt: new Date() },
         });
@@ -337,7 +327,7 @@ export async function runFullScan(trigger: 'scheduled' | 'manual' = 'scheduled')
 
     // Actualizar registro del escaneo
     const durationMs = Date.now() - startTime;
-    await db().guardianScan.update({
+    await db.guardianScan.update({
       where: { id: scan.id },
       data: {
         status: 'completed',
@@ -373,7 +363,7 @@ export async function runFullScan(trigger: 'scheduled' | 'manual' = 'scheduled')
     const durationMs = Date.now() - startTime;
     const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
 
-    await db().guardianScan.update({
+    await db.guardianScan.update({
       where: { id: scan.id },
       data: {
         status: 'failed',
@@ -415,7 +405,7 @@ export function getScannerStatus() {
 
 // ===== Obtener canales verificados de la DB =====
 export async function getVerifiedChannels(options?: { playlist?: string; group?: string; limit?: number }) {
-  const database = db();
+  const database = db;
   if (!database) return [];
 
   const where: Record<string, unknown> = {};
@@ -438,7 +428,7 @@ export async function getVerifiedChannels(options?: { playlist?: string; group?:
 
 // ===== Obtener estadísticas =====
 export async function getGuardianStats() {
-  const database = db();
+  const database = db;
   if (!database) {
     return {
       totalSources: 0,
