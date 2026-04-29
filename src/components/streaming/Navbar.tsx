@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useViewStore, useAuthStore, useCastStore, usePlayerStore } from '@/lib/store';
+import { useViewStore, useAuthStore, useCastStore } from '@/lib/store';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { Search, Heart, Home, Settings, Menu, X, Film, Tv, Radio, LogOut, User, Cast, Clock } from 'lucide-react';
 
 export function Navbar() {
   const { currentView, setView, setSearchQuery } = useViewStore();
   const { isLoggedIn, username, logout } = useAuthStore();
-  const { isCasting: playerCasting, currentServerUrl, currentMovie, isPlaying: moviePlaying } = usePlayerStore();
-  const { isCasting: globalCasting, setCastState } = useCastStore();
+  const { setCastState } = useCastStore();
   const cast = useChromecast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
@@ -22,17 +21,6 @@ export function Navbar() {
 
   const isActivelyCasting = cast.isConnected;
   const castStatus = cast.status;
-
-  // Auto-cast movie when server URL is set and Cast is connected
-  useEffect(() => {
-    if (moviePlaying && currentServerUrl && cast.isConnected && !playerCasting) {
-      const title = currentMovie?.title || 'Reproduciendo';
-      const subtitle = currentMovie?.mediaType === 'tv'
-        ? `Temporada ${usePlayerStore.getState().currentSeason} - Episodio ${usePlayerStore.getState().currentEpisode}`
-        : '';
-      cast.castEmbed(currentServerUrl, title, subtitle);
-    }
-  }, [currentServerUrl, cast.isConnected, moviePlaying]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCastClick = () => {
     if (isActivelyCasting) {

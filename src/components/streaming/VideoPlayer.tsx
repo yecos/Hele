@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { usePlayerStore, useHistoryStore } from '@/lib/store';
+import { usePlayerStore, useHistoryStore, useViewStore } from '@/lib/store';
 import { LANG_LABELS, SERVER_ICONS, TMDB_SERVERS, type StreamSource, type ServerGroup, type AudioLang } from '@/lib/sources';
-import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight, Cast } from 'lucide-react';
+import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight, Cast, Tv, Wifi } from 'lucide-react';
 import { useChromecast } from '@/hooks/use-chromecast';
 
 function buildServerGroups(
@@ -41,12 +41,15 @@ export function VideoPlayer() {
     closePlayer, selectServer, selectLang, setServerGroups, setDetail,
     playEpisode,
   } = usePlayerStore();
+  const setView = useViewStore(s => s.setView);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeKey, setIframeKey] = useState(0);
   const [iframeError, setIframeError] = useState(false);
   const [availableLangs, setAvailableLangs] = useState<AudioLang[]>([]);
   const [loadingProgress, setLoadingProgress] = useState(true);
+  const [castBannerDismissed, setCastBannerDismissed] = useState(false);
+  const [castTried, setCastTried] = useState(false);
 
   const cast = useChromecast();
   const isActivelyCasting = cast.isConnected;
@@ -105,6 +108,8 @@ export function VideoPlayer() {
       setIframeError(false);
       setLoadingProgress(true);
       setIframeKey(k => k + 1);
+      setCastTried(false);
+      setCastBannerDismissed(false);
       // Remember working server
       if (currentMovie) {
         try {
@@ -113,6 +118,24 @@ export function VideoPlayer() {
       }
     }
   }, [currentServerUrl, currentMovie?.id]);
+
+  // Auto-cast to Chromecast when connected and server URL changes
+  useEffect(() => {
+    if (isPlaying && currentServerUrl && cast.isConnected && !castTried && !cast.isCasting) {
+      const title = currentMovie?.title || 'Reproduciendo';
+      const subtitle = currentMovie?.mediaType === 'tv'
+        ? `T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}`
+        : '';
+
+      setCastTried(true);
+      cast.castEmbed(currentServerUrl, title, subtitle).then((success) => {
+        if (!success) {
+          // Cast failed — the banner will show automatically via castError
+          setCastBannerDismissed(false);
+        }
+      });
+    }
+  }, [currentServerUrl, cast.isConnected, isPlaying, castTried]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track watch history when movie starts playing
   useEffect(() => {
@@ -132,6 +155,9 @@ export function VideoPlayer() {
   const currentGroupSources = serverGroups.find(g => g.lang === currentLang)?.sources || [];
   const hasMultipleLangs = availableLangs.length > 1;
 
+  // Show cast error banner?
+  const showCastBanner = cast.isConnected && cast.castError && !castBannerDismissed && !cast.isCasting;
+
   if (!isPlaying || !currentMovie) return null;
 
   return (
@@ -150,7 +176,7 @@ export function VideoPlayer() {
             <p className="text-xs text-gray-400">
               {currentServerName || 'Cargando servidor...'}
               {currentMovie.mediaType === 'tv' && ` - T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}`}
-              {cast.isConnected && (
+              {cast.isConnected && cast.isCasting && (
                 <span className="text-green-400 ml-2">{cast.statusMessage}</span>
               )}
             </p>
@@ -169,7 +195,9 @@ export function VideoPlayer() {
                 if (!cast.isConnected) {
                   cast.connect();
                 } else {
-                  cast.castEmbed(currentServerUrl, currentMovie.title, subtitle);
+                  cast.castEmbed(currentServerUrl, currentMovie.title, subtitle).then(() => {
+                    setCastBannerDismissed(false);
+                  });
                 }
               } else {
                 cast.connect();
@@ -188,9 +216,90 @@ export function VideoPlayer() {
           </button>
       </div>
 
+      {/* Chromecast connection banner */}
+      {cast.isConnected && !cast.isCasting && !showCastBanner && (
+        <div className="absolute top-14 left-0 right-0 z-[15] bg-green-600/90 backdrop-blur-sm px-4 py-1.5 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-white text-xs">
+            <Wifi size={12} />
+            <span>Conectado a <b>{cast.device?.friendlyName || 'Chromecast'}</b></span>
+          </div>
+          <button onClick={() => cast.disconnect()} className="text-white/80 hover:text-white text-xs">
+            Desconectar
+          </button>
+        </div>
+      )}
+
+      {/* Chromecast error banner — explains why movie can't be sent to TV */}
+      {showCastBanner && (
+        <div className="absolute top-14 left-0 right-0 z-[15] bg-amber-600/95 backdrop-blur-sm px-4 py-3">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Cast size={16} className="text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-semibold">
+                No se pudo enviar a {cast.device?.friendlyName || 'Chromecast'}
+              </p>
+              <p className="text-white/80 text-xs mt-0.5 leading-relaxed">
+                Los servidores de películas usan un reproductor web que no es compatible con Chromecast.
+                El contenido se reproduce en tu dispositivo.
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <button
+                  onClick={() => setCastBannerDismissed(true)}
+                  className="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-full transition-all"
+                >
+                  Entendido
+                </button>
+                <button
+                  onClick={() => { cast.disconnect(); setCastBannerDismissed(true); }}
+                  className="text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1 rounded-full transition-all"
+                >
+                  Desconectar
+                </button>
+                <button
+                  onClick={() => { closePlayer(); setView('iptv'); }}
+                  className="text-xs bg-white/10 hover:bg-white/20 text-white/80 px-3 py-1 rounded-full transition-all flex items-center gap-1"
+                >
+                  <Tv size={10} />
+                  Probar IPTV
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Casting overlay — when content IS successfully being sent to TV */}
+      {cast.isCasting && (
+        <div className="absolute inset-0 z-[12] bg-black/95 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="w-20 h-20 rounded-full bg-red-600/20 border-2 border-red-600/50 flex items-center justify-center mx-auto animate-pulse">
+              <Cast size={36} className="text-red-500" />
+            </div>
+            <div>
+              <p className="text-white font-bold text-lg">Reproduciendo en TV</p>
+              <p className="text-gray-400 text-sm mt-1">{cast.device?.friendlyName || 'Chromecast'}</p>
+            </div>
+            {currentMovie && (
+              <p className="text-gray-500 text-xs max-w-xs mx-auto">
+                {currentMovie.title}
+                {currentMovie.mediaType === 'tv' && ` — T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}`}
+              </p>
+            )}
+            <button
+              onClick={() => cast.disconnect()}
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition-all"
+            >
+              Detener y ver en PC
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Player area */}
       <div className="flex-1 relative bg-black">
-        {loadingProgress && (
+        {loadingProgress && !cast.isCasting && (
           <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/80">
             <div className="flex flex-col items-center gap-3">
               <Loader2 size={40} className="text-red-500 animate-spin" />
@@ -209,7 +318,7 @@ export function VideoPlayer() {
           </div>
         )}
 
-        {!currentServerUrl && !loadingProgress && (
+        {!currentServerUrl && !loadingProgress && !cast.isCasting && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="flex flex-col items-center gap-3 text-center px-4">
               <MonitorPlay size={48} className="text-gray-600" />
@@ -218,7 +327,7 @@ export function VideoPlayer() {
           </div>
         )}
 
-        {currentServerUrl && (
+        {currentServerUrl && !cast.isCasting && (
           <iframe
             key={iframeKey}
             ref={iframeRef}
