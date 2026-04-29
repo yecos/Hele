@@ -153,7 +153,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 }));
 
 // ==================== VIEW STATE ====================
-export type ViewType = 'home' | 'movies' | 'series' | 'iptv' | 'search' | 'favorites' | 'settings';
+export type ViewType = 'home' | 'movies' | 'series' | 'iptv' | 'search' | 'history' | 'favorites' | 'settings';
 
 interface ViewState {
   currentView: ViewType;

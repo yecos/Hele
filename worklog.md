@@ -95,3 +95,24 @@ Stage Summary:
 - Visual consistency achieved: matching badge styles, button border-radius, hover scales
 - Google OAuth with graceful demo fallback when not configured
 - Build: SUCCESS (compiled in 6.0s, all 9 routes generated)
+
+---
+Task ID: 4
+Agent: Main
+Task: Phase 2 - History view, Settings component, server auto-fallback
+
+Work Log:
+- Created HistoryView component with watch history display, progress bars, and delete controls
+- Created SettingsView component extracted from inline page.tsx code with improved design
+- Added 'history' view type to store.ts ViewType
+- Updated Navbar with Clock icon and History nav item
+- Updated page.tsx to use SettingsView and HistoryView components
+- Added server auto-fallback in VideoPlayer iframe onError handler
+- Connected watch history tracking to VideoPlayer (auto-saves on play)
+
+Stage Summary:
+- New History view accessible from navigation with progress indicators
+- Settings separated into its own component with server status display
+- 5 servers listed in settings (3 active + 2 backup)
+- Server auto-fallback tries next server on iframe error
+- Watch history auto-tracks when user starts playing content

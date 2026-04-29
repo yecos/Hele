@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { usePlayerStore } from '@/lib/store';
+import { usePlayerStore, useHistoryStore } from '@/lib/store';
 import { LANG_LABELS, SERVER_ICONS, TMDB_SERVERS, type StreamSource, type ServerGroup, type AudioLang } from '@/lib/sources';
 import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight, Cast } from 'lucide-react';
 import { useChromecast } from '@/hooks/use-chromecast';
@@ -114,6 +114,21 @@ export function VideoPlayer() {
     }
   }, [currentServerUrl, currentMovie?.id]);
 
+  // Track watch history when movie starts playing
+  useEffect(() => {
+    if (isPlaying && currentMovie && currentServerUrl) {
+      const history = useHistoryStore.getState();
+      history.addToHistory({
+        movieId: currentMovie.id,
+        title: currentMovie.title,
+        posterUrl: currentMovie.posterUrl,
+        mediaType: currentMovie.mediaType as 'movie' | 'tv',
+        progress: 0,
+        duration: 0,
+      });
+    }
+  }, [isPlaying && currentMovie?.id && currentServerUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const currentGroupSources = serverGroups.find(g => g.lang === currentLang)?.sources || [];
   const hasMultipleLangs = availableLangs.length > 1;
 
@@ -211,8 +226,22 @@ export function VideoPlayer() {
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
             allowTransparency
             referrerPolicy="origin"
-            onLoad={() => setLoadingProgress(false)}
-            onError={() => { setIframeError(true); setLoadingProgress(false); }}
+            onLoad={() => {
+              setLoadingProgress(false);
+              setIframeError(false);
+            }}
+            onError={() => {
+              setLoadingProgress(false);
+              // Auto-try next server
+              const currentIndex = currentGroupSources.findIndex(s => s.url === currentServerUrl);
+              if (currentIndex >= 0 && currentIndex < currentGroupSources.length - 1) {
+                const nextSource = currentGroupSources[currentIndex + 1];
+                selectServer(nextSource);
+                setIframeError(false);
+              } else {
+                setIframeError(true);
+              }
+            }}
           />
         )}
       </div>

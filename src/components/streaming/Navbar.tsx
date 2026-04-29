@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useViewStore, useAuthStore, useCastStore, usePlayerStore } from '@/lib/store';
 import { useChromecast } from '@/hooks/use-chromecast';
-import { Search, Heart, Home, Settings, Menu, X, Film, Tv, Radio, LogOut, User, Cast } from 'lucide-react';
+import { Search, Heart, Home, Settings, Menu, X, Film, Tv, Radio, LogOut, User, Cast, Clock } from 'lucide-react';
 
 export function Navbar() {
   const { currentView, setView, setSearchQuery } = useViewStore();
@@ -56,6 +56,7 @@ export function Navbar() {
     { id: 'series' as const, label: 'Series', icon: Tv },
     { id: 'iptv' as const, label: 'IPTV', icon: Radio },
     { id: 'search' as const, label: 'Buscar', icon: Search },
+    { id: 'history' as const, label: 'Historial', icon: Clock },
     { id: 'favorites' as const, label: 'Mi Lista', icon: Heart },
     { id: 'settings' as const, label: 'Ajustes', icon: Settings },
   ];
