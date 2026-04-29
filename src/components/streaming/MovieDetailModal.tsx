@@ -185,6 +185,7 @@ export function MovieDetailModal() {
                 <iframe
                   src={`https://www.youtube.com/embed/${trailer.key}`}
                   className="w-full h-full"
+                  sandbox="allow-scripts allow-same-origin allow-autoplay allow-fullscreen allow-encrypted-media"
                   allowFullScreen
                   allow="autoplay; encrypted-media"
                 />

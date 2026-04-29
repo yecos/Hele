@@ -171,6 +171,33 @@ export default function RootLayout({
           })();
         `}} />
         <script dangerouslySetInnerHTML={{ __html: `
+          // Block popups and ad windows from embed servers
+          (function() {
+            var origOpen = window.open;
+            var blocked = 0;
+            window.open = function() {
+              blocked++;
+              if (blocked <= 3) console.log('[AdBlocker] Blocked popup #' + blocked);
+              return null;
+            };
+            // Block new tabs via target manipulation
+            document.addEventListener('click', function(e) {
+              var link = e.target.closest('a[target="_blank"], a[target="_new"]');
+              if (link) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+              }
+            }, true);
+            // Block beforeunload used by ads to prevent leaving
+            window.addEventListener('beforeunload', function(e) {
+              // Allow normal navigation, just clean up
+              var target = e.target || e.srcElement;
+            });
+            console.log('[AdBlocker] Popup blocker active');
+          })();
+        `}} />
+        <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
               navigator.serviceWorker.register('/sw.js').then(function(reg) {

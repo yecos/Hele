@@ -333,10 +333,11 @@ export function VideoPlayer() {
             ref={iframeRef}
             src={currentServerUrl}
             className="w-full h-full border-0"
+            sandbox="allow-scripts allow-same-origin allow-autoplay allow-fullscreen allow-encrypted-media allow-presentation"
             allowFullScreen
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
             allowTransparency
-            referrerPolicy="origin"
+            referrerPolicy="no-referrer"
             onLoad={() => {
               setLoadingProgress(false);
               setIframeError(false);
