@@ -167,8 +167,7 @@ export function VideoPlayer() {
         </div>
 
         {/* Cast button */}
-        {cast.isAvailable && (
-          <button
+        <button
             onClick={() => {
               if (isActivelyCasting) {
                 cast.disconnect();
@@ -177,7 +176,6 @@ export function VideoPlayer() {
                   ? `T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}`
                   : '';
                 if (!cast.isConnected) {
-                  // Connect first, then the Navbar auto-cast effect will handle it
                   cast.connect();
                 } else {
                   cast.castEmbed(currentServerUrl, currentMovie.title, subtitle);
@@ -195,7 +193,6 @@ export function VideoPlayer() {
           >
             <Cast size={20} />
           </button>
-        )}
       </div>
 
       {/* Player area */}
