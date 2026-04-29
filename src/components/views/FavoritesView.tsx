@@ -92,12 +92,12 @@ export function FavoritesView() {
                   </div>
                 </div>
                 {movie.rating > 0 && (
-                  <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/70 text-yellow-400 px-2 py-0.5 rounded-md text-xs font-bold">
+                  <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-yellow-400 px-2 py-0.5 rounded-md text-xs font-bold">
                     <Star size={10} fill="currentColor" />
                     {movie.rating.toFixed(1)}
                   </div>
                 )}
-                <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase">
+                <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase">
                   {movie.mediaType === 'movie' ? 'Peli' : 'Serie'}
                 </div>
               </div>

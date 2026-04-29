@@ -2,30 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/lib/store';
-import { LANG_LABELS, SERVER_ICONS, type StreamSource, type ServerGroup, type AudioLang } from '@/lib/sources';
+import { LANG_LABELS, SERVER_ICONS, TMDB_SERVERS, type StreamSource, type ServerGroup, type AudioLang } from '@/lib/sources';
 import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight, Cast } from 'lucide-react';
 import { useChromecast } from '@/hooks/use-chromecast';
-
-// Server URL generators (kept in sync with sources.ts)
-function getServerUrl(serverId: string, tmdbId: number, type: 'movie' | 'tv', season?: number, episode?: number): string {
-  switch (serverId) {
-    case 'vidsrc-io':
-      return type === 'movie' ? `https://vidsrc.io/embed/movie/${tmdbId}` : `https://vidsrc.io/embed/tv/${tmdbId}/${season}/${episode}`;
-    case 'vidlink':
-      return type === 'movie' ? `https://vidlink.pro/movie/${tmdbId}` : `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`;
-    case 'moviesapi':
-      return type === 'movie' ? `https://moviesapi.to/movie/${tmdbId}` : `https://moviesapi.to/tv/${tmdbId}-${season}-${episode}`;
-    default:
-      return '';
-  }
-}
-
-// Server definitions for each language tab
-const SERVER_CONFIG = [
-  { id: 'vidsrc-io', name: 'VidSrc IO', quality: 'HD' },
-  { id: 'vidlink', name: 'VidLink', quality: 'HD' },
-  { id: 'moviesapi', name: 'MoviesAPI', quality: 'Auto' },
-];
 
 function buildServerGroups(
   tmdbId: number,
@@ -36,13 +15,13 @@ function buildServerGroups(
   const langSources = (lang: AudioLang, label: string): ServerGroup => ({
     lang,
     label,
-    sources: SERVER_CONFIG.map(s => ({
+    sources: TMDB_SERVERS.map(s => ({
       id: `${s.id}-${lang}`,
       name: s.name,
       server: s.id,
-      url: getServerUrl(s.id, tmdbId, type, season, episode),
+      url: s.getUrl(tmdbId, type, season, episode),
       lang,
-      quality: s.quality,
+      quality: 'HD' as const,
       type: 'stream' as const,
       mode: 'embed' as const,
     })),
@@ -93,7 +72,7 @@ export function VideoPlayer() {
         console.error('Error fetching detail:', err);
       }
 
-      // 2. Build server groups
+      // 2. Build server groups from centralized sources
       const groups = buildServerGroups(
         currentMovie.tmdbId,
         type,
@@ -270,7 +249,7 @@ export function VideoPlayer() {
               <button
                 key={source.id}
                 onClick={() => selectServer(source)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   currentServerUrl === source.url
                     ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                     : 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white'
@@ -278,9 +257,7 @@ export function VideoPlayer() {
               >
                 <span className="text-base">{SERVER_ICONS[source.server] || SERVER_ICONS.default}</span>
                 <span>{source.name}</span>
-                {source.quality !== 'Auto' && source.quality !== 'HD' && (
-                  <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded">{source.quality}</span>
-                )}
+                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded">{source.quality}</span>
                 {source.type === 'download' && (
                   <Download size={12} className="ml-1" />
                 )}
@@ -302,7 +279,7 @@ export function VideoPlayer() {
             <button
               onClick={() => currentEpisode > 1 && playEpisode(currentSeason, currentEpisode - 1)}
               disabled={currentEpisode <= 1}
-              className="px-4 py-2 rounded-lg bg-white/5 text-sm text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="px-4 py-2 rounded-xl bg-white/5 text-sm text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               <ChevronLeft size={16} className="inline mr-1" />
               Anterior
@@ -315,7 +292,7 @@ export function VideoPlayer() {
                 const maxEp = currentDetail.number_of_episodes || 20;
                 if (currentEpisode < maxEp) playEpisode(currentSeason, currentEpisode + 1);
               }}
-              className="px-4 py-2 rounded-lg bg-white/5 text-sm text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+              className="px-4 py-2 rounded-xl bg-white/5 text-sm text-gray-400 hover:bg-white/10 hover:text-white transition-all"
             >
               Siguiente
               <ChevronRight size={16} className="inline ml-1" />

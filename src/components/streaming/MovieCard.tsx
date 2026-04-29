@@ -29,7 +29,7 @@ export function MovieCard({ movie }: MovieCardProps) {
             src={movie.posterUrl}
             alt={movie.title}
             loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             onError={() => setImgError(true)}
           />
         ) : (
@@ -42,7 +42,7 @@ export function MovieCard({ movie }: MovieCardProps) {
         <div className={`absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3 transition-opacity duration-200 ${hovered ? 'opacity-100' : 'opacity-0'}`}>
           <button
             onClick={(e) => { e.stopPropagation(); playMovie(movie); }}
-            className="w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center transition-all hover:scale-110 shadow-lg"
+            className="w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center transition-all hover:scale-105 shadow-lg"
           >
             <Play size={22} fill="white" className="ml-0.5" />
           </button>
@@ -103,13 +103,13 @@ export function CategoryRow({ title, movies }: CategoryRowProps) {
         {/* Scroll buttons */}
         <button
           onClick={() => scroll('left')}
-          className="absolute left-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-r from-[#0a0a0a] to-transparent flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity"
+          className="absolute left-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-r from-background to-transparent flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity"
         >
           <ChevronLeft size={28} className="text-white" />
         </button>
         <button
           onClick={() => scroll('right')}
-          className="absolute right-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-l from-[#0a0a0a] to-transparent flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity"
+          className="absolute right-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-l from-background to-transparent flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity"
         >
           <ChevronRight size={28} className="text-white" />
         </button>

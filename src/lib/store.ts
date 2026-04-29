@@ -91,7 +91,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   loginWithGoogle: async () => {
     set({ isLoading: true });
     try {
-      // Use NextAuth signIn with Google
+      // Try NextAuth Google OAuth
       const res = await fetch('/api/auth/signin/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -101,20 +101,26 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (res.ok) {
         const data = await res.json();
         if (data.url) {
-          // Redirect to Google OAuth
+          // Google OAuth configured — redirect to Google consent screen
           window.location.href = data.url;
           return true;
         }
       }
 
-      // If NextAuth Google is not configured, fallback to demo
+      // Google OAuth not configured — use demo mode
       console.log('Google OAuth not configured (missing GOOGLE_CLIENT_ID). Using demo mode.');
       const googleUser = {
         username: 'Google User',
+        name: 'Google User',
+        email: 'user@gmail.com',
+        image: '',
         provider: 'google',
       };
       localStorage.setItem('xs-auth', JSON.stringify({
         username: googleUser.username,
+        name: googleUser.name,
+        email: googleUser.email,
+        image: googleUser.image,
         token: 'google-demo-token',
         provider: 'google',
       }));

@@ -63,3 +63,35 @@ Stage Summary:
 - Added subtitulada language group (3 servers)
 - Pelisjuanita search API working (returns slugs and titles)
 - App compiles and runs without errors
+
+---
+Task ID: 3
+Agent: Main
+Task: Refactor sources + add backup servers, fix visual inconsistencies, improve Google login
+
+Work Log:
+- Added 2 backup servers to TMDB_SERVERS in sources.ts: moviesapi-club and vidsrc-pm
+- Added server icons for moviesapi-club (🎥) and vidsrc-pm (📺) to SERVER_ICONS
+- Rewrote VideoPlayer.tsx to import TMDB_SERVERS directly from sources.ts instead of duplicating server config
+- Removed getServerUrl() and SERVER_CONFIG from VideoPlayer.tsx; buildServerGroups() now uses TMDB_SERVERS directly
+- Fixed visual inconsistencies across 10 files:
+  - HomeView.tsx: pt-16 → pt-20 for skeleton and main content
+  - MovieCard.tsx: scale-110 → scale-105 on poster and play button
+  - MovieCard.tsx CategoryRow: from-[#0a0a0a] → from-background on scroll gradient buttons
+  - HeroBanner.tsx: from-[#0a0a0a] → from-background on bottom gradient
+  - MovieDetailModal.tsx: rounded-lg → rounded-xl + shadow-lg shadow-red-600/20 on play button; rounded-lg → rounded-xl on favorites button
+  - FavoritesView.tsx: added backdrop-blur-sm to rating and type badges
+  - SearchView.tsx: added Star import and rating badge to SearchResultCard
+  - LoginView.tsx: bg-[#0a0a0a] → bg-background; placeholder:text-gray-600 → placeholder:text-gray-500
+  - OfflinePage.tsx: bg-[#0a0a0a] → bg-background
+  - page.tsx: bg-[#0a0a0a] → bg-background
+- Improved loginWithGoogle() in store.ts with enhanced demo user data (name, email, image fields)
+- Updated .env with uncommented GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET with setup instructions
+
+Stage Summary:
+- Total servers now: 5 (VidSrc IO, VidLink, MoviesAPI, MoviesAPI Club, VidSrc PM)
+- VideoPlayer fully refactored to use centralized source config from sources.ts
+- All hardcoded bg-[#0a0a0a] replaced with theme-aware bg-background
+- Visual consistency achieved: matching badge styles, button border-radius, hover scales
+- Google OAuth with graceful demo fallback when not configured
+- Build: SUCCESS (compiled in 6.0s, all 9 routes generated)

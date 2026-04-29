@@ -35,7 +35,7 @@ export function LoginView() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       {/* Background gradient effect */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[128px]" />
@@ -97,7 +97,7 @@ export function LoginView() {
               value={username}
               onChange={e => setUsername(e.target.value)}
               placeholder="Escribe tu usuario"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-red-500/50 transition-colors placeholder:text-gray-600"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-red-500/50 transition-colors placeholder:text-gray-500"
               autoComplete="username"
             />
           </div>
@@ -111,7 +111,7 @@ export function LoginView() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="Escribe tu contraseña"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-red-500/50 transition-colors placeholder:text-gray-600 pr-12"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-red-500/50 transition-colors placeholder:text-gray-500 pr-12"
                 autoComplete="current-password"
               />
               <button

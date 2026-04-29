@@ -142,7 +142,7 @@ export function MovieDetailModal() {
 
             <button
               onClick={() => playMovie(currentMovie, detail || undefined)}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-semibold transition-all hover:scale-105"
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-semibold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-red-600/20"
             >
               <Play size={18} fill="white" />
               {isTV ? `Ver T${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}` : 'Ver Película'}
@@ -150,7 +150,7 @@ export function MovieDetailModal() {
 
             <button
               onClick={() => toggleFavorite(currentMovie.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all ${
                 favorite ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-gray-300 hover:bg-white/20'
               }`}
             >

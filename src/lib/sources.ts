@@ -53,6 +53,22 @@ export const TMDB_SERVERS: TMDBServer[] = [
       return `https://moviesapi.to/tv/${tmdbId}-${season}-${episode}`;
     },
   },
+  {
+    id: 'moviesapi-club',
+    name: 'MoviesAPI Club',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://moviesapi.club/movie/${tmdbId}`;
+      return `https://moviesapi.club/tv/${tmdbId}-${season}-${episode}`;
+    },
+  },
+  {
+    id: 'vidsrc-pm',
+    name: 'VidSrc PM',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://vidsrc.pm/embed/movie/${tmdbId}`;
+      return `https://vidsrc.pm/embed/tv/${tmdbId}/${season}/${episode}`;
+    },
+  },
 ];
 
 // Genera fuentes fallback basadas en TMDB ID
@@ -88,7 +104,9 @@ export const SERVER_ICONS: Record<string, string> = {
   dood: '▶️',
   '1fichier': '📥',
   moviesapi: '🎥',
+  'moviesapi-club': '🎥',
   'vidsrc-io': '📺',
+  'vidsrc-pm': '📺',
   vidlink: '🔗',
   default: '🖥️',
 };

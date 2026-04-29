@@ -34,7 +34,7 @@ export function HeroBanner({ movies }: HeroBannerProps) {
         style={{ backgroundImage: `url(${movie.backdropUrl})` }}
       />
       <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-black/30" />
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-black/30" />
 
       {/* Content */}
       <div className="relative h-full max-w-[1400px] mx-auto px-4 flex items-center">

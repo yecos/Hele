@@ -24,7 +24,7 @@ export function OfflinePage() {
   if (!isOffline) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-[#0a0a0a] flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[9999] bg-background flex items-center justify-center px-4">
       {/* Background glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-red-600/5 rounded-full blur-[128px]" />

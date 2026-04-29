@@ -75,7 +75,7 @@ export function HomeView() {
 
   if (loading) {
     return (
-      <div className="pt-16">
+      <div className="pt-20">
         {/* Hero skeleton */}
         <div className="w-full h-[60vh] min-h-[400px] bg-gray-900">
           <Skeleton className="w-full h-full" />
@@ -97,7 +97,7 @@ export function HomeView() {
   }
 
   return (
-    <div className="pt-16">
+    <div className="pt-20">
       {/* Hero */}
       <HeroBanner movies={heroMovies} />
 
