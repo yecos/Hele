@@ -30,6 +30,14 @@ interface TMDBServer {
 
 export const TMDB_SERVERS: TMDBServer[] = [
   {
+    id: 'vidsrc-pm',
+    name: 'VidSrc PM',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://vidsrc.pm/embed/movie/${tmdbId}`;
+      return `https://vidsrc.pm/embed/tv/${tmdbId}/${season}/${episode}`;
+    },
+  },
+  {
     id: 'vidsrc-io',
     name: 'VidSrc IO',
     getUrl: (tmdbId, type, season, episode) => {
@@ -59,14 +67,6 @@ export const TMDB_SERVERS: TMDBServer[] = [
     getUrl: (tmdbId, type, season, episode) => {
       if (type === 'movie') return `https://moviesapi.club/movie/${tmdbId}`;
       return `https://moviesapi.club/tv/${tmdbId}-${season}-${episode}`;
-    },
-  },
-  {
-    id: 'vidsrc-pm',
-    name: 'VidSrc PM',
-    getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'movie') return `https://vidsrc.pm/embed/movie/${tmdbId}`;
-      return `https://vidsrc.pm/embed/tv/${tmdbId}/${season}/${episode}`;
     },
   },
 ];

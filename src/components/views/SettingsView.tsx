@@ -114,20 +114,22 @@ export function SettingsView() {
           </h2>
           <div className="space-y-2">
             {[
+              { name: 'VidSrc PM', url: 'vidsrc.pm', status: 'Principal' },
               { name: 'VidSrc IO', url: 'vidsrc.io', status: 'Activo' },
               { name: 'VidLink', url: 'vidlink.pro', status: 'Activo' },
               { name: 'MoviesAPI', url: 'moviesapi.to', status: 'Activo' },
               { name: 'MoviesAPI Club', url: 'moviesapi.club', status: 'Backup' },
-              { name: 'VidSrc PM', url: 'vidsrc.pm', status: 'Backup' },
             ].map(server => (
               <div key={server.name} className="flex items-center justify-between text-sm">
                 <span className="text-gray-300">{server.name}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  server.status === 'Activo'
+                  server.status === 'Principal'
+                    ? 'bg-red-500/20 text-red-400'
+                    : server.status === 'Activo'
                     ? 'bg-green-500/20 text-green-400'
                     : 'bg-white/5 text-gray-500'
                 }`}>
-                  {server.status === 'Activo' ? t('settings.active') : t('settings.backup')}
+                  {server.status === 'Principal' ? '★ Principal' : server.status === 'Activo' ? t('settings.active') : t('settings.backup')}
                 </span>
               </div>
             ))}
