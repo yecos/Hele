@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore, useHistoryStore, useViewStore } from '@/lib/store';
-import { LANG_LABELS, SERVER_ICONS, TMDB_SERVERS, type StreamSource, type ServerGroup, type AudioLang } from '@/lib/sources';
+import { LANG_LABELS, SERVER_ICONS, TMDB_SERVERS, LATINO_SERVERS, SUBTITLED_SERVERS, type StreamSource, type ServerGroup, type AudioLang } from '@/lib/sources';
 import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight, Cast, Tv, Wifi, Settings, Check, WifiOff, Signal } from 'lucide-react';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
@@ -18,14 +18,13 @@ interface ServerProbe {
 function buildServerGroups(
   tmdbId: number,
   type: 'movie' | 'tv',
-  labels: { subtitulada: string; latino: string },
   season?: number,
   episode?: number
 ): ServerGroup[] {
-  const langSources = (lang: AudioLang, label: string): ServerGroup => ({
+  const makeGroup = (lang: AudioLang, label: string, servers: typeof TMDB_SERVERS): ServerGroup => ({
     lang,
     label,
-    sources: TMDB_SERVERS.map(s => ({
+    sources: servers.map(s => ({
       id: `${s.id}-${lang}`,
       name: s.name,
       server: s.id,
@@ -38,8 +37,10 @@ function buildServerGroups(
   });
 
   return [
-    langSources('subtitulada', labels.subtitulada),
-    langSources('latino', labels.latino),
+    // Latino primero — audio en español
+    makeGroup('latino', LANG_LABELS.latino, LATINO_SERVERS),
+    // Subtitulado — audio original con subtítulos
+    makeGroup('subtitulada', LANG_LABELS.subtitulada, SUBTITLED_SERVERS),
   ];
 }
 
@@ -180,7 +181,6 @@ export function VideoPlayer() {
       const groups = buildServerGroups(
         currentMovie.tmdbId,
         type,
-        { subtitulada: t('player.subtitulado'), latino: t('player.latino') },
         type === 'tv' ? currentSeason : undefined,
         type === 'tv' ? currentEpisode : undefined
       );

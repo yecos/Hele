@@ -1,5 +1,5 @@
 // Servidores de streaming con TMDB IDs
-// Incluye servidores embed que aceptan TMDB IDs directamente
+// Organizados por idioma: Latino, Subtitulado, Inglés
 
 export type SourceMode = 'embed' | 'native';
 export type AudioLang = 'latino' | 'español' | 'subtitulada';
@@ -21,15 +21,55 @@ export interface ServerGroup {
   sources: StreamSource[];
 }
 
-// Servidores que aceptan TMDB IDs directamente
 interface TMDBServer {
   id: string;
   name: string;
   getUrl: (tmdbId: number, type: 'movie' | 'tv', season?: number, episode?: number) => string;
 }
 
-export const TMDB_SERVERS: TMDBServer[] = [
-  // ===== PRINCIPAL =====
+// ═══════════════════════════════════════════════════════════
+//  ESPAÑOL LATINO — Servidores con audio en español latino
+// ═══════════════════════════════════════════════════════════
+export const LATINO_SERVERS: TMDBServer[] = [
+  {
+    id: 'nifelvid',
+    name: 'NifelVid',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://japierdolevid.com/embed/movie?tmdb=${tmdbId}&ds_lang=es&autoplay=1`;
+      return `https://japierdolevid.com/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}&ds_lang=es&autoplay=1`;
+    },
+  },
+  {
+    id: 'vidsrc-lat',
+    name: 'VidSrc LAT',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://vidsrc.lat/embed/movie/${tmdbId}`;
+      return `https://vidsrc.lat/embed/tv/${tmdbId}/${season}/${episode}`;
+    },
+  },
+  {
+    id: 'vidsrc-embed-su',
+    name: 'VidSrc SU',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://vidsrc-embed.su/embed/movie/${tmdbId}`;
+      return `https://vidsrc-embed.su/embed/tv/${tmdbId}/${season}/${episode}`;
+    },
+  },
+  {
+    id: 'embed69',
+    name: 'Embed69',
+    getUrl: (tmdbId, type, season, episode) => {
+      // Embed69 uses IMDB IDs — we pass TMDB and the server resolves it
+      if (type === 'movie') return `https://embed69.org/f/${tmdbId}`;
+      return `https://embed69.org/f/${tmdbId}/${season}/${episode}`;
+    },
+  },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  SUBTITULADO — Audio original con subtítulos en español
+// ═══════════════════════════════════════════════════════════
+export const SUBTITLED_SERVERS: TMDBServer[] = [
   {
     id: 'vidsrc-pm',
     name: 'VidSrc PM',
@@ -38,8 +78,6 @@ export const TMDB_SERVERS: TMDBServer[] = [
       return `https://vidsrc.pm/embed/tv/${tmdbId}/${season}/${episode}`;
     },
   },
-
-  // ===== VIDSRC ECOSYSTEM =====
   {
     id: 'vidsrc-to',
     name: 'VidSrc',
@@ -80,8 +118,6 @@ export const TMDB_SERVERS: TMDBServer[] = [
       return `https://vidsrc.xyz/embed/tv/${tmdbId}/${season}/${episode}`;
     },
   },
-
-  // ===== MULTI-SOURCE & EMBED =====
   {
     id: 'vidlink',
     name: 'VidLink',
@@ -122,8 +158,6 @@ export const TMDB_SERVERS: TMDBServer[] = [
       return `https://cinesrc.st/embed/tv/${tmdbId}/${season}/${episode}`;
     },
   },
-
-  // ===== MOVIESAPI =====
   {
     id: 'moviesapi',
     name: 'MoviesAPI',
@@ -140,6 +174,14 @@ export const TMDB_SERVERS: TMDBServer[] = [
       return `https://moviesapi.club/tv/${tmdbId}-${season}-${episode}`;
     },
   },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  ALL SERVERS — flat list for probing & settings
+// ═══════════════════════════════════════════════════════════
+export const TMDB_SERVERS: TMDBServer[] = [
+  ...LATINO_SERVERS,
+  ...SUBTITLED_SERVERS,
 ];
 
 // Genera fuentes fallback basadas en TMDB ID
@@ -167,6 +209,11 @@ export function getTMDBFallbackSources(
 
 // Mapea los iconos de servidor
 export const SERVER_ICONS: Record<string, string> = {
+  // Latino
+  nifelvid: '🇲🇽',
+  'vidsrc-lat': '🇲🇽',
+  'vidsrc-embed-su': '🇲🇽',
+  'embed69': '🇲🇽',
   // VidSrc ecosystem
   'vidsrc-pm': '📺',
   'vidsrc-to': '📺',
@@ -195,7 +242,7 @@ export const SERVER_ICONS: Record<string, string> = {
 };
 
 export const LANG_LABELS: Record<AudioLang, string> = {
-  latino: '🇲🇽 Latino',
+  latino: '🇲🇽 Español Latino',
   español: '🇪🇸 Español',
   subtitulada: '🇺🇸 Subtitulado',
 };

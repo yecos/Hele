@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useFavoritesStore } from '@/lib/store';
 import { Heart, Trash2, Wifi, WifiOff, Loader2, ExternalLink, Check, X as XIcon } from 'lucide-react';
 import { useI18nStore, useT, LOCALE_FLAGS, LOCALE_LABELS, type AppLocale } from '@/lib/i18n';
-import { TMDB_SERVERS } from '@/lib/sources';
+import { TMDB_SERVERS, LATINO_SERVERS, SUBTITLED_SERVERS, LANG_LABELS } from '@/lib/sources';
 
 export function SettingsView() {
   const { t } = useT();
@@ -113,19 +113,39 @@ export function SettingsView() {
           <h2 className="text-white font-semibold text-base flex items-center gap-2">
             <span className="text-red-500">●</span> {t('settings.servers')}
           </h2>
-          <div className="space-y-2">
-            {TMDB_SERVERS.map((server, index) => (
-              <div key={server.id} className="flex items-center justify-between text-sm">
-                <span className="text-gray-300">{server.name}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  index === 0
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'bg-green-500/20 text-green-400'
-                }`}>
-                  {index === 0 ? '★ Principal' : t('settings.active')}
-                </span>
+          <div className="space-y-3">
+            {/* Latino servers */}
+            <div>
+              <p className="text-xs text-gray-500 mb-1.5 font-medium">{LANG_LABELS.latino} ({LATINO_SERVERS.length})</p>
+              <div className="space-y-1">
+                {LATINO_SERVERS.map((server, index) => (
+                  <div key={server.id} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-300">{server.name}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      index === 0
+                        ? 'bg-red-500/20 text-red-400'
+                        : 'bg-green-500/20 text-green-400'
+                    }`}>
+                      {index === 0 ? '★ Principal' : t('settings.active')}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+            {/* Subtitled servers */}
+            <div>
+              <p className="text-xs text-gray-500 mb-1.5 font-medium">{LANG_LABELS.subtitulada} ({SUBTITLED_SERVERS.length})</p>
+              <div className="space-y-1">
+                {SUBTITLED_SERVERS.map((server) => (
+                  <div key={server.id} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-300">{server.name}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                      {t('settings.active')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
           <p className="text-gray-500 text-xs">{TMDB_SERVERS.length} {t('settings.serversDesc')}</p>
         </div>
