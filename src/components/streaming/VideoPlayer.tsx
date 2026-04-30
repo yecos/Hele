@@ -357,7 +357,7 @@ export function VideoPlayer() {
             ref={iframeRef}
             src={currentServerUrl}
             className="w-full h-full border-0"
-            sandbox="allow-scripts allow-same-origin allow-autoplay allow-fullscreen allow-encrypted-media allow-presentation"
+            sandbox="allow-scripts allow-same-origin allow-autoplay allow-fullscreen allow-encrypted-media allow-presentation allow-popups allow-forms allow-top-navigation allow-downloads"
             allowFullScreen
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
             allowTransparency
