@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useViewStore, usePlayerStore, useAuthStore } from '@/lib/store';
 import { Navbar } from '@/components/streaming/Navbar';
 import { VideoPlayer } from '@/components/streaming/VideoPlayer';
 import { LoginView } from '@/components/views/LoginView';
 import { OfflinePage } from '@/components/views/OfflinePage';
+import { ViewTransition, FavoritesHearts } from '@/components/ViewTransition';
+import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import { X } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
@@ -40,17 +42,11 @@ function ViewSkeleton() {
   );
 }
 
-export default function Page() {
+function MainApp() {
   const { currentView, setView } = useViewStore();
   const { isPlaying, closePlayer } = usePlayerStore();
-  const { isLoggedIn, checkAuth } = useAuthStore();
   const { t } = useT();
   const [showShortcuts, setShowShortcuts] = useState(false);
-
-  // Check auth on mount
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -88,10 +84,28 @@ export default function Page() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPlaying, setView, closePlayer, showShortcuts]);
 
-  // Show login screen if not authenticated
-  if (!isLoggedIn) {
-    return <LoginView />;
-  }
+  const renderView = () => {
+    switch (currentView) {
+      case 'home':
+        return <HomeView />;
+      case 'movies':
+        return <MoviesView />;
+      case 'series':
+        return <SeriesView />;
+      case 'iptv':
+        return <IPTVView />;
+      case 'search':
+        return <SearchView />;
+      case 'favorites':
+        return <FavoritesView />;
+      case 'history':
+        return <HistoryView />;
+      case 'settings':
+        return <SettingsView />;
+      default:
+        return <HomeView />;
+    }
+  };
 
   return (
     <main className="min-h-screen bg-background">
@@ -99,16 +113,14 @@ export default function Page() {
       <Navbar />
       <VideoPlayer />
 
-      {/* Main content */}
+      {/* Main content with view transitions */}
       <div className={`transition-opacity duration-300 ${isPlaying ? 'pointer-events-none opacity-30' : 'opacity-100'}`}>
-        {currentView === 'home' && <HomeView />}
-        {currentView === 'movies' && <MoviesView />}
-        {currentView === 'series' && <SeriesView />}
-        {currentView === 'iptv' && <IPTVView />}
-        {currentView === 'search' && <SearchView />}
-        {currentView === 'favorites' && <FavoritesView />}
-        {currentView === 'settings' && <SettingsView />}
-        {currentView === 'history' && <HistoryView />}
+        {/* Floating hearts for favorites view */}
+        {currentView === 'favorites' && <FavoritesHearts />}
+
+        <ViewTransition view={currentView}>
+          {renderView()}
+        </ViewTransition>
       </div>
 
       {/* Keyboard shortcuts help button */}
@@ -150,4 +162,36 @@ export default function Page() {
       )}
     </main>
   );
+}
+
+export default function Page() {
+  const { isLoggedIn, checkAuth } = useAuthStore();
+  const [onboardingDone, setOnboardingDone] = useState(() => {
+    try {
+      return localStorage.getItem('xs-onboarding-done') === '1';
+    } catch {
+      return true;
+    }
+  });
+
+  // Check auth on mount
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  const handleOnboardingComplete = useCallback(() => {
+    setOnboardingDone(true);
+  }, []);
+
+  // Show login screen if not authenticated
+  if (!isLoggedIn) {
+    return <LoginView />;
+  }
+
+  // Show onboarding if not completed
+  if (!onboardingDone) {
+    return <OnboardingTutorial onComplete={handleOnboardingComplete} />;
+  }
+
+  return <MainApp />;
 }

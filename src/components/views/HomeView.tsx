@@ -6,6 +6,7 @@ import { usePlayerStore, useFavoritesStore, useHistoryStore } from '@/lib/store'
 import type { MovieItem } from '@/lib/tmdb';
 import { HeroBanner } from '@/components/streaming/HeroBanner';
 import { CategoryRow } from '@/components/streaming/MovieCard';
+import { TopTenCarousel } from '@/components/streaming/TopTenCarousel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Play, Info } from 'lucide-react';
 
@@ -138,6 +139,11 @@ export function HomeView() {
 
       {/* Hero */}
       <HeroBanner movies={heroMovies} />
+
+      {/* Top 10 trending today */}
+      <div className="max-w-[1400px] mx-auto pt-4 pb-2">
+        <TopTenCarousel title="Top 10 en Tendencia Hoy" type="all" />
+      </div>
 
       {/* Category rows */}
       <div className="max-w-[1400px] mx-auto space-y-6 py-4">

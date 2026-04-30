@@ -7,6 +7,9 @@ import Hls from 'hls.js';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
 import dynamic from 'next/dynamic';
+import { ChannelTransition } from '@/components/iptv/ChannelTransition';
+import { AnimatedCategoryCard } from '@/components/iptv/AnimatedCategoryCard';
+import { CountryCarousel } from '@/components/iptv/CountryCarousel';
 const AdminPanel = dynamic(() => import('@/components/guardian/AdminPanel'), { ssr: false });
 
 interface IPTVChannel {
@@ -34,31 +37,7 @@ const PLAYLIST_SECTIONS: PlaylistSection[] = [
       { id: 'latam', label: 'Latinoamérica', flag: '🌎' },
     ],
   },
-  {
-    title: 'Países',
-    items: [
-      { id: 'co', label: 'Colombia', flag: '🇨🇴' },
-      { id: 'mx', label: 'México', flag: '🇲🇽' },
-      { id: 'ar', label: 'Argentina', flag: '🇦🇷' },
-      { id: 'es', label: 'España', flag: '🇪🇸' },
-      { id: 'cl', label: 'Chile', flag: '🇨🇱' },
-      { id: 've', label: 'Venezuela', flag: '🇻🇪' },
-      { id: 'pe', label: 'Perú', flag: '🇵🇪' },
-      { id: 'bo', label: 'Bolivia', flag: '🇧🇴' },
-      { id: 'ec', label: 'Ecuador', flag: '🇪🇨' },
-      { id: 'cu', label: 'Cuba', flag: '🇨🇺' },
-      { id: 'do', label: 'Rep. Dominicana', flag: '🇩🇴' },
-      { id: 'gt', label: 'Guatemala', flag: '🇬🇹' },
-      { id: 'hn', label: 'Honduras', flag: '🇭🇳' },
-      { id: 'sv', label: 'El Salvador', flag: '🇸🇻' },
-      { id: 'ni', label: 'Nicaragua', flag: '🇳🇮' },
-      { id: 'cr', label: 'Costa Rica', flag: '🇨🇷' },
-      { id: 'pa', label: 'Panamá', flag: '🇵🇦' },
-      { id: 'py', label: 'Paraguay', flag: '🇵🇾' },
-      { id: 'uy', label: 'Uruguay', flag: '🇺🇾' },
-      { id: 'pr', label: 'Puerto Rico', flag: '🇵🇷' },
-    ],
-  },
+  // Países section replaced by CountryCarousel component
   {
     title: 'Categorías',
     items: [
@@ -128,6 +107,8 @@ export function IPTVView() {
   const [showOnlyWorking, setShowOnlyWorking] = useState(true);
   const [verifiedUrls, setVerifiedUrls] = useState<Set<string>>(new Set());
   const verifyAbortRef = useRef<AbortController | null>(null);
+  const [showTransition, setShowTransition] = useState(false);
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Admin state
   const { username } = useAuthStore();
@@ -436,13 +417,28 @@ export function IPTVView() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showChannelList, searchQuery, isFullscreen, currentIndex, onlineChannels.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Show channel transition overlay helper
+  const triggerTransition = useCallback(() => {
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    setShowTransition(true);
+    transitionTimerRef.current = setTimeout(() => setShowTransition(false), 3000);
+  }, []);
+
+  // Cleanup transition timer on unmount
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    };
+  }, []);
+
   const goNext = useCallback(() => {
     if (onlineChannels.length === 0) return;
     const next = (currentIndex + 1) % onlineChannels.length;
     setCurrentIndex(next);
     setActiveChannel(onlineChannels[next]);
     setRetryCount(0);
-  }, [currentIndex, onlineChannels]);
+    triggerTransition();
+  }, [currentIndex, onlineChannels, triggerTransition]);
 
   const goPrev = useCallback(() => {
     if (onlineChannels.length === 0) return;
@@ -450,7 +446,8 @@ export function IPTVView() {
     setCurrentIndex(prev);
     setActiveChannel(onlineChannels[prev]);
     setRetryCount(0);
-  }, [currentIndex, onlineChannels]);
+    triggerTransition();
+  }, [currentIndex, onlineChannels, triggerTransition]);
 
   const selectChannel = (channel: IPTVChannel, index: number) => {
     setActiveChannel(channel);
@@ -463,6 +460,7 @@ export function IPTVView() {
     }
     setRetryCount(0);
     setShowChannelList(false);
+    triggerTransition();
   };
 
   const toggleMute = () => {
@@ -893,6 +891,14 @@ export function IPTVView() {
               </div>
             </div>
 
+            {/* Country flag carousel */}
+            <div className="py-3 border-b border-white/5">
+              <CountryCarousel
+                selectedCountry={selectedPlaylist}
+                onSelect={(countryId) => { setSelectedPlaylist(countryId); setShowChannelList(false); }}
+              />
+            </div>
+
             {/* Playlist selector - organized by sections */}
             <div className="px-4 py-3 border-b border-white/5">
               <div className="max-h-[45vh] overflow-y-auto space-y-3 pr-1">
@@ -903,17 +909,14 @@ export function IPTVView() {
                     </h4>
                     <div className="flex flex-wrap gap-1.5">
                       {section.items.map(pl => (
-                        <button
+                        <AnimatedCategoryCard
                           key={pl.id}
+                          id={pl.id}
+                          name={pl.label}
+                          flag={pl.flag}
+                          isSelected={selectedPlaylist === pl.id}
                           onClick={() => { setSelectedPlaylist(pl.id); setShowChannelList(false); }}
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
-                            selectedPlaylist === pl.id
-                              ? 'bg-green-600 text-white shadow-lg shadow-green-600/20'
-                              : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
-                          }`}
-                        >
-                          {pl.flag} {pl.label}
-                        </button>
+                        />
                       ))}
                     </div>
                   </div>
@@ -1009,6 +1012,9 @@ export function IPTVView() {
           </div>
         </div>
       )}
+      {/* Channel Transition Overlay */}
+      <ChannelTransition channel={activeChannel} isVisible={showTransition} />
+
       {/* Admin Panel Modal */}
       {showAdminPanel && isAdmin && (
         <AdminPanel onClose={() => setShowAdminPanel(false)} />

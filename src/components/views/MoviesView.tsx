@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useT } from '@/lib/i18n';
 import type { MovieItem } from '@/lib/tmdb';
 import { CategoryRow } from '@/components/streaming/MovieCard';
+import { TopTenCarousel } from '@/components/streaming/TopTenCarousel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Film } from 'lucide-react';
 
@@ -84,6 +85,11 @@ export function MoviesView() {
           <Film size={28} className="text-red-500" />
           <h1 className="text-2xl font-bold text-white">{t('movies.title')}</h1>
         </div>
+      </div>
+
+      {/* Top 10 Movies */}
+      <div className="px-4 max-w-[1400px] mx-auto">
+        <TopTenCarousel title="Top 10 Películas" type="movie" />
       </div>
 
       <div className="max-w-[1400px] mx-auto space-y-6">
