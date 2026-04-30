@@ -571,6 +571,8 @@ export function IPTVView() {
       onClick={isMobile ? handleTouchToggle : handleMouseMove}
       onTouchStart={isMobile ? handleTouchToggle : undefined}
     >
+      {/* Touch zone for toggling controls — only fires when tapping the video area, not controls */}
+      {/* The top/bottom control bars have e.stopPropagation() to prevent this */}
       {/* Video player - fills entire screen */}
       <div className="flex-1 relative bg-black">
         {/* Loading / Verifying playlist */}
@@ -660,7 +662,10 @@ export function IPTVView() {
 
       {/* ===== BOTTOM INFO BAR (TV style) ===== */}
       {activeChannel && showInfo && !loadingPlaylist && (
-        <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
+        <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none"
+          onClick={e => e.stopPropagation()}
+          onTouchStart={e => e.stopPropagation()}
+        >
           {/* Channel info gradient */}
           <div className="bg-gradient-to-t from-black/95 via-black/70 to-transparent pt-12 sm:pt-16 pb-4 px-3 sm:px-8">
             <div className="max-w-[1400px] mx-auto flex items-center gap-3 sm:gap-6">
@@ -729,8 +734,13 @@ export function IPTVView() {
 
       {/* ===== TOP CONTROL BAR ===== */}
       {showInfo && !loadingPlaylist && (
-        <div className="absolute top-0 left-0 right-0 z-20">
-          <div className="bg-gradient-to-b from-black/80 via-black/40 to-transparent pt-2 sm:pt-4 pb-8 px-3 sm:px-4">
+        <div
+          className="absolute top-0 left-0 right-0 z-20"
+          onClick={e => e.stopPropagation()}
+          onTouchStart={e => e.stopPropagation()}
+          onMouseMove={e => e.stopPropagation()}
+        >
+          <div className="bg-gradient-to-b from-black/80 via-black/40 to-transparent pb-8 px-3 sm:px-4" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}>
             {/* Safe area top padding for iOS notch */}
             <div className="max-w-[1400px] mx-auto flex items-center justify-between">
               {/* Left: Back button + logo */}
@@ -950,7 +960,7 @@ export function IPTVView() {
         </div>
       )}
       {/* Close more menu when tapping outside */}
-      {showMoreMenu && <div className="fixed inset-0 z-[18]" onClick={() => setShowMoreMenu(false)} />}
+      {showMoreMenu && <div className="fixed inset-0 z-[18]" onClick={(e) => { e.stopPropagation(); setShowMoreMenu(false); }} onTouchStart={e => e.stopPropagation()} />}
 
       {/* Quick channel up/down buttons at sides — desktop only (hover-to-show) */}
       {showInfo && !loadingPlaylist && !isMobile && (
