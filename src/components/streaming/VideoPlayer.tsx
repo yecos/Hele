@@ -146,6 +146,18 @@ export function VideoPlayer() {
     }
   }, [currentServerUrl, cast.isConnected, isPlaying, castTried, supportsEmbedOnTV]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Block popups from embed servers (ads/new tabs)
+  useEffect(() => {
+    if (!isPlaying) return;
+    const originalOpen = window.open;
+    window.open = (...args: Parameters<typeof window.open>) => {
+      // Block all popup attempts from embeds
+      console.log('[Hele] Popup blocked:', args[0]);
+      return null;
+    };
+    return () => { window.open = originalOpen; };
+  }, [isPlaying]);
+
   // Track watch history when movie starts playing
   useEffect(() => {
     if (isPlaying && currentMovie && currentServerUrl) {
@@ -352,33 +364,45 @@ export function VideoPlayer() {
         )}
 
         {currentServerUrl && !cast.isCasting && (
-          <iframe
-            key={iframeKey}
-            ref={iframeRef}
-            src={currentServerUrl}
-            className="w-full h-full border-0"
-            sandbox="allow-scripts allow-same-origin allow-autoplay allow-fullscreen allow-encrypted-media allow-presentation allow-popups allow-forms allow-top-navigation allow-downloads"
-            allowFullScreen
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-            allowTransparency
-            referrerPolicy="no-referrer"
-            onLoad={() => {
-              setLoadingProgress(false);
-              setIframeError(false);
-            }}
-            onError={() => {
-              setLoadingProgress(false);
-              // Auto-try next server
-              const currentIndex = currentGroupSources.findIndex(s => s.url === currentServerUrl);
-              if (currentIndex >= 0 && currentIndex < currentGroupSources.length - 1) {
-                const nextSource = currentGroupSources[currentIndex + 1];
-                selectServer(nextSource);
+          <div className="absolute inset-0 overflow-hidden">
+            {/* iframe scaled up to crop edges (hides watermarks/logos/ads at borders) */}
+            <iframe
+              key={iframeKey}
+              ref={iframeRef}
+              src={currentServerUrl}
+              className="w-[103%] h-[103%] border-0 -ml-[1.5%] -mt-[1.5%]"
+              allowFullScreen
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              referrerPolicy="no-referrer"
+              onLoad={() => {
+                setLoadingProgress(false);
                 setIframeError(false);
-              } else {
-                setIframeError(true);
-              }
-            }}
-          />
+              }}
+              onError={() => {
+                setLoadingProgress(false);
+                // Auto-try next server
+                const currentIndex = currentGroupSources.findIndex(s => s.url === currentServerUrl);
+                if (currentIndex >= 0 && currentIndex < currentGroupSources.length - 1) {
+                  const nextSource = currentGroupSources[currentIndex + 1];
+                  selectServer(nextSource);
+                  setIframeError(false);
+                } else {
+                  setIframeError(true);
+                }
+              }}
+            />
+            {/* Edge overlays: hide any remaining watermark/logo at borders */}
+            <div className="absolute inset-0 pointer-events-none z-10"
+              style={{
+                boxShadow: 'inset 0 45px 60px -30px rgba(0,0,0,0.95), inset 0 -45px 60px -30px rgba(0,0,0,0.95), inset 30px 0 60px -30px rgba(0,0,0,0.95), inset -30px 0 60px -30px rgba(0,0,0,0.95)',
+              }}
+            />
+            {/* Click-blocker at corners to prevent ad clicks */}
+            <div className="absolute top-0 left-0 w-16 h-8 z-20" />
+            <div className="absolute top-0 right-0 w-16 h-8 z-20" />
+            <div className="absolute bottom-0 left-0 w-16 h-8 z-20" />
+            <div className="absolute bottom-0 right-0 w-16 h-8 z-20" />
+          </div>
         )}
       </div>
 
