@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useViewStore, useAuthStore } from '@/lib/store';
-import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity, Shield } from 'lucide-react';
+import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity, Shield, MoreHorizontal, List } from 'lucide-react';
 import Hls from 'hls.js';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
@@ -11,6 +11,18 @@ import { ChannelTransition } from '@/components/iptv/ChannelTransition';
 import { AnimatedCategoryCard } from '@/components/iptv/AnimatedCategoryCard';
 import { CountryCarousel } from '@/components/iptv/CountryCarousel';
 const AdminPanel = dynamic(() => import('@/components/guardian/AdminPanel'), { ssr: false });
+
+// Mobile detection hook
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+}
 
 interface IPTVChannel {
   id: string;
@@ -125,6 +137,8 @@ export function IPTVView() {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   const cast = useChromecast();
   const { t } = useT();
@@ -515,13 +529,28 @@ export function IPTVView() {
     setIsChannelLoading(false);
   };
 
-  // Move mouse to show info
+  // Move mouse / tap to show info
   const handleMouseMove = () => {
     setShowInfo(true);
     if (infoTimeout) clearTimeout(infoTimeout);
     const timeout = setTimeout(() => setShowInfo(false), 4000);
     setInfoTimeout(timeout);
   };
+
+  // Touch toggle for controls overlay (tap to show/hide)
+  const handleTouchToggle = useCallback(() => {
+    setShowInfo(prev => {
+      if (infoTimeout) clearTimeout(infoTimeout);
+      if (prev) {
+        // Already showing, hide immediately
+        return false;
+      }
+      // Show and auto-hide after 4s
+      const timeout = setTimeout(() => setShowInfo(false), 4000);
+      setInfoTimeout(timeout);
+      return true;
+    });
+  }, [infoTimeout]);
 
   // Group channels for list display
   const groupedChannels: Record<string, IPTVChannel[]> = {};
@@ -539,7 +568,8 @@ export function IPTVView() {
       ref={containerRef}
       className="fixed inset-0 z-50 bg-black flex flex-col select-none"
       onMouseMove={handleMouseMove}
-      onClick={handleMouseMove}
+      onClick={isMobile ? handleTouchToggle : handleMouseMove}
+      onTouchStart={isMobile ? handleTouchToggle : undefined}
     >
       {/* Video player - fills entire screen */}
       <div className="flex-1 relative bg-black">
@@ -632,20 +662,21 @@ export function IPTVView() {
       {activeChannel && showInfo && !loadingPlaylist && (
         <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
           {/* Channel info gradient */}
-          <div className="bg-gradient-to-t from-black/95 via-black/70 to-transparent pt-16 pb-4 px-4 sm:px-8">
-            <div className="max-w-[1400px] mx-auto flex items-center gap-4 sm:gap-6">
+          <div className="bg-gradient-to-t from-black/95 via-black/70 to-transparent pt-12 sm:pt-16 pb-4 px-3 sm:px-8">
+            <div className="max-w-[1400px] mx-auto flex items-center gap-3 sm:gap-6">
               {/* Logo */}
               <div className="flex-shrink-0">
                 {activeChannel.logo ? (
                   <img
                     src={activeChannel.logo}
                     alt={activeChannel.name}
-                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-contain bg-white/5 p-1"
+                    className="w-12 h-12 sm:w-20 sm:h-20 rounded-lg sm:rounded-xl object-contain bg-white/5 p-1"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                 ) : (
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-white/5 flex items-center justify-center">
-                    <Tv size={32} className="text-gray-500" />
+                  <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-lg sm:rounded-xl bg-white/5 flex items-center justify-center">
+                    <Tv size={24} className="text-gray-500 sm:hidden" />
+                    <Tv size={32} className="text-gray-500 hidden sm:block" />
                   </div>
                 )}
               </div>
@@ -672,8 +703,8 @@ export function IPTVView() {
                     </>
                   )}
                 </div>
-                <h2 className="text-white text-xl sm:text-2xl font-bold truncate">{activeChannel.name}</h2>
-                <p className="text-gray-500 text-xs mt-0.5">
+                <h2 className="text-white text-base sm:text-2xl font-bold truncate">{activeChannel.name}</h2>
+                <p className="text-gray-500 text-[11px] sm:text-xs mt-0.5">
                   {t('iptv.channel')} {currentIndex + 1} {t('iptv.of')} {onlineChannels.length}
                   {isActivelyCasting && (
                     <span className="text-green-400 ml-2">{t('iptv.castingOn', { device: cast.device?.friendlyName || '' })}</span>
@@ -681,11 +712,15 @@ export function IPTVView() {
                 </p>
               </div>
 
-              {/* Controls hint */}
+              {/* Controls hint — desktop only */}
               <div className="hidden sm:flex flex-col items-end gap-1 text-gray-600 text-[10px] shrink-0">
                 <span>{t('iptv.controls.changeChannel')}</span>
                 <span>{t('iptv.controls.mute')}</span>
                 <span>{t('iptv.controls.pause')}</span>
+              </div>
+              {/* Tap hint — mobile only */}
+              <div className="sm:hidden text-gray-600 text-[10px] shrink-0">
+                Toca para controles
               </div>
             </div>
           </div>
@@ -695,31 +730,33 @@ export function IPTVView() {
       {/* ===== TOP CONTROL BAR ===== */}
       {showInfo && !loadingPlaylist && (
         <div className="absolute top-0 left-0 right-0 z-20">
-          <div className="bg-gradient-to-b from-black/80 via-black/40 to-transparent pt-4 pb-8 px-4">
+          <div className="bg-gradient-to-b from-black/80 via-black/40 to-transparent pt-2 sm:pt-4 pb-8 px-3 sm:px-4">
+            {/* Safe area top padding for iOS notch */}
             <div className="max-w-[1400px] mx-auto flex items-center justify-between">
               {/* Left: Back button + logo */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <button
                   onClick={() => setView('home')}
-                  className="pointer-events-auto p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+                  className="pointer-events-auto p-2 sm:p-2 rounded-full bg-white/10 active:bg-white/30 hover:bg-white/20 text-white transition-all"
+                  style={{ touchAction: 'manipulation' }}
                 >
                   <ArrowLeft size={20} />
                 </button>
-                <div className="flex items-center gap-2">
-                  <Radio size={20} className="text-green-500" />
-                  <span className="text-white font-bold">IPTV</span>
-                  {/* Admin: siempre visible. No-admin: solo si scheduler inicializado */}
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <Radio size={18} className="text-green-500 flex-shrink-0" />
+                  <span className="text-white font-bold text-sm sm:text-base">IPTV</span>
+                  {/* Admin badge — hide on very small screens */}
                   {isAdmin ? (
                     <button
                       onClick={() => setShowAdminPanel(true)}
-                      className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 ml-1 hover:bg-emerald-500/30 cursor-pointer transition-colors"
+                      className="pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 ml-1 hover:bg-emerald-500/30 cursor-pointer transition-colors"
                       title="Abrir Panel Admin"
                     >
                       <Shield size={12} className="text-emerald-400" />
                       <span className="text-emerald-400 text-[11px] font-bold">Admin</span>
                     </button>
                   ) : guardianStatus && guardianStatus.scheduler.initialized ? (
-                    <span className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1">
+                    <span className="pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1">
                       {guardianStatus.isScanning ? (
                         <Activity size={10} className="text-green-400 animate-pulse" />
                       ) : (
@@ -733,55 +770,59 @@ export function IPTVView() {
                 </div>
               </div>
 
-              {/* Center: Playback controls */}
-              <div className="flex items-center gap-2 pointer-events-auto">
+              {/* Center + Right: Controls — responsive layout */}
+              <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
+                {/* Prev channel — horizontal arrows on mobile, vertical on desktop */}
                 <button
                   onClick={goPrev}
-                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+                  className="p-2.5 rounded-full bg-white/10 active:bg-white/30 hover:bg-white/20 text-white transition-all"
                   title={t('iptv.prevChannel')}
+                  style={{ touchAction: 'manipulation' }}
                 >
-                  <ChevronUp size={20} />
+                  <ChevronLeft size={18} className="sm:hidden" />
+                  <ChevronUp size={18} className="hidden sm:block" />
                 </button>
 
+                {/* Play/Pause — always visible, larger on mobile */}
                 <button
                   onClick={togglePause}
-                  className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+                  className="p-3 sm:p-2.5 rounded-full bg-white/10 active:bg-white/30 hover:bg-white/20 text-white transition-all"
                   title={isPaused ? t('iptv.resume') : t('iptv.pause')}
+                  style={{ touchAction: 'manipulation' }}
                 >
-                  {isPaused ? <Play size={18} fill="white" /> : <Pause size={18} />}
+                  {isPaused ? <Play size={20} fill="white" className="sm:size-[18px]" /> : <Pause size={20} className="sm:size-[18px]" />}
                 </button>
 
+                {/* Next channel */}
                 <button
                   onClick={goNext}
-                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+                  className="p-2.5 rounded-full bg-white/10 active:bg-white/30 hover:bg-white/20 text-white transition-all"
                   title={t('iptv.nextChannel')}
+                  style={{ touchAction: 'manipulation' }}
                 >
-                  <ChevronDown size={20} />
+                  <ChevronRight size={18} className="sm:hidden" />
+                  <ChevronDown size={18} className="hidden sm:block" />
                 </button>
 
-                <div className="w-px h-6 bg-white/10 mx-1" />
-
-                <button
-                  onClick={toggleMute}
-                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
-                  title={isMuted ? t('iptv.unmute') : t('iptv.mute')}
-                >
-                  {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                </button>
-
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
-                  title={t('iptv.fullscreen')}
-                >
-                  {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-                </button>
-              </div>
-
-              {/* Right: Cast + Channel list */}
-              <div className="flex items-center gap-2 pointer-events-auto">
-                {/* Chromecast button */}
-                <button
+                {/* Desktop: Mute + Fullscreen + Cast + Channels */}
+                <div className="hidden sm:flex items-center gap-2">
+                  <div className="w-px h-6 bg-white/10 mx-1" />
+                  <button
+                    onClick={toggleMute}
+                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+                    title={isMuted ? t('iptv.unmute') : t('iptv.mute')}
+                  >
+                    {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                  </button>
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+                    title={t('iptv.fullscreen')}
+                  >
+                    {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+                  </button>
+                  {/* Chromecast button — desktop */}
+                  <button
                     onClick={async () => {
                       if (isActivelyCasting) {
                         cast.disconnect();
@@ -798,7 +839,7 @@ export function IPTVView() {
                         cast.connect();
                       }
                     }}
-                    className={`p-2 rounded-full transition-all ${
+                    className={`relative p-2 rounded-full transition-all ${
                       isActivelyCasting
                         ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
                         : cast.status === 'connecting'
@@ -815,21 +856,104 @@ export function IPTVView() {
                       <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full" />
                     )}
                   </button>
-                <button
-                  onClick={() => setShowChannelList(true)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm transition-all"
-                >
-                  <Tv size={16} />
-                  <span className="hidden sm:inline">{t('iptv.channels')}</span>
-                </button>
+                  <button
+                    onClick={() => setShowChannelList(true)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm transition-all"
+                  >
+                    <Tv size={16} />
+                    <span>{t('iptv.channels')}</span>
+                  </button>
+                </div>
+
+                {/* Mobile: More menu + Channels */}
+                <div className="flex sm:hidden items-center gap-1.5">
+                  <div className="w-px h-6 bg-white/10" />
+                  <button
+                    onClick={() => setShowChannelList(true)}
+                    className="flex items-center gap-1.5 px-3 py-2.5 rounded-full bg-white/10 active:bg-white/30 text-white text-sm transition-all"
+                    style={{ touchAction: 'manipulation' }}
+                  >
+                    <List size={16} />
+                    <span>{t('iptv.channels')}</span>
+                  </button>
+                  {/* More menu button */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowMoreMenu(!showMoreMenu)}
+                      className="p-2.5 rounded-full bg-white/10 active:bg-white/30 text-white transition-all"
+                      style={{ touchAction: 'manipulation' }}
+                    >
+                      <MoreHorizontal size={20} />
+                    </button>
+                    {/* Dropdown menu */}
+                    {showMoreMenu && (
+                      <div className="absolute right-0 top-full mt-2 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-xl py-1 min-w-[160px] shadow-2xl z-50">
+                        <button
+                          onClick={() => { toggleMute(); setShowMoreMenu(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-white/10 hover:text-white active:bg-white/15 transition-all"
+                          style={{ touchAction: 'manipulation' }}
+                        >
+                          {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                          {isMuted ? t('iptv.unmute') : t('iptv.mute')}
+                        </button>
+                        <button
+                          onClick={() => { toggleFullscreen(); setShowMoreMenu(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-white/10 hover:text-white active:bg-white/15 transition-all"
+                          style={{ touchAction: 'manipulation' }}
+                        >
+                          {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+                          {t('iptv.fullscreen')}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            setShowMoreMenu(false);
+                            if (isActivelyCasting) {
+                              cast.disconnect();
+                            } else if (activeChannel) {
+                              if (!cast.isConnected) {
+                                const connected = await cast.connect();
+                                if (connected && activeChannel.url.includes('.m3u8')) {
+                                  cast.castHLS(activeChannel.url, activeChannel.name, `${activeChannel.group} - ${activeChannel.country}`);
+                                }
+                              } else {
+                                cast.castHLS(activeChannel.url, activeChannel.name, `${activeChannel.group} - ${activeChannel.country}`);
+                              }
+                            } else {
+                              cast.connect();
+                            }
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all ${
+                            isActivelyCasting ? 'text-green-400' : 'text-gray-300 hover:bg-white/10 hover:text-white active:bg-white/15'
+                          }`}
+                          style={{ touchAction: 'manipulation' }}
+                        >
+                          <Cast size={16} />
+                          {isActivelyCasting ? t('player.disconnectFrom', { device: cast.device?.friendlyName || '' }) : t('iptv.sendToChromecast')}
+                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => { setShowAdminPanel(true); setShowMoreMenu(false); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-emerald-400 hover:bg-white/10 active:bg-white/15 transition-all border-t border-white/5"
+                            style={{ touchAction: 'manipulation' }}
+                          >
+                            <Shield size={16} />
+                            Admin Panel
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
+      {/* Close more menu when tapping outside */}
+      {showMoreMenu && <div className="fixed inset-0 z-[18]" onClick={() => setShowMoreMenu(false)} />}
 
-      {/* Quick channel up/down buttons at sides */}
-      {showInfo && !loadingPlaylist && (
+      {/* Quick channel up/down buttons at sides — desktop only (hover-to-show) */}
+      {showInfo && !loadingPlaylist && !isMobile && (
         <>
           <button
             onClick={goPrev}
@@ -857,7 +981,7 @@ export function IPTVView() {
 
           {/* Panel */}
           <div
-            className="w-full max-w-md bg-gray-950 border-l border-white/10 flex flex-col"
+            className="w-full max-w-md bg-gray-950 border-l border-white/10 flex flex-col overscroll-contain"
             onClick={e => e.stopPropagation()}
           >
             {/* Panel header */}
@@ -884,7 +1008,9 @@ export function IPTVView() {
                 </button>
                 <button
                   onClick={() => setShowChannelList(false)}
-                  className="text-gray-400 hover:text-white p-1"
+                  className="text-gray-400 hover:text-white active:text-white p-3 -mr-2"
+                  style={{ touchAction: 'manipulation' }}
+                  aria-label="Cerrar"
                 >
                   ✕
                 </button>
@@ -901,7 +1027,7 @@ export function IPTVView() {
 
             {/* Playlist selector - organized by sections */}
             <div className="px-4 py-3 border-b border-white/5">
-              <div className="max-h-[45vh] overflow-y-auto space-y-3 pr-1">
+              <div className="max-h-[35vh] sm:max-h-[45vh] overflow-y-auto overscroll-contain space-y-3 pr-1">
                 {PLAYLIST_SECTIONS.map(section => (
                   <div key={section.title}>
                     <h4 className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider mb-1.5">
@@ -937,7 +1063,7 @@ export function IPTVView() {
             </div>
 
             {/* Channel list */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto overscroll-contain">
               {Object.entries(groupedChannels).map(([group, groupChannels]) => (
                 <div key={group}>
                   <div className="sticky top-0 bg-gray-950/95 backdrop-blur-sm px-4 py-2 border-b border-white/5">

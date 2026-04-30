@@ -126,7 +126,7 @@ function MainApp() {
       {/* Keyboard shortcuts help button */}
       <button
         onClick={() => setShowShortcuts(true)}
-        className="fixed bottom-6 right-6 z-30 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white flex items-center justify-center transition-all backdrop-blur-sm text-sm font-bold border border-white/10"
+        className="fixed bottom-6 right-6 z-30 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white items-center justify-center transition-all backdrop-blur-sm text-sm font-bold border border-white/10 hidden md:flex"
         title={t('shortcuts.buttonTitle')}
       >
         ?

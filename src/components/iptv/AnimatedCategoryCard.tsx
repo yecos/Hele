@@ -126,7 +126,7 @@ export function AnimatedCategoryCard({ id, name, flag, isSelected, onClick }: An
     <motion.button
       onClick={onClick}
       className={`
-        relative flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-medium
+        relative flex items-center gap-2 px-3 py-2 rounded-xl text-[11px] font-medium
         transition-all cursor-pointer border
         ${
           isSelected
