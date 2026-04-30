@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useFavoritesStore } from '@/lib/store';
 import { Heart, Trash2, Wifi, WifiOff, Loader2, ExternalLink, Check, X as XIcon } from 'lucide-react';
 import { useI18nStore, useT, LOCALE_FLAGS, LOCALE_LABELS, type AppLocale } from '@/lib/i18n';
+import { TMDB_SERVERS } from '@/lib/sources';
 
 export function SettingsView() {
   const { t } = useT();
@@ -113,28 +114,20 @@ export function SettingsView() {
             <span className="text-red-500">●</span> {t('settings.servers')}
           </h2>
           <div className="space-y-2">
-            {[
-              { name: 'VidSrc PM', url: 'vidsrc.pm', status: 'Principal' },
-              { name: 'VidSrc IO', url: 'vidsrc.io', status: 'Activo' },
-              { name: 'VidLink', url: 'vidlink.pro', status: 'Activo' },
-              { name: 'MoviesAPI', url: 'moviesapi.to', status: 'Activo' },
-              { name: 'MoviesAPI Club', url: 'moviesapi.club', status: 'Backup' },
-            ].map(server => (
-              <div key={server.name} className="flex items-center justify-between text-sm">
+            {TMDB_SERVERS.map((server, index) => (
+              <div key={server.id} className="flex items-center justify-between text-sm">
                 <span className="text-gray-300">{server.name}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  server.status === 'Principal'
+                  index === 0
                     ? 'bg-red-500/20 text-red-400'
-                    : server.status === 'Activo'
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-white/5 text-gray-500'
+                    : 'bg-green-500/20 text-green-400'
                 }`}>
-                  {server.status === 'Principal' ? '★ Principal' : server.status === 'Activo' ? t('settings.active') : t('settings.backup')}
+                  {index === 0 ? '★ Principal' : t('settings.active')}
                 </span>
               </div>
             ))}
           </div>
-          <p className="text-gray-500 text-xs">{t('settings.serversDesc')}</p>
+          <p className="text-gray-500 text-xs">{TMDB_SERVERS.length} {t('settings.serversDesc')}</p>
         </div>
 
         {/* Chromecast — Enhanced Settings */}

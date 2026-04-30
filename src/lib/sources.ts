@@ -29,12 +29,23 @@ interface TMDBServer {
 }
 
 export const TMDB_SERVERS: TMDBServer[] = [
+  // ===== PRINCIPAL =====
   {
     id: 'vidsrc-pm',
     name: 'VidSrc PM',
     getUrl: (tmdbId, type, season, episode) => {
       if (type === 'movie') return `https://vidsrc.pm/embed/movie/${tmdbId}`;
       return `https://vidsrc.pm/embed/tv/${tmdbId}/${season}/${episode}`;
+    },
+  },
+
+  // ===== VIDSRC ECOSYSTEM =====
+  {
+    id: 'vidsrc-to',
+    name: 'VidSrc',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://vidsrc.to/embed/movie/${tmdbId}`;
+      return `https://vidsrc.to/embed/tv/${tmdbId}/${season}/${episode}`;
     },
   },
   {
@@ -46,6 +57,32 @@ export const TMDB_SERVERS: TMDBServer[] = [
     },
   },
   {
+    id: 'vidsrc-dev',
+    name: 'VidSrc 4K',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://vidsrc.dev/embed/movie/${tmdbId}`;
+      return `https://vidsrc.dev/embed/tv/${tmdbId}/${season}/${episode}`;
+    },
+  },
+  {
+    id: 'vidsrc-pro',
+    name: 'VidSrc Pro',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://vidsrc.pro/embed/movie/${tmdbId}`;
+      return `https://vidsrc.pro/embed/tv/${tmdbId}/${season}/${episode}`;
+    },
+  },
+  {
+    id: 'vidsrc-xyz',
+    name: 'VidSrc XYZ',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://vidsrc.xyz/embed/movie/${tmdbId}`;
+      return `https://vidsrc.xyz/embed/tv/${tmdbId}/${season}/${episode}`;
+    },
+  },
+
+  // ===== MULTI-SOURCE & EMBED =====
+  {
     id: 'vidlink',
     name: 'VidLink',
     getUrl: (tmdbId, type, season, episode) => {
@@ -53,6 +90,40 @@ export const TMDB_SERVERS: TMDBServer[] = [
       return `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`;
     },
   },
+  {
+    id: 'embed-su',
+    name: 'Embed.su',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://www.embed.su/embed/movie/${tmdbId}`;
+      return `https://www.embed.su/embed/tv/${tmdbId}/${season}/${episode}`;
+    },
+  },
+  {
+    id: 'smashystream',
+    name: 'SmashyStream',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://embed.smashystream.com/embed/movie/${tmdbId}`;
+      return `https://embed.smashystream.com/embed/tv/${tmdbId}/${season}/${episode}`;
+    },
+  },
+  {
+    id: '2embed',
+    name: '2Embed',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://www.2embed.cc/embed/${tmdbId}`;
+      return `https://www.2embed.cc/embed/${tmdbId}/${season}/${episode}`;
+    },
+  },
+  {
+    id: 'cinesrc',
+    name: 'CineSrc',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'movie') return `https://cinesrc.st/embed/movie/${tmdbId}`;
+      return `https://cinesrc.st/embed/tv/${tmdbId}/${season}/${episode}`;
+    },
+  },
+
+  // ===== MOVIESAPI =====
   {
     id: 'moviesapi',
     name: 'MoviesAPI',
@@ -96,6 +167,23 @@ export function getTMDBFallbackSources(
 
 // Mapea los iconos de servidor
 export const SERVER_ICONS: Record<string, string> = {
+  // VidSrc ecosystem
+  'vidsrc-pm': '📺',
+  'vidsrc-to': '📺',
+  'vidsrc-io': '📺',
+  'vidsrc-dev': '🎬',
+  'vidsrc-pro': '📺',
+  'vidsrc-xyz': '📺',
+  // Multi-source
+  vidlink: '🔗',
+  'embed-su': '🍿',
+  smashystream: '💥',
+  '2embed': '▶️',
+  cinesrc: '🎬',
+  // MoviesAPI
+  moviesapi: '🎥',
+  'moviesapi-club': '🎥',
+  // Legacy
   streamwish: '📡',
   earnvids: '🎬',
   waaw: '🌐',
@@ -103,11 +191,6 @@ export const SERVER_ICONS: Record<string, string> = {
   fastream: '🚀',
   dood: '▶️',
   '1fichier': '📥',
-  moviesapi: '🎥',
-  'moviesapi-club': '🎥',
-  'vidsrc-io': '📺',
-  'vidsrc-pm': '📺',
-  vidlink: '🔗',
   default: '🖥️',
 };
 
