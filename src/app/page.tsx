@@ -92,8 +92,6 @@ function MainApp() {
         return <MoviesView />;
       case 'series':
         return <SeriesView />;
-      case 'iptv':
-        return <IPTVView />;
       case 'search':
         return <SearchView />;
       case 'favorites':
@@ -113,7 +111,11 @@ function MainApp() {
       <Navbar />
       <VideoPlayer />
 
+      {/* IPTV renders outside the opacity wrapper so it can overlay the Navbar */}
+      {currentView === 'iptv' && <IPTVView />}
+
       {/* Main content with view transitions */}
+      {currentView !== 'iptv' && (
       <div className={`transition-opacity duration-300 ${isPlaying ? 'pointer-events-none opacity-30' : 'opacity-100'}`}>
         {/* Floating hearts for favorites view */}
         {currentView === 'favorites' && <FavoritesHearts />}
@@ -122,6 +124,7 @@ function MainApp() {
           {renderView()}
         </ViewTransition>
       </div>
+      )}
 
       {/* Keyboard shortcuts help button */}
       <button

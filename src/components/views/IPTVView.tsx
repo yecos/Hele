@@ -569,7 +569,6 @@ export function IPTVView() {
       className="fixed inset-0 z-50 bg-black flex flex-col select-none"
       onMouseMove={handleMouseMove}
       onClick={isMobile ? handleTouchToggle : handleMouseMove}
-      onTouchStart={isMobile ? handleTouchToggle : undefined}
     >
       {/* Touch zone for toggling controls — only fires when tapping the video area, not controls */}
       {/* The top/bottom control bars have e.stopPropagation() to prevent this */}
