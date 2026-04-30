@@ -3,9 +3,17 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore, useHistoryStore, useViewStore } from '@/lib/store';
 import { LANG_LABELS, SERVER_ICONS, TMDB_SERVERS, type StreamSource, type ServerGroup, type AudioLang } from '@/lib/sources';
-import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight, Cast, Tv, Wifi, Settings } from 'lucide-react';
+import { X, Loader2, MonitorPlay, AlertTriangle, Globe, Download, ChevronLeft, ChevronRight, Cast, Tv, Wifi, Settings, Check, WifiOff, Signal } from 'lucide-react';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
+
+// Types for server probing
+interface ServerProbe {
+  id: string;
+  available: boolean;
+  latency: number;
+  reason?: string;
+}
 
 function buildServerGroups(
   tmdbId: number,
@@ -54,9 +62,98 @@ export function VideoPlayer() {
   const [castBannerDismissed, setCastBannerDismissed] = useState(false);
   const [castTried, setCastTried] = useState(false);
 
+  // Probe state
+  const [isProbing, setIsProbing] = useState(false);
+  const [probeResults, setProbeResults] = useState<Record<string, ServerProbe>>({});
+  const [showUnavailable, setShowUnavailable] = useState(false);
+
   const cast = useChromecast();
   const isActivelyCasting = cast.isConnected;
   const supportsEmbedOnTV = cast.castMode === 'custom';
+
+  // Probe servers to check availability
+  const probeServers = useCallback(async (tmdbId: number, type: 'movie' | 'tv', season?: number, episode?: number) => {
+    setIsProbing(true);
+    setProbeResults({});
+
+    // Set initial "checking" state for all servers
+    const initial: Record<string, ServerProbe> = {};
+    TMDB_SERVERS.forEach(s => {
+      initial[s.id] = { id: s.id, available: false, latency: 0, reason: 'checking' };
+    });
+    setProbeResults(initial);
+
+    try {
+      const res = await fetch('/api/probe-servers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tmdbId, type, season, episode }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.servers && Array.isArray(data.servers)) {
+          const results: Record<string, ServerProbe> = {};
+          data.servers.forEach((s: ServerProbe) => {
+            results[s.id] = s;
+          });
+          setProbeResults(results);
+
+          // Auto-switch to fastest available if current server is unavailable
+          if (currentServerUrl) {
+            const currentServerId = currentServerUrl.includes('vidsrc.pm') ? 'vidsrc-pm'
+              : currentServerUrl.includes('vidsrc.to') ? 'vidsrc-to'
+              : currentServerUrl.includes('vidsrc.io') ? 'vidsrc-io'
+              : currentServerUrl.includes('vidsrc.dev') ? 'vidsrc-dev'
+              : currentServerUrl.includes('vidsrc.pro') ? 'vidsrc-pro'
+              : currentServerUrl.includes('vidsrc.xyz') ? 'vidsrc-xyz'
+              : currentServerUrl.includes('vidlink') ? 'vidlink'
+              : currentServerUrl.includes('embed.su') ? 'embed-su'
+              : currentServerUrl.includes('smashystream') ? 'smashystream'
+              : currentServerUrl.includes('2embed') ? '2embed'
+              : currentServerUrl.includes('cinesrc') ? 'cinesrc'
+              : currentServerUrl.includes('moviesapi.club') ? 'moviesapi-club'
+              : currentServerUrl.includes('moviesapi') ? 'moviesapi'
+              : '';
+
+            if (currentServerId && results[currentServerId] && !results[currentServerId].available) {
+              // Current server is down, find the fastest available
+              const fastest = data.servers
+                .filter((s: ServerProbe) => s.available)
+                .sort((a: ServerProbe, b: ServerProbe) => a.latency - b.latency)[0];
+
+              if (fastest) {
+                const lang = currentLang;
+                const url = TMDB_SERVERS.find(s => s.id === fastest.id)?.getUrl(tmdbId, type, season, episode);
+                if (url) {
+                  selectServer({
+                    id: `${fastest.id}-${lang}`,
+                    name: TMDB_SERVERS.find(s => s.id === fastest.id)?.name || fastest.id,
+                    server: fastest.id,
+                    url,
+                    lang,
+                    quality: 'HD',
+                    type: 'stream',
+                    mode: 'embed',
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error probing servers:', err);
+      // On probe failure, show all servers (fallback)
+      const fallback: Record<string, ServerProbe> = {};
+      TMDB_SERVERS.forEach(s => {
+        fallback[s.id] = { id: s.id, available: true, latency: 0 };
+      });
+      setProbeResults(fallback);
+    } finally {
+      setIsProbing(false);
+    }
+  }, [currentServerUrl, currentLang, selectServer]);
 
   // Fetch servers when movie changes
   const fetchServers = useCallback(async () => {
@@ -96,6 +193,14 @@ export function VideoPlayer() {
         const firstSource = groups[0].sources[0];
         selectServer(firstSource);
       }
+
+      // 3. Probe servers in background
+      probeServers(
+        currentMovie.tmdbId,
+        type,
+        type === 'tv' ? currentSeason : undefined,
+        type === 'tv' ? currentEpisode : undefined
+      );
     } catch (err) {
       console.error('Error fetching servers:', err);
     } finally {
@@ -115,7 +220,6 @@ export function VideoPlayer() {
       setIframeKey(k => k + 1);
       setCastTried(false);
       setCastBannerDismissed(false);
-      // Remember working server
       if (currentMovie) {
         try {
           localStorage.setItem(`xs-working-${currentMovie.id}`, currentServerUrl);
@@ -135,12 +239,10 @@ export function VideoPlayer() {
       setCastTried(true);
 
       if (supportsEmbedOnTV) {
-        // Custom receiver — embed URLs work on TV
         cast.castEmbed(currentServerUrl, title, subtitle).then((success) => {
           if (!success) setCastBannerDismissed(false);
         });
       } else {
-        // Default receiver — embeds don't work, show warning
         setCastBannerDismissed(false);
       }
     }
@@ -151,7 +253,6 @@ export function VideoPlayer() {
     if (!isPlaying) return;
     const originalOpen = window.open;
     window.open = (...args: Parameters<typeof window.open>) => {
-      // Block all popup attempts from embeds
       console.log('[Hele] Popup blocked:', args[0]);
       return null;
     };
@@ -175,9 +276,20 @@ export function VideoPlayer() {
 
   const currentGroupSources = serverGroups.find(g => g.lang === currentLang)?.sources || [];
   const hasMultipleLangs = availableLangs.length > 1;
-
-  // Show cast error banner?
   const showCastBanner = cast.isConnected && cast.castError && !castBannerDismissed && !cast.isCasting;
+
+  // Filter sources by probe availability
+  const filteredSources = showUnavailable
+    ? currentGroupSources
+    : currentGroupSources.filter(s => {
+        const probe = probeResults[s.server];
+        // If still probing or probe says available, show it
+        return !probe || probe.available || probe.reason === 'checking';
+      });
+
+  // Count stats
+  const workingCount = Object.values(probeResults).filter(p => p.available).length;
+  const totalProbed = Object.values(probeResults).filter(p => p.reason !== 'checking').length;
 
   if (!isPlaying || !currentMovie) return null;
 
@@ -253,7 +365,7 @@ export function VideoPlayer() {
         </div>
       )}
 
-      {/* Chromecast warning banner — different messages based on cast mode */}
+      {/* Chromecast warning banner */}
       {showCastBanner && (
         <div className="absolute top-14 left-0 right-0 z-[15] bg-amber-600/95 backdrop-blur-sm px-4 py-3">
           <div className="flex items-start gap-3">
@@ -306,7 +418,7 @@ export function VideoPlayer() {
         </div>
       )}
 
-      {/* Casting overlay — when content IS successfully being sent to TV */}
+      {/* Casting overlay */}
       {cast.isCasting && (
         <div className="absolute inset-0 z-[12] bg-black/95 flex items-center justify-center">
           <div className="text-center space-y-4">
@@ -365,7 +477,6 @@ export function VideoPlayer() {
 
         {currentServerUrl && !cast.isCasting && (
           <div className="absolute inset-0 overflow-hidden">
-            {/* iframe scaled up to crop edges (hides watermarks/logos/ads at borders) */}
             <iframe
               key={iframeKey}
               ref={iframeRef}
@@ -380,24 +491,22 @@ export function VideoPlayer() {
               }}
               onError={() => {
                 setLoadingProgress(false);
-                // Auto-try next server
-                const currentIndex = currentGroupSources.findIndex(s => s.url === currentServerUrl);
-                if (currentIndex >= 0 && currentIndex < currentGroupSources.length - 1) {
-                  const nextSource = currentGroupSources[currentIndex + 1];
-                  selectServer(nextSource);
+                const nextAvailable = filteredSources.find(s => s.url !== currentServerUrl);
+                if (nextAvailable) {
+                  selectServer(nextAvailable);
                   setIframeError(false);
                 } else {
                   setIframeError(true);
                 }
               }}
             />
-            {/* Edge overlays: hide any remaining watermark/logo at borders */}
+            {/* Edge overlays */}
             <div className="absolute inset-0 pointer-events-none z-10"
               style={{
                 boxShadow: 'inset 0 45px 60px -30px rgba(0,0,0,0.95), inset 0 -45px 60px -30px rgba(0,0,0,0.95), inset 30px 0 60px -30px rgba(0,0,0,0.95), inset -30px 0 60px -30px rgba(0,0,0,0.95)',
               }}
             />
-            {/* Click-blocker at corners to prevent ad clicks */}
+            {/* Click-blocker at corners */}
             <div className="absolute top-0 left-0 w-16 h-8 z-20" />
             <div className="absolute top-0 right-0 w-16 h-8 z-20" />
             <div className="absolute bottom-0 left-0 w-16 h-8 z-20" />
@@ -429,29 +538,105 @@ export function VideoPlayer() {
 
         {/* Server list */}
         <div className="px-4 py-3">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-2">
-            <Globe size={12} />
-            {t('player.servers')} {LANG_LABELS[currentLang] && `(${currentLang})`}
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {currentGroupSources.map(source => (
+          {/* Server header with probe status */}
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase flex items-center gap-2">
+              <Globe size={12} />
+              {t('player.servers')} {LANG_LABELS[currentLang] && `(${currentLang})`}
+              {isProbing && (
+                <span className="flex items-center gap-1 text-yellow-400 normal-case">
+                  <Loader2 size={10} className="animate-spin" />
+                  Verificando...
+                </span>
+              )}
+              {!isProbing && workingCount > 0 && (
+                <span className="flex items-center gap-1 text-green-400 normal-case">
+                  <Signal size={10} />
+                  {workingCount}/{TMDB_SERVERS.length}
+                </span>
+              )}
+            </h3>
+
+            {/* Toggle to show/hide unavailable servers */}
+            {!isProbing && totalProbed > 0 && (
               <button
-                key={source.id}
-                onClick={() => selectServer(source)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                  currentServerUrl === source.url
-                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                    : 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white'
-                }`}
+                onClick={() => setShowUnavailable(!showUnavailable)}
+                className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
               >
-                <span className="text-base">{SERVER_ICONS[source.server] || SERVER_ICONS.default}</span>
-                <span>{source.name}</span>
-                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded">{source.quality}</span>
-                {source.type === 'download' && (
-                  <Download size={12} className="ml-1" />
-                )}
+                {showUnavailable ? 'Ocultar caídos' : 'Ver todos'}
               </button>
-            ))}
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {filteredSources.map(source => {
+              const probe = probeResults[source.server];
+              const isChecking = probe?.reason === 'checking';
+              const isAvailable = probe?.available;
+              const isUnavailable = probe && !probe.available && probe.reason !== 'checking';
+              const latency = probe?.latency;
+
+              return (
+                <button
+                  key={source.id}
+                  onClick={() => !isUnavailable && selectServer(source)}
+                  disabled={isUnavailable}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                    currentServerUrl === source.url
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                      : isUnavailable
+                      ? 'bg-white/[0.02] text-gray-600 line-through opacity-40 cursor-not-allowed'
+                      : isChecking
+                      ? 'bg-white/5 text-gray-400'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                  title={isUnavailable ? `No disponible: ${probe?.reason}` : isAvailable ? `${latency}ms` : undefined}
+                >
+                  <span className="text-base">{SERVER_ICONS[source.server] || SERVER_ICONS.default}</span>
+                  <span>{source.name}</span>
+
+                  {/* Status indicator */}
+                  {isChecking && (
+                    <Loader2 size={12} className="text-yellow-400 animate-spin" />
+                  )}
+                  {isAvailable && !isChecking && (
+                    <Check size={12} className="text-green-400" />
+                  )}
+                  {isUnavailable && (
+                    <WifiOff size={12} className="text-red-400/50" />
+                  )}
+
+                  <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded">
+                    {isUnavailable ? '--' : source.quality}
+                  </span>
+
+                  {/* Latency badge for working servers */}
+                  {isAvailable && !isChecking && latency && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                      latency < 2000
+                        ? 'bg-green-500/20 text-green-400'
+                        : latency < 5000
+                        ? 'bg-yellow-500/20 text-yellow-400'
+                        : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {latency < 1000 ? `${latency}ms` : `${(latency / 1000).toFixed(1)}s`}
+                    </span>
+                  )}
+
+                  {source.type === 'download' && (
+                    <Download size={12} className="ml-1" />
+                  )}
+                </button>
+              );
+            })}
+
+            {/* Show unavailable count when hidden */}
+            {!showUnavailable && !isProbing && workingCount < TMDB_SERVERS.length && (
+              <div className="flex items-center gap-1 px-3 py-2 text-gray-600 text-xs">
+                <WifiOff size={12} />
+                +{TMDB_SERVERS.length - workingCount} no disponibles
+              </div>
+            )}
 
             {isLoadingServers && (
               <div className="flex items-center gap-2 px-3 py-2 text-gray-500 text-sm">
