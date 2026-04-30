@@ -168,7 +168,11 @@ export const useViewStore = create<ViewState>((set) => ({
   currentView: 'home',
   searchQuery: '',
   selectedGenre: null,
-  setView: (view) => set({ currentView: view, searchQuery: '' }),
+  setView: (view) => set((state) => ({
+    currentView: view,
+    // Only clear searchQuery when navigating AWAY from search, not into it
+    searchQuery: view === 'search' ? state.searchQuery : '',
+  })),
   setSearchQuery: (q) => set({ searchQuery: q }),
   setSelectedGenre: (g) => set({ selectedGenre: g }),
 }));
