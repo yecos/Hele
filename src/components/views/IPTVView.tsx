@@ -1,16 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useViewStore, useAuthStore } from '@/lib/store';
-import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity, Shield, MoreHorizontal, List } from 'lucide-react';
+import { useViewStore } from '@/lib/store';
+import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity, MoreHorizontal, List } from 'lucide-react';
 import Hls from 'hls.js';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
-import dynamic from 'next/dynamic';
 import { ChannelTransition } from '@/components/iptv/ChannelTransition';
 import { AnimatedCategoryCard } from '@/components/iptv/AnimatedCategoryCard';
 import { CountryCarousel } from '@/components/iptv/CountryCarousel';
-const AdminPanel = dynamic(() => import('@/components/guardian/AdminPanel'), { ssr: false });
 
 // Mobile detection hook
 function useIsMobile() {
@@ -121,11 +119,6 @@ export function IPTVView() {
   const verifyAbortRef = useRef<AbortController | null>(null);
   const [showTransition, setShowTransition] = useState(false);
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Admin state
-  const { username } = useAuthStore();
-  const isAdmin = username?.toLowerCase() === 'admin';
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // Guardian state
   const [guardianStatus, setGuardianStatus] = useState<{
@@ -754,17 +747,7 @@ export function IPTVView() {
                 <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                   <Radio size={18} className="text-green-500 flex-shrink-0" />
                   <span className="text-white font-bold text-sm sm:text-base">IPTV</span>
-                  {/* Admin badge — hide on very small screens */}
-                  {isAdmin ? (
-                    <button
-                      onClick={() => setShowAdminPanel(true)}
-                      className="pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 ml-1 hover:bg-emerald-500/30 cursor-pointer transition-colors"
-                      title="Abrir Panel Admin"
-                    >
-                      <Shield size={12} className="text-emerald-400" />
-                      <span className="text-emerald-400 text-[11px] font-bold">Admin</span>
-                    </button>
-                  ) : guardianStatus && guardianStatus.scheduler.initialized ? (
+                  {guardianStatus && guardianStatus.scheduler.initialized ? (
                     <span className="pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1">
                       {guardianStatus.isScanning ? (
                         <Activity size={10} className="text-green-400 animate-pulse" />
@@ -939,16 +922,7 @@ export function IPTVView() {
                           <Cast size={16} />
                           {isActivelyCasting ? t('player.disconnectFrom', { device: cast.device?.friendlyName || '' }) : t('iptv.sendToChromecast')}
                         </button>
-                        {isAdmin && (
-                          <button
-                            onClick={() => { setShowAdminPanel(true); setShowMoreMenu(false); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-emerald-400 hover:bg-white/10 active:bg-white/15 transition-all border-t border-white/5"
-                            style={{ touchAction: 'manipulation' }}
-                          >
-                            <Shield size={16} />
-                            Admin Panel
-                          </button>
-                        )}
+
                       </div>
                     )}
                   </div>
@@ -1150,10 +1124,7 @@ export function IPTVView() {
       {/* Channel Transition Overlay */}
       <ChannelTransition channel={activeChannel} isVisible={showTransition} />
 
-      {/* Admin Panel Modal */}
-      {showAdminPanel && isAdmin && (
-        <AdminPanel onClose={() => setShowAdminPanel(false)} />
-      )}
+
     </div>
   );
 }

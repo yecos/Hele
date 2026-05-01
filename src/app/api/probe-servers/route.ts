@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TMDB_SERVERS } from '@/lib/sources';
 
-const TIMEOUT_MS = 7000;
+const TIMEOUT_MS = 8000;
 
 // Textos que indican que el contenido NO está disponible
 const UNAVAILABLE_PATTERNS = [
   'not found',
-  '404',
   'no source',
   'no sources',
   'unavailable',
@@ -21,9 +20,9 @@ const UNAVAILABLE_PATTERNS = [
   'episode not found',
   'video not found',
   'server error',
-  '500',
-  '502',
-  '503',
+  'not available',
+  'no stream',
+  'no results',
 ];
 
 // Indicadores de que SÍ hay un player de video funcional
@@ -36,15 +35,29 @@ const PLAYER_INDICATORS = [
   'jwplayer',
   'videojs',
   'plyr',
-  'videojs',
   'flowplayer',
   'iframe',
   'embed',
   'vidstack',
   'mediaelement',
-  'dash',
-  'mp4',
+  '.mp4',
   'autoplay',
+  'react-player',
+  'playback',
+  'stream',
+  'data-id',
+  'tmdb',
+];
+
+// Patrones de servidores específicos que sabemos que devuelven contenido válido
+const VALID_PAGE_INDICATORS = [
+  'root',           // React apps mount point
+  'app',            // Next.js/Vite app mount
+  'vite',           // Vite-based players
+  'webpack',        // Webpack bundles
+  'chunk',          // Code splitting
+  '__next',         // Next.js
+  'nuxt',           // Nuxt.js
 ];
 
 interface ProbeResult {
@@ -74,21 +87,22 @@ async function probeServer(
       redirect: 'follow',
       headers: {
         'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
+        'Referer': url,
       },
     });
 
     clearTimeout(timeout);
     const latency = Date.now() - start;
 
-    // Status code check
+    // Status code check - 3xx redirects were followed, so >=400 is bad
     if (res.status >= 400) {
       return { id: server.id, name: server.name, available: false, latency, reason: `HTTP ${res.status}` };
     }
 
-    // Read body with a size limit (10KB is enough to determine availability)
+    // Read body with a size limit
     const reader = res.body?.getReader();
     if (!reader) {
       return { id: server.id, name: server.name, available: false, latency, reason: 'No body' };
@@ -96,7 +110,7 @@ async function probeServer(
 
     let bodyLength = 0;
     let bodyChunk = '';
-    const maxRead = 15000; // read up to 15KB
+    const maxRead = 20000; // read up to 20KB for better analysis
     let done = false;
 
     while (!done && bodyLength < maxRead) {
@@ -110,19 +124,25 @@ async function probeServer(
 
     reader.cancel();
 
-    // Very small response = probably an error page or redirect
-    if (bodyLength < 800) {
+    // Very small response = probably an error page or empty redirect
+    if (bodyLength < 500) {
       return { id: server.id, name: server.name, available: false, latency, reason: 'Too small' };
     }
 
     const lowerBody = bodyChunk.toLowerCase();
 
-    // Check for unavailable indicators
+    // Check for unavailable indicators (but only count strong signals)
     const unavailableMatches = UNAVAILABLE_PATTERNS.filter(p => lowerBody.includes(p));
     const hasPlayerIndicators = PLAYER_INDICATORS.some(p => lowerBody.includes(p));
+    const hasValidPage = VALID_PAGE_INDICATORS.some(p => lowerBody.includes(p));
 
-    // If there are strong unavailable signals and no player indicators
-    if (unavailableMatches.length >= 2 && !hasPlayerIndicators) {
+    // Large response with player/app indicators = definitely working
+    if (bodyLength > 5000 && (hasPlayerIndicators || hasValidPage)) {
+      return { id: server.id, name: server.name, available: true, latency };
+    }
+
+    // If there are strong unavailable signals and no positive indicators
+    if (unavailableMatches.length >= 3 && !hasPlayerIndicators && !hasValidPage) {
       return { id: server.id, name: server.name, available: false, latency, reason: 'Not found' };
     }
 
@@ -131,8 +151,17 @@ async function probeServer(
       return { id: server.id, name: server.name, available: true, latency };
     }
 
+    // Medium response with valid page indicators
+    if (bodyLength > 1000 && hasValidPage) {
+      return { id: server.id, name: server.name, available: true, latency };
+    }
+
     // Default: if status is 200 and body is substantial, assume available
-    return { id: server.id, name: server.name, available: true, latency };
+    if (bodyLength > 800) {
+      return { id: server.id, name: server.name, available: true, latency };
+    }
+
+    return { id: server.id, name: server.name, available: false, latency, reason: 'Uncertain' };
   } catch (err) {
     const latency = Date.now() - start;
     const isTimeout = err instanceof DOMException && err.name === 'AbortError';
