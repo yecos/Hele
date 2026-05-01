@@ -12,6 +12,7 @@
 import cron from 'node-cron';
 import { runFullScan } from './scanner';
 import { runDiscovery } from './discovery';
+import { runXuperMonitorCheck } from './xuper-monitor';
 
 let scheduledTasks: cron.ScheduledTask[] = [];
 let initialized = false;
@@ -35,12 +36,14 @@ export function startGuardianScheduler() {
   const morningTask = cron.schedule('0 6 * * *', async () => {
     console.log('[Guardian] Escaneo programado de las 6:00 AM...');
     await runFullScan('scheduled');
+    try { await runXuperMonitorCheck('scheduled'); } catch (err) { console.error('[Xuper Monitor] Error:', err); }
   }, { timezone: 'America/Bogota' });
 
   // Mediodía: escaneo + descubrimiento
   const noonTask = cron.schedule('0 12 * * *', async () => {
     console.log('[Guardian] Escaneo programado del mediodía...');
     await runFullScan('scheduled');
+    try { await runXuperMonitorCheck('scheduled'); } catch (err) { console.error('[Xuper Monitor] Error:', err); }
     console.log('[Discovery] Descubrimiento web programado del mediodía...');
     await runDiscovery('scheduled');
   }, { timezone: 'America/Bogota' });
@@ -49,6 +52,7 @@ export function startGuardianScheduler() {
   const eveningTask = cron.schedule('0 18 * * *', async () => {
     console.log('[Guardian] Escaneo programado de las 6:00 PM...');
     await runFullScan('scheduled');
+    try { await runXuperMonitorCheck('scheduled'); } catch (err) { console.error('[Xuper Monitor] Error:', err); }
   }, { timezone: 'America/Bogota' });
 
   // Descubrimiento web a las 3 AM (baja actividad)
@@ -82,6 +86,11 @@ export function startGuardianScheduler() {
       } catch (err) {
         console.error('[Discovery] Error en primer descubrimiento:', err);
       }
+      // Primer chequeo Xuper 5 minutos después
+      setTimeout(async () => {
+        console.log('[Xuper Monitor] Primer chequeo...');
+        try { await runXuperMonitorCheck('scheduled'); } catch (err) { console.error('[Xuper Monitor] Error:', err); }
+      }, 120_000);
     }, 180_000); // 3 min después
   }, 60_000); // 1 min después del arranque
 }
@@ -100,9 +109,9 @@ export function getSchedulerStatus() {
     initialized,
     activeTasks: scheduledTasks.length,
     tasks: [
-      { name: 'Mañana (6:00 AM)', cron: '0 6 * * *', type: 'scan' },
-      { name: 'Mediodía (12:00 PM)', cron: '0 12 * * *', type: 'scan+discovery' },
-      { name: 'Tarde (6:00 PM)', cron: '0 18 * * *', type: 'scan' },
+      { name: 'Mañana (6:00 AM)', cron: '0 6 * * *', type: 'scan+xuper' },
+      { name: 'Mediodía (12:00 PM)', cron: '0 12 * * *', type: 'scan+xuper+discovery' },
+      { name: 'Tarde (6:00 PM)', cron: '0 18 * * *', type: 'scan+xuper' },
       { name: 'Madrugada (3:00 AM)', cron: '0 3 * * *', type: 'discovery+scan' },
     ],
   };

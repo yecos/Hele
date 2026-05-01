@@ -3,6 +3,8 @@ import { requireAdmin } from '@/lib/admin-guard';
 import { runDiscovery, promoteToGuardian, getDiscoveredSources, getDiscoveryStats, getDiscoveryStatus } from '@/lib/guardian/discovery';
 import { runFullScan, getGuardianStats, getVerifiedChannels } from '@/lib/guardian/scanner';
 import { getSchedulerStatus } from '@/lib/guardian/scheduler';
+import { runXuperMonitorCheck, markAllXuperAlertsRead } from '@/lib/guardian/xuper-monitor';
+import { fetchDCS, getXuperClientStatus, testEncryption, probeEndpoint } from '@/lib/guardian/xuper-client';
 import { db } from '@/lib/db';
 
 // Admin actions (runDiscovery, runScan) can take several minutes
@@ -160,6 +162,48 @@ export async function POST(request: NextRequest) {
         }
         await database.guardianSource.delete({ where: { id: body.sourceId } });
         return NextResponse.json({ success: true, message: 'Fuente eliminada' });
+      }
+
+      case 'runXuperCheck': {
+        const result = await runXuperMonitorCheck('manual');
+        if (result.status === 'already_running') {
+          return NextResponse.json({ success: false, message: result.message, isChecking: true });
+        }
+        return NextResponse.json({ success: true, ...result });
+      }
+
+      case 'markXuperAlertsRead': {
+        await markAllXuperAlertsRead();
+        return NextResponse.json({ success: true, message: 'Alertas Xuper marcadas como leídas' });
+      }
+
+      case 'clearXuperAlerts': {
+        const deleted = await database.xuperAlert.deleteMany();
+        return NextResponse.json({ success: true, deleted: deleted.count, message: `${deleted.count} alertas Xuper eliminadas` });
+      }
+
+      case 'xuperFetchDCS': {
+        const result = await fetchDCS();
+        return NextResponse.json({ success: result.success, ...result });
+      }
+
+      case 'xuperClientStatus': {
+        const status = getXuperClientStatus();
+        const encTest = testEncryption();
+        return NextResponse.json({ success: true, status, encryption: encTest });
+      }
+
+      case 'xuperProbeEndpoint': {
+        if (!body.domain || !body.path) {
+          return NextResponse.json({ success: false, error: 'domain y path requeridos' });
+        }
+        const result = await probeEndpoint(body.domain, body.path, body.method || 'POST', body.params || {});
+        return NextResponse.json({ success: result.success, result });
+      }
+
+      case 'clearXuperAPILogs': {
+        const deleted = await database.xuperAPILog.deleteMany();
+        return NextResponse.json({ success: true, deleted: deleted.count, message: `${deleted.count} API logs eliminados` });
       }
 
       default:
