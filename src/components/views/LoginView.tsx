@@ -7,19 +7,22 @@ import { useT } from '@/lib/i18n';
 import { Eye, EyeOff, LogIn, Loader2 } from 'lucide-react';
 
 export function LoginView() {
-  const { isLoading } = useAuthStore();
+  const { setFromSession } = useAuthStore();
   const { t } = useT();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoggingIn(true);
 
     if (!username.trim() || !password.trim()) {
       setError(t('login.fillAll'));
+      setIsLoggingIn(false);
       return;
     }
 
@@ -32,10 +35,21 @@ export function LoginView() {
 
       if (result?.error) {
         setError(t('login.invalidCredentials'));
+        setIsLoggingIn(false);
       }
-      // If successful, AuthSync will update the store automatically
+      // If successful, NextAuth session will update and AuthSync will catch it.
+      // We also do an immediate optimistic update so the UI doesn't lag.
+      if (result?.ok && !result?.error) {
+        setFromSession({
+          isLoggedIn: true,
+          username: username.trim().toLowerCase(),
+          userRole: username.trim().toLowerCase() === 'admin' ? 'admin' : 'user',
+          userProvider: 'credentials',
+        });
+      }
     } catch {
       setError(t('login.invalidCredentials'));
+      setIsLoggingIn(false);
     }
   };
 
@@ -81,7 +95,7 @@ export function LoginView() {
           <button
             type="button"
             onClick={handleGoogleLogin}
-            disabled={isLoading}
+            disabled={isLoggingIn}
             className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-medium transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg width="20" height="20" viewBox="0 0 24 24">
@@ -113,6 +127,7 @@ export function LoginView() {
               placeholder={t('login.usernamePlaceholder')}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-red-500/50 transition-colors placeholder:text-gray-500"
               autoComplete="username"
+              disabled={isLoggingIn}
             />
           </div>
 
@@ -127,6 +142,7 @@ export function LoginView() {
                 placeholder={t('login.passwordPlaceholder')}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-red-500/50 transition-colors placeholder:text-gray-500 pr-12"
                 autoComplete="current-password"
+                disabled={isLoggingIn}
               />
               <button
                 type="button"
@@ -141,10 +157,10 @@ export function LoginView() {
           {/* Submit */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoggingIn}
             className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-600/20"
           >
-            {isLoading ? (
+            {isLoggingIn ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
                 {t('login.loggingIn')}

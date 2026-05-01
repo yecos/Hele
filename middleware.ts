@@ -1,11 +1,20 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = [
   '/api/auth',
   '/api/health',
+  '/api/tmdb',
+  '/api/iptv',
+  '/api/sources',
+  '/api/probe-servers',
+];
+
+// Admin-only routes (require JWT or header auth)
+const ADMIN_ROUTES = [
+  '/api/guardian/scan',
+  '/api/guardian/discover/run',
 ];
 
 export async function middleware(request: NextRequest) {
@@ -24,7 +33,7 @@ export async function middleware(request: NextRequest) {
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'no-referrer');
 
-  // CSP — allow Google OAuth form submissions
+  // CSP — allow Google OAuth form submissions + media streaming
   response.headers.set(
     'Content-Security-Policy',
     [
@@ -33,7 +42,7 @@ export async function middleware(request: NextRequest) {
       "frame-src 'self' https: http:",
       "img-src 'self' https: http: data: blob:",
       "media-src 'self' https: http: blob:",
-      "connect-src 'self' https: http:",
+      "connect-src 'self' https: http: wss:",
       "style-src 'self' 'unsafe-inline' https:",
       "font-src 'self' https: data:",
       "child-src 'self' https: http:",
@@ -41,22 +50,22 @@ export async function middleware(request: NextRequest) {
     ].join('; ')
   );
 
-  // Auth check only for API routes (except public ones)
-  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
-  const isApiRoute = pathname.startsWith('/api/');
+  // Auth check ONLY for admin routes
+  const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route));
 
-  if (isApiRoute && !isPublicRoute) {
+  if (isAdminRoute) {
     try {
-      const token = await getToken({ 
-        req: request, 
-        secret: process.env.NEXTAUTH_SECRET 
+      const { getToken } = await import('next-auth/jwt');
+      const token = await getToken({
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET,
       });
-      
+
       // If no token, check for legacy header auth
       if (!token) {
         const adminAuth = request.headers.get('x-admin-auth');
         const authHeader = request.headers.get('authorization');
-        
+
         if (!adminAuth && !authHeader) {
           return NextResponse.json(
             { success: false, error: 'Autenticación requerida' },

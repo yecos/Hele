@@ -1,6 +1,6 @@
 'use client';
 
-import { SessionProvider, useSession, signIn, signOut } from 'next-auth/react';
+import { SessionProvider, useSession } from 'next-auth/react';
 import { useEffect, ReactNode } from 'react';
 import { useAuthStore } from '@/lib/store';
 
@@ -45,12 +45,10 @@ function AuthSyncInner({ children }: { children: ReactNode }) {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   return (
-    <SessionProvider refetchInterval={5 * 60}>
+    <SessionProvider refetchInterval={5 * 60} refetchOnWindowFocus={true}>
       <AuthSyncInner>
         {children}
       </AuthSyncInner>
     </SessionProvider>
   );
 }
-
-export { signIn, signOut };
