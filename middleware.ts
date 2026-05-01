@@ -9,15 +9,22 @@ const PUBLIC_ROUTES = [
 ];
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Skip middleware entirely for auth routes — critical for OAuth callbacks
+  if (pathname.startsWith('/api/auth')) {
+    return NextResponse.next();
+  }
+
   const response = NextResponse.next();
 
-  // Anti-ad / security headers for all responses
+  // Security headers for all responses
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'no-referrer');
 
-  // CSP — restrict what can be loaded to prevent ad injections
+  // CSP — allow Google OAuth form submissions
   response.headers.set(
     'Content-Security-Policy',
     [
@@ -30,12 +37,13 @@ export async function middleware(request: NextRequest) {
       "style-src 'self' 'unsafe-inline' https:",
       "font-src 'self' https: data:",
       "child-src 'self' https: http:",
+      "form-action 'self' https://accounts.google.com",
     ].join('; ')
   );
 
-  // Auth check for API routes (except public ones)
-  const isPublicRoute = PUBLIC_ROUTES.some(route => request.nextUrl.pathname.startsWith(route));
-  const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
+  // Auth check only for API routes (except public ones)
+  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
+  const isApiRoute = pathname.startsWith('/api/');
 
   if (isApiRoute && !isPublicRoute) {
     try {
@@ -50,7 +58,6 @@ export async function middleware(request: NextRequest) {
         const authHeader = request.headers.get('authorization');
         
         if (!adminAuth && !authHeader) {
-          // For API routes, return 401 instead of redirecting
           return NextResponse.json(
             { success: false, error: 'Autenticación requerida' },
             { status: 401 }
@@ -59,7 +66,6 @@ export async function middleware(request: NextRequest) {
       }
     } catch {
       // Token verification failed but might have header auth — let it through
-      // The individual route handlers will verify with requireAdmin
     }
   }
 
@@ -68,6 +74,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api/auth|_next/static|_next/image|favicon|logo|icon|manifest|sw.js|cast-receiver|offline).*)',
+    '/((?!_next/static|_next/image|favicon|logo|icon|manifest|sw.js|cast-receiver|offline).*)',
   ],
 };

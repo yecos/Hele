@@ -44,12 +44,27 @@ export function LoginView() {
     setError('');
     setGoogleLoading(true);
     try {
-      // This redirects to Google's OAuth consent screen
-      await signIn('google', {
+      // signIn with redirect:false so we can handle errors
+      const result = await signIn('google', {
         callbackUrl: '/',
-        redirect: true,
+        redirect: false,
       });
-    } catch {
+      
+      if (result?.error) {
+        setError(result.error === 'CallbackRouteError' 
+          ? 'Error al conectar con Google. Verifica la configuración OAuth.' 
+          : t('login.googleFailed'));
+        setGoogleLoading(false);
+      } else if (result?.url) {
+        // NextAuth returned a URL — redirect manually
+        window.location.href = result.url;
+      } else {
+        // No error and no URL — redirect might have happened
+        // or signIn succeeded for some reason
+        setGoogleLoading(false);
+      }
+    } catch (err) {
+      console.error('[Google Login] Error:', err);
       setError(t('login.googleFailed'));
       setGoogleLoading(false);
     }
