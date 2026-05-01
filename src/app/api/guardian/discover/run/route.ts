@@ -12,7 +12,7 @@ export const maxDuration = 300;
  */
 export async function POST(request: Request) {
   try {
-    requireAdmin(request);
+    await requireAdmin(request);
 
     const body = await request.json().catch(() => ({}));
 

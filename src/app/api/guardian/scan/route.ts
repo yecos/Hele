@@ -11,7 +11,7 @@ export const maxDuration = 300;
  */
 export async function POST(request: NextRequest) {
   try {
-    requireAdmin(request);
+    await requireAdmin(request);
 
     const body = await request.json().catch(() => ({}));
     const trigger = body.trigger === 'manual' ? 'manual' : 'manual';

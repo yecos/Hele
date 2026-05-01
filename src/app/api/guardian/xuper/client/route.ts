@@ -40,7 +40,7 @@ export const maxDuration = 60;
  */
 export async function GET(request: NextRequest) {
   try {
-    requireAdmin(request);
+    await requireAdmin(request);
 
     const status = getXuperClientStatus();
     const endpoints = getKnownEndpoints();
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    requireAdmin(request);
+    await requireAdmin(request);
 
     const body = await request.json().catch(() => ({}));
     const { action } = body;

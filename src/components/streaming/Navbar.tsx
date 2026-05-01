@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { signOut } from 'next-auth/react';
 import { useViewStore, useAuthStore, useCastStore } from '@/lib/store';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
@@ -8,7 +9,7 @@ import { Search, Heart, Home, Settings, Menu, X, Film, Tv, Radio, LogOut, User, 
 
 export function Navbar() {
   const { currentView, setView, setSearchQuery } = useViewStore();
-  const { isLoggedIn, username, logout } = useAuthStore();
+  const { isLoggedIn, username, userImage, userProvider, clearAuth } = useAuthStore();
   const { setCastState } = useCastStore();
   const cast = useChromecast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -52,6 +53,13 @@ export function Navbar() {
       setView('search');
       setMobileMenuOpen(false);
     }
+  };
+
+  const handleLogout = async () => {
+    clearAuth();
+    setShowUserMenu(false);
+    setMobileMenuOpen(false);
+    await signOut({ redirect: false });
   };
 
   const navItems = [
@@ -143,9 +151,13 @@ export function Navbar() {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-all"
               >
-                <div className="w-7 h-7 rounded-full bg-red-600 flex items-center justify-center">
-                  <User size={14} className="text-white" />
-                </div>
+                {userImage ? (
+                  <img src={userImage} alt={username} className="w-7 h-7 rounded-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-red-600 flex items-center justify-center">
+                    <User size={14} className="text-white" />
+                  </div>
+                )}
                 <span className="text-sm font-medium hidden sm:block">{username}</span>
               </button>
 
@@ -154,7 +166,7 @@ export function Navbar() {
                 <div className="absolute right-0 top-12 bg-gray-900 border border-white/10 rounded-xl shadow-2xl p-2 w-48 z-50">
                   <div className="px-3 py-2 border-b border-white/5 mb-1">
                     <p className="text-white text-sm font-medium">{username}</p>
-                    <p className="text-gray-500 text-xs">{t('nav.personalAccount')}</p>
+                    <p className="text-gray-500 text-xs">{userProvider === 'google' ? 'Cuenta de Google' : t('nav.personalAccount')}</p>
                   </div>
                   <button
                     onClick={() => { setView('settings'); setShowUserMenu(false); }}
@@ -164,7 +176,7 @@ export function Navbar() {
                     {t('nav.settings')}
                   </button>
                   <button
-                    onClick={() => { logout(); setShowUserMenu(false); }}
+                    onClick={handleLogout}
                     className="w-full px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2 transition-all"
                   >
                     <LogOut size={14} />
@@ -239,7 +251,7 @@ export function Navbar() {
                   : t('nav.chromecastUnavailable')}
               </button>
               <button
-                onClick={() => { logout(); setMobileMenuOpen(false); }}
+                onClick={handleLogout}
                 className="w-full px-4 py-3 rounded-lg text-left text-sm font-medium text-red-400 hover:bg-red-500/10 flex items-center gap-3 transition-all"
               >
                 <LogOut size={18} />

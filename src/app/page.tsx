@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useViewStore, usePlayerStore, useAuthStore } from '@/lib/store';
 import { Navbar } from '@/components/streaming/Navbar';
@@ -168,7 +168,7 @@ function MainApp() {
 }
 
 export default function Page() {
-  const { isLoggedIn, checkAuth } = useAuthStore();
+  const { isLoggedIn } = useAuthStore();
   const [onboardingDone, setOnboardingDone] = useState(() => {
     try {
       return localStorage.getItem('xs-onboarding-done') === '1';
@@ -177,10 +177,8 @@ export default function Page() {
     }
   });
 
-  // Check auth on mount
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+  // Auth is now synced by AuthSync component in layout.tsx
+  // No need for manual checkAuth() — NextAuth session drives the state
 
   const handleOnboardingComplete = useCallback(() => {
     setOnboardingDone(true);

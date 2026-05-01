@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-export function middleware(request: NextRequest) {
+// Routes that don't require authentication
+const PUBLIC_ROUTES = [
+  '/api/auth',
+  '/api/health',
+];
+
+export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
   // Anti-ad / security headers for all responses
@@ -25,6 +32,36 @@ export function middleware(request: NextRequest) {
       "child-src 'self' https: http:",
     ].join('; ')
   );
+
+  // Auth check for API routes (except public ones)
+  const isPublicRoute = PUBLIC_ROUTES.some(route => request.nextUrl.pathname.startsWith(route));
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
+
+  if (isApiRoute && !isPublicRoute) {
+    try {
+      const token = await getToken({ 
+        req: request, 
+        secret: process.env.NEXTAUTH_SECRET 
+      });
+      
+      // If no token, check for legacy header auth
+      if (!token) {
+        const adminAuth = request.headers.get('x-admin-auth');
+        const authHeader = request.headers.get('authorization');
+        
+        if (!adminAuth && !authHeader) {
+          // For API routes, return 401 instead of redirecting
+          return NextResponse.json(
+            { success: false, error: 'Autenticación requerida' },
+            { status: 401 }
+          );
+        }
+      }
+    } catch {
+      // Token verification failed but might have header auth — let it through
+      // The individual route handlers will verify with requireAdmin
+    }
+  }
 
   return response;
 }

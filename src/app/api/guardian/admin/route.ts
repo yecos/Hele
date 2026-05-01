@@ -36,7 +36,7 @@ const EMPTY_DASHBOARD = {
  */
 export async function GET(request: NextRequest) {
   try {
-    const admin = requireAdmin(request);
+    const admin = await requireAdmin(request);
     const database = db;
 
     if (!database) {
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const admin = requireAdmin(request);
+    const admin = await requireAdmin(request);
     const database = db;
 
     if (!database) {

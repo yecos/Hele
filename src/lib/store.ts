@@ -3,153 +3,58 @@ import type { MovieItem, TMDBMovieDetail } from './tmdb';
 import type { StreamSource, ServerGroup, AudioLang } from './sources';
 
 // ==================== AUTH STATE ====================
+// Auth is now handled by NextAuth (SessionProvider + useSession).
+// This store is kept for backward compatibility but delegates to NextAuth.
+// The login/loginWithGoogle/logout functions use next-auth/react directly.
+
 interface AuthState {
   isLoggedIn: boolean;
   username: string;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
-  loginWithGoogle: () => Promise<boolean>;
-  logout: () => void;
-  checkAuth: () => void;
+  userImage: string;
+  userEmail: string;
+  userRole: string;
+  userProvider: string;
+  // Sync state from NextAuth session (called by AuthSync component)
+  setFromSession: (data: {
+    isLoggedIn: boolean;
+    username: string;
+    userImage?: string;
+    userEmail?: string;
+    userRole?: string;
+    userProvider?: string;
+  }) => void;
+  clearAuth: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   isLoggedIn: false,
   username: '',
   isLoading: false,
+  userImage: '',
+  userEmail: '',
+  userRole: 'user',
+  userProvider: 'credentials',
 
-  login: async (username, password) => {
-    set({ isLoading: true });
-    try {
-      const res = await fetch('/api/auth/callback/credentials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-        redirect: 'false',
-        username,
-        password,
-        csrfToken: '',
-        callbackUrl: '/',
-      }).toString(),
-      });
+  setFromSession: (data) => set({
+    isLoggedIn: data.isLoggedIn,
+    username: data.username,
+    userImage: data.userImage || '',
+    userEmail: data.userEmail || '',
+    userRole: data.userRole || 'user',
+    userProvider: data.userProvider || 'credentials',
+    isLoading: false,
+  }),
 
-      if (res.ok) {
-        // Try NextAuth sign in
-        try {
-          const signInRes = await fetch('/api/auth/signin/credentials', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, redirect: false }),
-          });
-          if (signInRes.ok) {
-            const data = await signInRes.json();
-            if (data.url) {
-              set({ isLoggedIn: true, username: username.toLowerCase(), isLoading: false });
-              return true;
-            }
-          }
-        } catch {
-          // Fallback: use legacy login endpoint
-        }
-
-        // Fallback to legacy auth
-        const legacyRes = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
-        });
-        const data = await legacyRes.json();
-        if (data.success) {
-          localStorage.setItem('xs-auth', JSON.stringify({ username: data.username.toLowerCase(), token: data.token }));
-          set({ isLoggedIn: true, username: data.username.toLowerCase(), isLoading: false });
-          return true;
-        }
-      }
-
-      set({ isLoading: false });
-      return false;
-    } catch {
-      // Fallback to legacy
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          localStorage.setItem('xs-auth', JSON.stringify({ username: data.username.toLowerCase(), token: data.token }));
-          set({ isLoggedIn: true, username: data.username.toLowerCase(), isLoading: false });
-          return true;
-        }
-      } catch {}
-      set({ isLoading: false });
-      return false;
-    }
-  },
-
-  loginWithGoogle: async () => {
-    set({ isLoading: true });
-    try {
-      // Try NextAuth Google OAuth
-      const res = await fetch('/api/auth/signin/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ redirect: false, callbackUrl: '/' }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.url) {
-          // Google OAuth configured — redirect to Google consent screen
-          window.location.href = data.url;
-          return true;
-        }
-      }
-
-      // Google OAuth not configured — use demo mode
-      console.log('Google OAuth not configured (missing GOOGLE_CLIENT_ID). Using demo mode.');
-      const googleUser = {
-        username: 'Google User',
-        name: 'Google User',
-        email: 'user@gmail.com',
-        image: '',
-        provider: 'google',
-      };
-      localStorage.setItem('xs-auth', JSON.stringify({
-        username: googleUser.username,
-        name: googleUser.name,
-        email: googleUser.email,
-        image: googleUser.image,
-        token: 'google-demo-token',
-        provider: 'google',
-      }));
-      set({ isLoggedIn: true, username: googleUser.username, isLoading: false });
-      return true;
-    } catch {
-      set({ isLoading: false });
-      return false;
-    }
-  },
-
-  logout: () => {
-    localStorage.removeItem('xs-auth');
-    set({ isLoggedIn: false, username: '' });
-  },
-
-  checkAuth: () => {
-    try {
-      const stored = localStorage.getItem('xs-auth');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.username && typeof parsed.username === 'string') {
-          set({ isLoggedIn: true, username: parsed.username.toLowerCase() });
-          return;
-        }
-      }
-    } catch {}
-    set({ isLoggedIn: false, username: '' });
-  },
+  clearAuth: () => set({
+    isLoggedIn: false,
+    username: '',
+    userImage: '',
+    userEmail: '',
+    userRole: 'user',
+    userProvider: 'credentials',
+    isLoading: false,
+  }),
 }));
 
 // ==================== VIEW STATE ====================
