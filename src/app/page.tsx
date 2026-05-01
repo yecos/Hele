@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useViewStore, usePlayerStore, useAuthStore } from '@/lib/store';
 import { Navbar } from '@/components/streaming/Navbar';
