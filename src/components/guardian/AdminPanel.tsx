@@ -113,7 +113,7 @@ function EngineIcon({ engine }: { engine: string }) {
 // ===== Main Component =====
 export default function AdminPanel({ onClose }: { onClose: () => void }) {
   const { isAdmin, adminFetch } = useAdminAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'discovery' | 'sources' | 'scans'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'discovery' | 'sources' | 'scans' | 'xuper'>('overview');
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -192,6 +192,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
     { id: 'discovery' as const, label: 'Discovery', icon: Search },
     { id: 'sources' as const, label: 'Fuentes', icon: Database },
     { id: 'scans' as const, label: 'Scans', icon: Activity },
+    { id: 'xuper' as const, label: 'Xuper', icon: Radio },
   ];
 
   const d = dashboard;
@@ -525,6 +526,9 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
                 </div>
               )}
 
+              {/* ===== XUPER TAB ===== */}
+              {activeTab === 'xuper' && <XuperPanel />}
+
               {/* ===== SCANS TAB ===== */}
               {activeTab === 'scans' && (
                 <div className="space-y-4">
@@ -715,6 +719,335 @@ function EngineCard({ name, engine, stats }: { name: string; engine: string; sta
           <span className="text-gray-600">Nuevas</span>
           <p className="text-green-400 font-mono">{newSources}</p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== Xuper Panel Component =====
+function XuperPanel() {
+  const [status, setStatus] = useState<{
+    available: boolean;
+    dcsOk: boolean;
+    portalOk: boolean;
+    latencyMs: number;
+    activePortal: string;
+    client: { isLoggedIn: boolean; portalDomain: string; domainsCount: number; hasToken: boolean };
+  } | null>(null);
+  const [monitorData, setMonitorData] = useState<{
+    timestamp: string;
+    dcsAvailable: boolean;
+    domainsChecked: number;
+    domainsOk: number;
+    portalLatencyMs: number;
+    configOk: boolean;
+    domains: Array<{ domain: string; type: string; ip: string; dnsOk: boolean; httpOk: boolean; latencyMs: number; error?: string }>;
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [loginSuccess, setLoginSuccess] = useState(false);
+
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch('/api/xuper/status');
+      const data = await res.json();
+      if (data.success) {
+        setStatus({
+          available: data.connectivity?.available || false,
+          dcsOk: data.connectivity?.dcsOk || false,
+          portalOk: data.connectivity?.portalOk || false,
+          latencyMs: data.connectivity?.latencyMs || 0,
+          activePortal: data.connectivity?.activePortal || '',
+          client: data.client || {},
+        });
+      }
+    } catch {}
+  };
+
+  const fetchMonitor = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/xuper/monitor');
+      const data = await res.json();
+      if (data.success && data.monitor) {
+        setMonitorData(data.monitor);
+      }
+    } catch {}
+    setLoading(false);
+  };
+
+  const handleLogin = async () => {
+    setLoginLoading(true);
+    setLoginError('');
+    setLoginSuccess(false);
+    try {
+      const res = await fetch('/api/xuper/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLoginSuccess(true);
+        fetchStatus();
+      } else {
+        setLoginError(data.error || 'Login fallido');
+      }
+    } catch {
+      setLoginError('Error de conexión');
+    }
+    setLoginLoading(false);
+  };
+
+  useEffect(() => {
+    fetchStatus();
+    fetchMonitor();
+  }, []);
+
+  return (
+    <div className="space-y-4">
+      {/* Status Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-gray-900 rounded-xl p-3 border border-gray-800">
+          <div className="flex items-center gap-2 text-gray-500 mb-1">
+            <Globe size={14} />
+            <span className="text-[10px] uppercase tracking-wider">DCS</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {status?.dcsOk ? (
+              <CheckCircle size={18} className="text-green-400" />
+            ) : (
+              <XCircle size={18} className="text-red-400" />
+            )}
+            <span className={`text-sm font-bold ${status?.dcsOk ? 'text-green-400' : 'text-red-400'}`}>
+              {status?.dcsOk ? 'Online' : 'Offline'}
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-gray-900 rounded-xl p-3 border border-gray-800">
+          <div className="flex items-center gap-2 text-gray-500 mb-1">
+            <Radio size={14} />
+            <span className="text-[10px] uppercase tracking-wider">Portal</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {status?.portalOk ? (
+              <CheckCircle size={18} className="text-green-400" />
+            ) : (
+              <XCircle size={18} className="text-red-400" />
+            )}
+            <span className={`text-sm font-bold ${status?.portalOk ? 'text-green-400' : 'text-red-400'}`}>
+              {status?.portalOk ? 'Online' : 'Offline'}
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-gray-900 rounded-xl p-3 border border-gray-800">
+          <div className="flex items-center gap-2 text-gray-500 mb-1">
+            <Zap size={14} />
+            <span className="text-[10px] uppercase tracking-wider">Latencia</span>
+          </div>
+          <p className={`text-lg font-bold ${status?.latencyMs && status.latencyMs < 500 ? 'text-green-400' : status?.latencyMs && status.latencyMs < 2000 ? 'text-yellow-400' : 'text-red-400'}`}>
+            {status?.latencyMs ? `${status.latencyMs}ms` : 'N/A'}
+          </p>
+        </div>
+
+        <div className="bg-gray-900 rounded-xl p-3 border border-gray-800">
+          <div className="flex items-center gap-2 text-gray-500 mb-1">
+            <Shield size={14} />
+            <span className="text-[10px] uppercase tracking-wider">Sesión</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {status?.client?.isLoggedIn ? (
+              <CheckCircle size={18} className="text-green-400" />
+            ) : (
+              <XCircle size={18} className="text-gray-600" />
+            )}
+            <span className={`text-sm font-bold ${status?.client?.isLoggedIn ? 'text-green-400' : 'text-gray-500'}`}>
+              {status?.client?.isLoggedIn ? 'Activa' : 'Sin sesión'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Active Portal Info */}
+      {status?.activePortal && (
+        <div className="bg-gray-900 rounded-xl p-3 border border-gray-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[10px] text-gray-500 uppercase tracking-wider">Portal Activo</span>
+              <p className="text-sm text-blue-400 font-mono">{status.activePortal}</p>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-gray-500 uppercase tracking-wider">Dominios DCS</span>
+              <p className="text-sm text-white font-mono">{status.client?.domainsCount || 0}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Login Form */}
+      <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+        <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+          <Shield size={14} className="text-blue-400" />
+          Login Xuper TV
+        </h3>
+        
+        {status?.client?.isLoggedIn ? (
+          <div className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle size={16} className="text-green-400" />
+              <span className="text-green-400 text-sm">Sesión activa en Xuper TV</span>
+            </div>
+            <button
+              onClick={async () => {
+                try { await fetch('/api/xuper/status'); } catch {}
+                fetchStatus();
+              }}
+              className="text-xs text-gray-400 hover:text-white transition-colors"
+            >
+              Verificar
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <input
+                type="text"
+                placeholder="Username"
+                value={loginForm.username}
+                onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-600 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <input
+                type="password"
+                placeholder="Password"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-600 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            {loginError && (
+              <p className="text-red-400 text-xs">{loginError}</p>
+            )}
+            {loginSuccess && (
+              <p className="text-green-400 text-xs">Login exitoso!</p>
+            )}
+            <button
+              onClick={handleLogin}
+              disabled={loginLoading || !loginForm.username || !loginForm.password}
+              className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              {loginLoading ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
+              {loginLoading ? 'Conectando...' : 'Conectar a Xuper TV'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Monitor Results */}
+      <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+            <Radar size={14} className="text-purple-400" />
+            Monitor de Dominios
+          </h3>
+          <button
+            onClick={fetchMonitor}
+            disabled={loading}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {loading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            {loading ? 'Monitoreando...' : 'Ejecutar Monitor'}
+          </button>
+        </div>
+
+        {monitorData ? (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3 text-xs">
+              <div>
+                <span className="text-gray-500">DCS</span>
+                <p className={monitorData.dcsAvailable ? 'text-green-400' : 'text-red-400'}>
+                  {monitorData.dcsAvailable ? 'Disponible' : 'Caído'}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-500">Dominios OK</span>
+                <p className="text-white">{monitorData.domainsOk}/{monitorData.domainsChecked}</p>
+              </div>
+              <div>
+                <span className="text-gray-500">Portal Latencia</span>
+                <p className="text-white">{monitorData.portalLatencyMs}ms</p>
+              </div>
+              <div>
+                <span className="text-gray-500">Config API</span>
+                <p className={monitorData.configOk ? 'text-green-400' : 'text-red-400'}>
+                  {monitorData.configOk ? 'OK' : 'Falló'}
+                </p>
+              </div>
+            </div>
+
+            {/* Domains table */}
+            <div className="overflow-x-auto max-h-64 overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-gray-800/50 sticky top-0">
+                  <tr className="text-gray-400">
+                    <th className="text-left p-2">Tipo</th>
+                    <th className="text-left p-2">Dominio</th>
+                    <th className="text-center p-2">DNS</th>
+                    <th className="text-center p-2">HTTP</th>
+                    <th className="text-center p-2">Latencia</th>
+                    <th className="text-left p-2">IP</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monitorData.domains.map((d) => (
+                    <tr key={d.domain} className="border-t border-gray-800/50 hover:bg-gray-800/30">
+                      <td className="p-2">
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${
+                          d.type === 'portal' ? 'bg-blue-500/20 text-blue-400' :
+                          d.type === 'epg' ? 'bg-purple-500/20 text-purple-400' :
+                          d.type === 'cdn' ? 'bg-emerald-500/20 text-emerald-400' :
+                          'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {d.type}
+                        </span>
+                      </td>
+                      <td className="p-2 text-gray-300 font-mono text-[10px] max-w-[180px] truncate" title={d.domain}>
+                        {d.domain}
+                      </td>
+                      <td className="p-2 text-center">
+                        {d.dnsOk ? <CheckCircle size={12} className="text-green-400 inline" /> : <XCircle size={12} className="text-red-400 inline" />}
+                      </td>
+                      <td className="p-2 text-center">
+                        {d.httpOk ? <CheckCircle size={12} className="text-green-400 inline" /> : <XCircle size={12} className="text-red-400 inline" />}
+                      </td>
+                      <td className="p-2 text-center text-gray-400 font-mono">
+                        {d.latencyMs > 0 ? `${d.latencyMs}ms` : '—'}
+                      </td>
+                      <td className="p-2 text-gray-500 font-mono text-[10px]">
+                        {d.ip || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <p className="text-[10px] text-gray-600 mt-2">
+              Último monitoreo: {new Date(monitorData.timestamp).toLocaleString('es-CO')}
+            </p>
+          </>
+        ) : (
+          <p className="text-gray-600 text-xs text-center py-4">
+            Haz clic en &quot;Ejecutar Monitor&quot; para verificar los dominios Xuper
+          </p>
+        )}
       </div>
     </div>
   );

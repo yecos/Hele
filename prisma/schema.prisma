@@ -87,3 +87,32 @@ model VerifiedChannel {
   playlist  String   @default("")         // ID del playlist original (ej: "co", "sports")
   createdAt DateTime @default(now())
 }
+
+// ===== XUPER TV - Cliente de acceso directo =====
+
+/// Sesiones activas del cliente Xuper TV
+model XuperSession {
+  id            String   @id @default(cuid())
+  userId        String                        // ID del usuario Xuper
+  username      String                        // Username en Xuper
+  token         String                        // Token de sesión (encriptado)
+  portalDomain  String   @default("")         // Dominio portal activo
+  vipLevel      Int      @default(0)          // Nivel VIP
+  expireTime    String   @default("")         // Fecha de expiración
+  isActive      Boolean  @default(true)       // Sesión activa
+  lastHeartbeat DateTime @default(now())       // Último heartbeat exitoso
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+/// Resultados del monitoreo Xuper
+model XuperMonitorLog {
+  id              String   @id @default(cuid())
+  dcsAvailable    Boolean  @default(false)     // DCS respondió
+  domainsChecked  Int      @default(0)         // Total dominios chequeados
+  domainsOk       Int      @default(0)         // Dominios OK
+  portalLatencyMs Int      @default(0)         // Latencia del portal
+  configOk        Boolean  @default(false)     // Config endpoint OK
+  details         String   @default("{}")      // JSON con detalles por dominio
+  createdAt       DateTime @default(now())
+}

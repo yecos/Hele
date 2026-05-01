@@ -335,3 +335,96 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     set({ history: updated });
   },
 }));
+
+// ==================== XUPER CLIENT STATE ====================
+interface XuperClientState {
+  isLoggedIn: boolean;
+  username: string;
+  isConnecting: boolean;
+  error: string;
+  available: boolean;
+  dcsOk: boolean;
+  portalOk: boolean;
+  latencyMs: number;
+  activePortal: string;
+  xuperLogin: (username: string, password: string) => Promise<boolean>;
+  xuperLogout: () => void;
+  checkXuperStatus: () => Promise<void>;
+}
+
+export const useXuperStore = create<XuperClientState>((set) => ({
+  isLoggedIn: false,
+  username: '',
+  isConnecting: false,
+  error: '',
+  available: false,
+  dcsOk: false,
+  portalOk: false,
+  latencyMs: 0,
+  activePortal: '',
+
+  xuperLogin: async (username, password) => {
+    set({ isConnecting: true, error: '' });
+    try {
+      const res = await fetch('/api/xuper/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        localStorage.setItem('xuper-session', JSON.stringify({ username, loggedIn: true }));
+        set({
+          isLoggedIn: true,
+          username,
+          isConnecting: false,
+          error: '',
+        });
+        return true;
+      } else {
+        set({
+          isConnecting: false,
+          error: data.error || 'Login fallido',
+        });
+        return false;
+      }
+    } catch {
+      set({
+        isConnecting: false,
+        error: 'Error de conexión',
+      });
+      return false;
+    }
+  },
+
+  xuperLogout: () => {
+    localStorage.removeItem('xuper-session');
+    set({
+      isLoggedIn: false,
+      username: '',
+      error: '',
+    });
+  },
+
+  checkXuperStatus: async () => {
+    try {
+      const res = await fetch('/api/xuper/status');
+      const data = await res.json();
+
+      if (data.success) {
+        set({
+          available: data.connectivity?.available || false,
+          dcsOk: data.connectivity?.dcsOk || false,
+          portalOk: data.connectivity?.portalOk || false,
+          latencyMs: data.connectivity?.latencyMs || 0,
+          activePortal: data.connectivity?.activePortal || '',
+          isLoggedIn: data.client?.isLoggedIn || false,
+        });
+      }
+    } catch {
+      set({ available: false, dcsOk: false, portalOk: false });
+    }
+  },
+}));

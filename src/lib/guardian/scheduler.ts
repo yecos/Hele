@@ -12,6 +12,8 @@
 import cron from 'node-cron';
 import { runFullScan } from './scanner';
 import { runDiscovery } from './discovery';
+import { runXuperMonitor, setLastMonitorResult } from './xuper-monitor';
+import { getXuperClient } from './xuper-client';
 
 let scheduledTasks: cron.ScheduledTask[] = [];
 let initialized = false;
@@ -60,9 +62,36 @@ export function startGuardianScheduler() {
     await runFullScan('scheduled');
   }, { timezone: 'America/Bogota' });
 
-  scheduledTasks = [morningTask, noonTask, eveningTask, discoveryTask];
+  // Monitoreo Xuper cada 30 minutos
+  const xuperMonitorTask = cron.schedule('*/30 * * * *', async () => {
+    console.log('[XuperMonitor] Monitoreo programado...');
+    try {
+      const result = await runXuperMonitor();
+      setLastMonitorResult(result);
+      console.log(`[XuperMonitor] DCS: ${result.dcsAvailable ? 'OK' : 'DOWN'} | Dominios OK: ${result.domainsOk}/${result.domainsChecked}`);
+    } catch (err) {
+      console.error('[XuperMonitor] Error en monitoreo:', err);
+    }
+  }, { timezone: 'America/Bogota' });
 
-  console.log('[Guardian] 4 tareas programadas activas');
+  // Heartbeat Xuper cada 5 minutos (si hay sesión activa)
+  const xuperHeartbeatTask = cron.schedule('*/5 * * * *', async () => {
+    const client = getXuperClient();
+    if (client.getStatus().isLoggedIn) {
+      try {
+        const ok = await client.heartbeat();
+        if (!ok) {
+          console.warn('[XuperMonitor] Heartbeat falló - sesión puede haber expirado');
+        }
+      } catch {
+        // Silencioso
+      }
+    }
+  }, { timezone: 'America/Bogota' });
+
+  scheduledTasks = [morningTask, noonTask, eveningTask, discoveryTask, xuperMonitorTask, xuperHeartbeatTask];
+
+  console.log('[Guardian] 6 tareas programadas activas (4 Guardian + 2 Xuper)');
   console.log('[Guardian] El sistema validará y descubrirá canales automáticamente');
 
   // Escaneo inicial: 60 segundos después de iniciar
@@ -83,6 +112,18 @@ export function startGuardianScheduler() {
         console.error('[Discovery] Error en primer descubrimiento:', err);
       }
     }, 180_000); // 3 min después
+
+    // Primer monitoreo Xuper 2 minutos después
+    setTimeout(async () => {
+      console.log('[XuperMonitor] Primer monitoreo...');
+      try {
+        const result = await runXuperMonitor();
+        setLastMonitorResult(result);
+        console.log(`[XuperMonitor] DCS: ${result.dcsAvailable ? 'OK' : 'DOWN'} | Dominios: ${result.domainsOk}/${result.domainsChecked}`);
+      } catch (err) {
+        console.error('[XuperMonitor] Error en primer monitoreo:', err);
+      }
+    }, 120_000); // 2 min después
   }, 60_000); // 1 min después del arranque
 }
 
@@ -104,6 +145,8 @@ export function getSchedulerStatus() {
       { name: 'Mediodía (12:00 PM)', cron: '0 12 * * *', type: 'scan+discovery' },
       { name: 'Tarde (6:00 PM)', cron: '0 18 * * *', type: 'scan' },
       { name: 'Madrugada (3:00 AM)', cron: '0 3 * * *', type: 'discovery+scan' },
+      { name: 'Xuper Monitor (cada 30 min)', cron: '*/30 * * * *', type: 'xuper-monitor' },
+      { name: 'Xuper Heartbeat (cada 5 min)', cron: '*/5 * * * *', type: 'xuper-heartbeat' },
     ],
   };
 }

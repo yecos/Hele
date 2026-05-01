@@ -206,7 +206,7 @@ export function VideoPlayer() {
     } finally {
       setLoadingProgress(false);
     }
-  }, [isPlaying, currentMovie?.id, currentSeason, currentEpisode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isPlaying, currentMovie?.id, currentSeason, currentEpisode]);  
 
   useEffect(() => {
     fetchServers();
@@ -246,7 +246,7 @@ export function VideoPlayer() {
         setCastBannerDismissed(false);
       }
     }
-  }, [currentServerUrl, cast.isConnected, isPlaying, castTried, supportsEmbedOnTV]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentServerUrl, cast.isConnected, isPlaying, castTried, supportsEmbedOnTV]);  
 
   // Block popups from embed servers (ads/new tabs)
   useEffect(() => {
@@ -272,7 +272,7 @@ export function VideoPlayer() {
         duration: 0,
       });
     }
-  }, [isPlaying && currentMovie?.id && currentServerUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isPlaying && currentMovie?.id && currentServerUrl]);  
 
   const currentGroupSources = serverGroups.find(g => g.lang === currentLang)?.sources || [];
   const hasMultipleLangs = availableLangs.length > 1;

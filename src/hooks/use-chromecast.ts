@@ -267,7 +267,7 @@ export function useChromecast(): ChromecastState {
       clearTimeout(timeout);
       clearInterval(poll);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  
 
   // ==================== CONNECT / DISCONNECT ====================
 

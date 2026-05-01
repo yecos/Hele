@@ -306,7 +306,7 @@ export function IPTVView() {
     if (activeChannel && cast.isConnected && activeChannel.url.includes('.m3u8')) {
       cast.castHLS(activeChannel.url, activeChannel.name, `${activeChannel.group} - ${activeChannel.country}`);
     }
-  }, [activeChannel?.id, cast.isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeChannel?.id, cast.isConnected]);  
 
   // Play channel when activeChannel changes
   useEffect(() => {
@@ -387,7 +387,7 @@ export function IPTVView() {
         hlsRef.current = null;
       }
     };
-  }, [activeChannel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeChannel?.id]);  
 
   // Keyboard navigation
   useEffect(() => {
@@ -429,7 +429,7 @@ export function IPTVView() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showChannelList, searchQuery, isFullscreen, currentIndex, onlineChannels.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [showChannelList, searchQuery, isFullscreen, currentIndex, onlineChannels.length]);  
 
   // Show channel transition overlay helper
   const triggerTransition = useCallback(() => {
