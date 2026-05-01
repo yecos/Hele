@@ -15,6 +15,7 @@ const PUBLIC_ROUTES = [
 const ADMIN_ROUTES = [
   '/api/guardian/scan',
   '/api/guardian/discover/run',
+  '/api/guardian/admin',
 ];
 
 export async function middleware(request: NextRequest) {

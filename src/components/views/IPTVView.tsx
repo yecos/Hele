@@ -2,13 +2,16 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useViewStore } from '@/lib/store';
-import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity, MoreHorizontal, List } from 'lucide-react';
+import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity, MoreHorizontal, List, Shield } from 'lucide-react';
 import Hls from 'hls.js';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
 import { ChannelTransition } from '@/components/iptv/ChannelTransition';
 import { AnimatedCategoryCard } from '@/components/iptv/AnimatedCategoryCard';
 import { CountryCarousel } from '@/components/iptv/CountryCarousel';
+import { useAuthStore } from '@/lib/store';
+import dynamic from 'next/dynamic';
+const AdminPanel = dynamic(() => import('@/components/guardian/AdminPanel'), { ssr: false });
 
 // Mobile detection hook
 function useIsMobile() {
@@ -95,6 +98,9 @@ const PLAYLIST_SECTIONS: PlaylistSection[] = [
 
 export function IPTVView() {
   const { setView } = useViewStore();
+  const { userRole } = useAuthStore();
+  const isAdmin = userRole === 'admin';
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [channels, setChannels] = useState<IPTVChannel[]>([]);
   const [filteredChannels, setFilteredChannels] = useState<IPTVChannel[]>([]);
   const [onlineChannels, setOnlineChannels] = useState<IPTVChannel[]>([]);
@@ -748,7 +754,11 @@ export function IPTVView() {
                   <Radio size={18} className="text-green-500 flex-shrink-0" />
                   <span className="text-white font-bold text-sm sm:text-base">IPTV</span>
                   {guardianStatus && guardianStatus.scheduler.initialized ? (
-                    <span className="pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1">
+                    <button
+                      onClick={() => isAdmin && setShowAdminPanel(true)}
+                      className={`pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1 transition-colors ${isAdmin ? 'hover:bg-green-500/30 cursor-pointer' : ''}`}
+                      title={isAdmin ? 'Abrir Panel Admin' : 'Guardian activo'}
+                    >
                       {guardianStatus.isScanning ? (
                         <Activity size={10} className="text-green-400 animate-pulse" />
                       ) : (
@@ -757,7 +767,8 @@ export function IPTVView() {
                       <span className="text-green-400 text-[10px] font-medium">
                         {guardianStatus.isScanning ? 'Escaneando...' : guardianStatus.totalVerified > 0 ? `${guardianStatus.totalVerified} OK` : 'Guardian'}
                       </span>
-                    </span>
+                      {isAdmin && <Shield size={10} className="text-yellow-400 ml-0.5" />}
+                    </button>
                   ) : null}
                 </div>
               </div>
@@ -1125,6 +1136,10 @@ export function IPTVView() {
       <ChannelTransition channel={activeChannel} isVisible={showTransition} />
 
 
+      {/* Admin Panel Modal */}
+      {showAdminPanel && isAdmin && (
+        <AdminPanel onClose={() => setShowAdminPanel(false)} />
+      )}
     </div>
   );
 }
