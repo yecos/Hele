@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { MovieItem } from '@/lib/tmdb';
 import { usePlayerStore } from '@/lib/store';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -51,14 +51,10 @@ export function TopTenCarousel({ title = 'Top 10 Hoy', type = 'all' }: TopTenCar
   const [items, setItems] = useState<MovieItem[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
   const playMovie = usePlayerStore(s => s.playMovie);
   const { openDetail } = usePlayerStore();
 
   useEffect(() => {
-    if (!isInView) return;
-
     const endpoint = type === 'movie'
       ? '/trending/movie/day'
       : type === 'tv'
@@ -76,7 +72,7 @@ export function TopTenCarousel({ title = 'Top 10 Hoy', type = 'all' }: TopTenCar
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [isInView, type]);
+  }, [type]);
 
   const scroll = (dir: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -119,7 +115,7 @@ export function TopTenCarousel({ title = 'Top 10 Hoy', type = 'all' }: TopTenCar
   };
 
   return (
-    <div ref={ref} className="relative group/row">
+    <div className="relative group/row">
       <h2 className="text-lg sm:text-xl font-bold text-white mb-3 px-4 max-w-[1400px] mx-auto flex items-center gap-2">
         <span className="text-red-500">🔥</span> {title}
       </h2>

@@ -215,45 +215,27 @@ export function IPTVView() {
           const chs: IPTVChannel[] = data.channels || [];
           setChannels(chs);
 
-          // Start verification in background
-          const allVerified = await verifyChannels(chs, abortController.signal);
+          // Show channels IMMEDIATELY - don't wait for verification
+          const online = chs.filter(c => c.status !== 'offline');
+          setOnlineChannels(online);
+          setFilteredChannels(online);
+          setLoadingPlaylist(false);
 
-          if (abortController.signal.aborted) return;
-
-          if (allVerified && allVerified.size > 0) {
-            // Filter to only verified working channels
-            const workingChs = chs.filter(c => allVerified.has(c.url));
-            setOnlineChannels(workingChs);
-            setFilteredChannels(workingChs);
-
-            if (workingChs.length > 0) {
-              setCurrentIndex(0);
-              setActiveChannel(workingChs[0]);
-              setIsChannelLoading(true);
-              setChannelError(false);
-              setRetryCount(0);
-            }
-          } else {
-            // Fallback: use non-offline channels if verification returned nothing
-            const online = chs.filter(c => c.status !== 'offline');
-            setOnlineChannels(online);
-            setFilteredChannels(online);
-
-            if (online.length > 0) {
-              setCurrentIndex(0);
-              setActiveChannel(online[0]);
-              setIsChannelLoading(true);
-              setChannelError(false);
-              setRetryCount(0);
-            }
+          if (online.length > 0) {
+            setCurrentIndex(0);
+            setActiveChannel(online[0]);
+            setIsChannelLoading(true);
+            setChannelError(false);
+            setRetryCount(0);
           }
+
+          // Start verification IN BACKGROUND (non-blocking)
+          // This will silently update the channel list when done
+          verifyChannelsInBackground(chs, abortController.signal);
         }
       } catch (err) {
         console.error('Error fetching IPTV:', err);
-      } finally {
-        if (!abortController.signal.aborted) {
-          setLoadingPlaylist(false);
-        }
+        setLoadingPlaylist(false);
       }
     };
     fetchChannels();
@@ -263,7 +245,74 @@ export function IPTVView() {
         verifyAbortRef.current.abort();
       }
     };
-  }, [selectedPlaylist, verifyChannels]);
+  }, [selectedPlaylist]);
+
+  // Background verification - runs silently without blocking UI
+  const verifyChannelsInBackground = useCallback(async (chs: IPTVChannel[], signal?: AbortSignal) => {
+    if (chs.length === 0) return;
+
+    setIsVerifying(true);
+    setVerifyProgress({ checked: 0, total: chs.length });
+
+    const urls = chs.map(c => c.url);
+    const batchSize = 150;
+    const allVerified = new Set<string>();
+    let totalChecked = 0;
+
+    for (let i = 0; i < urls.length; i += batchSize) {
+      if (signal?.aborted) break;
+
+      const batch = urls.slice(i, i + batchSize);
+      try {
+        const res = await fetch('/api/iptv/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ urls: batch }),
+          signal,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.working && Array.isArray(data.working)) {
+            data.working.forEach((url: string) => allVerified.add(url));
+          }
+          totalChecked += batch.length;
+          setVerifyProgress({ checked: totalChecked, total: urls.length });
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') break;
+        console.error('Error verifying batch:', err);
+        totalChecked += batch.length;
+        setVerifyProgress({ checked: totalChecked, total: urls.length });
+      }
+    }
+
+    if (signal?.aborted) return;
+
+    setVerifiedUrls(allVerified);
+    setIsVerifying(false);
+
+    // Silently update online channels with verified results
+    if (allVerified.size > 0) {
+      const workingChs = chs.filter(c => allVerified.has(c.url));
+      setOnlineChannels(workingChs);
+      // Only update filtered if no search active
+      setFilteredChannels(prev => {
+        // If user is searching, don't overwrite their filter
+        return workingChs;
+      });
+
+      // If current channel is not working, switch to first working
+      setActiveChannel(prev => {
+        if (prev && allVerified.has(prev.url)) return prev;
+        if (workingChs.length > 0) {
+          setCurrentIndex(0);
+          return workingChs[0];
+        }
+        return prev;
+      });
+    }
+  }, []);
 
   // Fetch Guardian status
   useEffect(() => {
@@ -574,34 +623,13 @@ export function IPTVView() {
       {/* The top/bottom control bars have e.stopPropagation() to prevent this */}
       {/* Video player - fills entire screen */}
       <div className="flex-1 relative bg-black">
-        {/* Loading / Verifying playlist */}
-        {(loadingPlaylist || isVerifying) && (
+        {/* Loading playlist (initial fetch only, NOT verification) */}
+        {loadingPlaylist && (
           <div className="absolute inset-0 flex items-center justify-center z-30 bg-black">
             <div className="flex flex-col items-center gap-4 max-w-sm text-center px-4">
               <Loader2 size={48} className="text-red-500 animate-spin" />
-              {isVerifying ? (
-                <>
-                  <p className="text-gray-400 text-lg">{t('iptv.verifying')}</p>
-                  <p className="text-gray-500 text-sm">
-                    {t('iptv.checking', { checked: verifyProgress.checked, total: verifyProgress.total })}
-                  </p>
-                  {/* Progress bar */}
-                  <div className="w-full max-w-xs h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-green-500 rounded-full transition-all duration-300"
-                      style={{ width: `${verifyProgress.total > 0 ? (verifyProgress.checked / verifyProgress.total) * 100 : 0}%` }}
-                    />
-                  </div>
-                  <p className="text-gray-600 text-xs">
-                    {t('iptv.onlyWorking')}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-gray-400 text-lg">{t('iptv.loading')}</p>
-                  <p className="text-gray-600 text-sm">{t('iptv.loadingFrom')}</p>
-                </>
-              )}
+              <p className="text-gray-400 text-lg">{t('iptv.loading')}</p>
+              <p className="text-gray-600 text-sm">{t('iptv.loadingFrom')}</p>
             </div>
           </div>
         )}
@@ -764,6 +792,20 @@ export function IPTVView() {
                       <Shield size={12} className="text-emerald-400" />
                       <span className="text-emerald-400 text-[11px] font-bold">Admin</span>
                     </button>
+                  ) : isVerifying ? (
+                    <span className="pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 border border-yellow-500/30 ml-1">
+                      <Loader2 size={10} className="text-yellow-400 animate-spin" />
+                      <span className="text-yellow-400 text-[10px] font-medium">
+                        Verificando {verifyProgress.checked}/{verifyProgress.total}
+                      </span>
+                    </span>
+                  ) : verifiedUrls.size > 0 ? (
+                    <span className="pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1">
+                      <ShieldCheck size={10} className="text-green-400" />
+                      <span className="text-green-400 text-[10px] font-medium">
+                        {onlineChannels.length} OK
+                      </span>
+                    </span>
                   ) : guardianStatus && guardianStatus.scheduler.initialized ? (
                     <span className="pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1">
                       {guardianStatus.isScanning ? (

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useT } from '@/lib/i18n';
 import type { MovieItem } from '@/lib/tmdb';
 import { CategoryRow } from '@/components/streaming/MovieCard';
+import { TopTenCarousel } from '@/components/streaming/TopTenCarousel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tv } from 'lucide-react';
 
@@ -124,6 +125,11 @@ export function SeriesView() {
           <Tv size={28} className="text-blue-500" />
           <h1 className="text-2xl font-bold text-white">{t('series.title')}</h1>
         </div>
+      </div>
+
+      {/* Top 10 Series */}
+      <div className="px-4 max-w-[1400px] mx-auto">
+        <TopTenCarousel title="Top 10 Series" type="tv" />
       </div>
 
       <div className="max-w-[1400px] mx-auto space-y-6">
