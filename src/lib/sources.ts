@@ -32,11 +32,11 @@ interface TMDBServer {
 // ═══════════════════════════════════════════════════════════
 export const LATINO_SERVERS: TMDBServer[] = [
   {
-    id: 'nifelvid',
-    name: 'NifelVid',
+    id: 'vidsrc-embed-su',
+    name: 'VidSrc SU',
     getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'movie') return `https://japierdolevid.com/embed/movie?tmdb=${tmdbId}&ds_lang=es&autoplay=1`;
-      return `https://japierdolevid.com/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}&ds_lang=es&autoplay=1`;
+      if (type === 'movie') return `https://vidsrc-embed.su/embed/movie/${tmdbId}`;
+      return `https://vidsrc-embed.su/embed/tv/${tmdbId}/${season}/${episode}`;
     },
   },
   {
@@ -48,11 +48,11 @@ export const LATINO_SERVERS: TMDBServer[] = [
     },
   },
   {
-    id: 'vidsrc-embed-su',
-    name: 'VidSrc SU',
+    id: 'nifelvid',
+    name: 'NifelVid',
     getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'movie') return `https://vidsrc-embed.su/embed/movie/${tmdbId}`;
-      return `https://vidsrc-embed.su/embed/tv/${tmdbId}/${season}/${episode}`;
+      if (type === 'movie') return `https://japierdolevid.com/embed/movie?tmdb=${tmdbId}&ds_lang=es&autoplay=1`;
+      return `https://japierdolevid.com/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}&ds_lang=es&autoplay=1`;
     },
   },
   {
