@@ -93,6 +93,18 @@ const PLAYLIST_SECTIONS: PlaylistSection[] = [
       { id: 'telechancho', label: 'telechancho', flag: '📺' },
     ],
   },
+  {
+    title: 'HBO Premium',
+    items: [
+      { id: 'hbo', label: 'HBO Canales', flag: '🎬' },
+    ],
+  },
+  {
+    title: 'Premium Latino',
+    items: [
+      { id: 'premium', label: 'Canales Premium', flag: '⭐' },
+    ],
+  },
 ];
 
 export function IPTVView() {

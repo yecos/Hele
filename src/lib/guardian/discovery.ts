@@ -46,6 +46,7 @@ const SEED_SOURCES = [
   { name: 'Deportes - iptv-org', url: 'https://iptv-org.github.io/iptv/categories/sports.m3u', type: 'category', category: 'category' },
   { name: 'Noticias - iptv-org', url: 'https://iptv-org.github.io/iptv/categories/news.m3u', type: 'category', category: 'category' },
   { name: 'Música - iptv-org', url: 'https://iptv-org.github.io/iptv/categories/music.m3u', type: 'category', category: 'category' },
+  { name: 'HBO Premium - lupael', url: 'https://raw.githubusercontent.com/lupael/IPTV/master/channels/hbo.m3u8', type: 'extra', category: 'extra' },
 ];
 
 // ===== Términos de búsqueda web =====
@@ -60,6 +61,8 @@ const SEARCH_QUERIES = [
   'iptv m3u deportes español en vivo',
   'free spanish tv channels m3u github',
   'iptv m3u lista nueva hoy funcionando',
+  'hbo m3u8 iptv playlist working channels',
+  'hbo live stream m3u iptv premium 2025',
 ];
 
 // ===== Consultas GitHub específicas =====
@@ -68,6 +71,7 @@ const GITHUB_QUERIES = [
   'iptv lista español countries',
   'iptv-org iptv countries es',
   'free iptv m3u updated playlist',
+  'hbo m3u8 iptv channels playlist',
 ];
 
 // ===== Patrones M3U =====
@@ -86,6 +90,8 @@ const M3U_PATTERNS = [
   /https?:\/\/[^\s"'<>]*\/channels\.m3u[^\s"'<>]*/gi,
   /https?:\/\/[^\s"'<>]*\/live[^\s"'<>]*\.m3u[^\s"'<>]*/gi,
   /https?:\/\/[^\s"'<>]*\/tv[^\s"'<>]*\.m3u[^\s"'<>]*/gi,
+  /https?:\/\/[^\s"'<>]*hbogo[^\s"'<>]*\.m3u8[^\s"'<>]*/gi,
+  /https?:\/\/liveorigin[^\s"'<>]*\.m3u8[^\s"'<>]*/gi,
 ];
 
 // ===== Dominios a excluir =====

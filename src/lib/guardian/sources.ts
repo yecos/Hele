@@ -71,4 +71,10 @@ export const GUARDIAN_SOURCES: SourceDefinition[] = [
   { id: 'm3ucl-total', name: 'M3U.CL Todos', url: 'https://www.m3u.cl/lista/total.m3u', category: 'extra', priority: 75 },
   { id: 'm3ucl-music', name: 'M3U.CL Música', url: 'https://www.m3u.cl/lista/musica.m3u', category: 'extra', priority: 70 },
   { id: 'telechancho', name: 'telechancho', url: 'https://telechancho.github.io/telechancho-iptv/telechancho-infinity.m3u', category: 'extra', priority: 75 },
+
+  // ===== HBO PREMIUM =====
+  { id: 'hbo', name: 'HBO Premium', url: 'https://raw.githubusercontent.com/lupael/IPTV/master/channels/hbo.m3u8', category: 'extra', priority: 95 },
+
+  // ===== PREMIUM LATINO =====
+  { id: 'premium', name: 'Premium Latino', url: 'https://raw.githubusercontent.com/vivemastv/IPTV/master/PREMIUN/LATINOS/M3UP001', category: 'extra', priority: 98 },
 ];

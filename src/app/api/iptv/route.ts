@@ -39,6 +39,159 @@ const CUSTOM_CHANNELS_CO: IPTVChannel[] = [
   },
 ];
 
+const CUSTOM_CHANNELS_HBO: IPTVChannel[] = [
+  {
+    id: 'ch-custom-hbo-asia-fhd',
+    name: 'HBO Asia (1080p)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/HBO_logo.svg',
+    group: 'HBO Premium',
+    url: 'https://liveorigin01.hbogoasia.com:8443/origin/live/main/HBO/4.m3u8?token=Zalogi',
+    country: 'ASIA',
+    quality: 'HD',
+    status: 'online',
+  },
+  {
+    id: 'ch-custom-hbo-asia-hd',
+    name: 'HBO Asia (540p)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/HBO_logo.svg',
+    group: 'HBO Premium',
+    url: 'https://liveorigin01.hbogoasia.com:8443/origin/live/main/HBO/3.m3u8?token=Zalogi',
+    country: 'ASIA',
+    quality: 'HD',
+    status: 'online',
+  },
+  {
+    id: 'ch-custom-hbo-asia-sd',
+    name: 'HBO Asia (360p)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/HBO_logo.svg',
+    group: 'HBO Premium',
+    url: 'https://liveorigin01.hbogoasia.com:8443/origin/live/main/HBO/2.m3u8?token=Zalogi',
+    country: 'ASIA',
+    quality: 'SD',
+    status: 'online',
+  },
+  {
+    id: 'ch-custom-hbo-asia-ld',
+    name: 'HBO Asia (270p)',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/HBO_logo.svg',
+    group: 'HBO Premium',
+    url: 'https://liveorigin01.hbogoasia.com:8443/origin/live/main/HBO/1.m3u8?token=Zalogi',
+    country: 'ASIA',
+    quality: 'LD',
+    status: 'online',
+  },
+  {
+    id: 'ch-custom-hbo-hd-india',
+    name: 'HBO HD India',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/HBO_logo.svg',
+    group: 'HBO Premium',
+    url: 'http://jiotv.live.cdn.jio.com/HBO_HD/HBO_HD_1200.m3u8',
+    country: 'IN',
+    quality: 'HD',
+    status: 'online',
+  },
+];
+
+const CUSTOM_CHANNELS_PREMIUM: IPTVChannel[] = [
+  // ===== PELÍCULAS / CINE PREMIUM =====
+  { id: 'ch-premium-fox1-hd', name: 'Fox 1 HD', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/Fox1HD/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-fox1-720p', name: 'Fox 1 (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/FOX1_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxaction', name: 'Fox Action', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/FoxAction/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxaction-720p', name: 'Fox Action (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/FOXACTION_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxaction-mx', name: 'Fox Action MX', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/FOX_ACTION_MEXICO_HD/demoUwD/OV0/hd.m3u8', country: 'MX', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxcinema', name: 'Fox Cinema', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/FoxCinema/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxcinema-720p', name: 'Fox Cinema (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/FOX_CINEMA_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxclassics', name: 'Fox Classics', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/FoxClassics/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxclassics-720p', name: 'Fox Classics (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/FOX_CLASSICS_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxcomedy-720p', name: 'Fox Comedy (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/FOX_COMEDY_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxfamily', name: 'Fox Family', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src5/FoxFamily/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxfamily-720p', name: 'Fox Family (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/FOXFAMILY_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxmovies', name: 'Fox Movies', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/FoxMovies/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxmovies-720p', name: 'Fox Movies (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/FOXMOVIES_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cinemax', name: 'Cinemax', logo: 'https://upload.wikimedia.org/wikipedia/commons/6/6d/Cinemax_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/Cinemax/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cinemax-720p', name: 'Cinemax (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/6/6d/Cinemax_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/CINEMAX/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cinecanal', name: 'Cinecanal+', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f7/Cinecanal_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/CinecanalHD/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cinecanal-720p', name: 'Cinecanal (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f7/Cinecanal_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/CINECANAL_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cinelatino-720p', name: 'Cine Latino (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Cine_Latino_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/CINELATINO/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cinemadinamita-720p', name: 'Cinema Dinamita (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2d/Cinema_Dinamita_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/CINEMA_DINAMITA/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-tnt', name: 'TNT', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4c/TNT_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/TNT/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-tnt-720p', name: 'TNT (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4c/TNT_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/TNT_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-space', name: 'Space HD', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Space_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/SpaceHD/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-space-720p', name: 'Space (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Space_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/SPACE_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-golden', name: 'Golden HD', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b2/Golden_Channel_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/GoldenHD/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-golden-720p', name: 'Golden (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b2/Golden_Channel_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/GOLDEN_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-goldenedge', name: 'Golden Edge', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b2/Golden_Channel_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/GoldenEdge/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-goldenpremier-720p', name: 'Golden Premier (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b2/Golden_Channel_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/GOLDEN_PREMIER_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-paramount', name: 'Paramount', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/41/Paramount_Network_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src5/Paramount/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-paramount-720p', name: 'Paramount (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/41/Paramount_Network_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/PARAMOUNT_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-studiouniversal', name: 'Studio Universal', logo: 'https://upload.wikimedia.org/wikipedia/commons/6/60/Universal_Channel_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/StudioUniversal/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-studiouniversal-720p', name: 'Studio Universal (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/6/60/Universal_Channel_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/STUDIO_UNIVERSAL/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-universal', name: 'Universal Channel', logo: 'https://upload.wikimedia.org/wikipedia/commons/6/60/Universal_Channel_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src1/Universal/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-universal-720p', name: 'Universal (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/6/60/Universal_Channel_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src2/UNIVERSAL_CHANNEL/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-multipremier', name: 'MultiPremier', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Multipremier_2017.png/200px-Multipremier_2017.png', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src5/MultiPremier/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-azcinema', name: 'Az Cinema', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/1c/Az_Cinema_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src5/AzCinema/demoUwD/OV0.m3u8', country: 'MX', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-megacine', name: 'MegaCine HD', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/72/Mega_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src5/MegaCineHD/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-canalaccion', name: 'Canal+ Accion', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Movistar_Plus%2B_logo.svg', group: 'Cine Premium', url: 'http://usuarios.club/usuarios/src5/MoviAccion/demoUwD/OV0.m3u8', country: 'ES', quality: 'HD', status: 'online' },
+
+  // ===== ENTRETENIMIENTO PREMIUM =====
+  { id: 'ch-premium-fox', name: 'Fox', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src5/Fox/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-fox-720p', name: 'Fox (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src2/FOX_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxlife', name: 'Fox Life', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src1/FoxLife/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxlife-720p', name: 'Fox Life (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/25/Fox_Broadcasting_Company_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src2/FOX_LIFE_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-sony', name: 'Sony HD', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/17/Sony_Channel_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src1/SonyHD/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-sony-720p', name: 'Sony (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/17/Sony_Channel_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src2/SONY_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-warner', name: 'Warner Channel HD', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Warner_Channel_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src1/WarnerChannelHD/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-warner-720p', name: 'Warner Channel (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Warner_Channel_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src2/WARNER_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-axn', name: 'AXN', logo: 'https://upload.wikimedia.org/wikipedia/commons/8/81/AXN_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src5/AXN/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-axn-720p', name: 'AXN (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/8/81/AXN_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src2/AXN_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-amc', name: 'AMC', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e8/AMC_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src1/AMC/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-amc-720p', name: 'AMC (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e8/AMC_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src2/AMC_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-tntseries', name: 'TNT Series', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4c/TNT_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src1/TNTSeries/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-tntseries-720p', name: 'TNT Series (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4c/TNT_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src2/TNT_SERIES_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-ae', name: 'A&E', logo: 'https://upload.wikimedia.org/wikipedia/commons/d/df/A%26E_Network_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src1/AEHD/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-ae-720p', name: 'A&E (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/d/df/A%26E_Network_logo.svg', group: 'Entretenimiento Premium', url: 'http://usuarios.club/usuarios/src2/AE_MUNDO_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+
+  // ===== DEPORTES PREMIUM =====
+  { id: 'ch-premium-espn', name: 'ESPN', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4e/ESPN_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src1/ESPN/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-espn-720p', name: 'ESPN (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4e/ESPN_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src2/ESPN_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-espnplus', name: 'ESPN+', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4e/ESPN_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src1/ESPNHD/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-espnplus-720p', name: 'ESPN+ (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4e/ESPN_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src2/ESPN_PLUS_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxsports', name: 'Fox Sports', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Fox_Sports_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src1/FoxSports/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxsports-720p', name: 'Fox Sports (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Fox_Sports_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src2/FOX_SPORTS_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxsports2', name: 'Fox Sports 2', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Fox_Sports_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src1/FoxSports2/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxsports2-720p', name: 'Fox Sports 2 (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Fox_Sports_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src2/FOX_SPORTS2_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxsports3-720p', name: 'Fox Sports 3 (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Fox_Sports_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src2/FOX_SPORTS3_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-foxsportspremium', name: 'Fox Sports Premium', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Fox_Sports_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src5/FoxSportsPremium/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-beinsports', name: 'BeinSports', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5c/BeIn_Sports_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src5/BeinSports/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-beinsports1', name: 'BeinSports 1', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5c/BeIn_Sports_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src5/Deportes1/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-goltv', name: 'Gol TV', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f9/Gol_TV_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src5/GolTV/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-tntsports', name: 'TNT Sports', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4c/TNT_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src5/TNTSports/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-aymsports', name: 'AyM Sports', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/AyM_Sports_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src5/AyMSports/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-deportv', name: 'DeporTV', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4a/DeporTV_logo.svg', group: 'Deportes Premium', url: 'http://usuarios.club/usuarios/src4/DeporTV/demoUwD/OV0.m3u8', country: 'AR', quality: 'HD', status: 'online' },
+
+  // ===== INFANTIL PREMIUM =====
+  { id: 'ch-premium-disney', name: 'Disney Channel', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f4/Disney_Channel_logo.svg', group: 'Infantil Premium', url: 'http://usuarios.club/usuarios/src1/DisneyChannel/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-disney-720p', name: 'Disney Channel (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f4/Disney_Channel_logo.svg', group: 'Infantil Premium', url: 'http://usuarios.club/usuarios/src2/DISNEY_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-disneyjr-720p', name: 'Disney Junior (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2b/Disney_Junior_logo.svg', group: 'Infantil Premium', url: 'http://usuarios.club/usuarios/src2/DISNEY_JR/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-disneyxd-720p', name: 'Disney XD (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/3/3a/Disney_XD_logo.svg', group: 'Infantil Premium', url: 'http://usuarios.club/usuarios/src2/DISNEY_XD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cartoonnetwork', name: 'Cartoon Network', logo: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Cartoon_Network_logo.svg', group: 'Infantil Premium', url: 'http://usuarios.club/usuarios/src1/CartoonNetwork/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cartoonnetwork-720p', name: 'Cartoon Network (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Cartoon_Network_logo.svg', group: 'Infantil Premium', url: 'http://usuarios.club/usuarios/src2/CARTOON_NETWORK_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-nickelodeon', name: 'Nickelodeon', logo: 'https://upload.wikimedia.org/wikipedia/commons/6/6c/Nickelodeon_logo.svg', group: 'Infantil Premium', url: 'http://usuarios.club/usuarios/src1/Nickelodeon/demoUwD/OV0.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-nickelodeon-720p', name: 'Nickelodeon (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/6/6c/Nickelodeon_logo.svg', group: 'Infantil Premium', url: 'http://usuarios.club/usuarios/src2/NICKELODEON_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-boomerang-720p', name: 'Boomerang (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/46/Boomerang_logo.svg', group: 'Infantil Premium', url: 'http://usuarios.club/usuarios/src2/BOOMERANG/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-discoverykids-720p', name: 'Discovery Kids (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Discovery_Kids_logo.svg', group: 'Infantil Premium', url: 'http://usuarios.club/usuarios/src2/DISCOVERY_KIDS_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+
+  // ===== CULTURA / DOCUMENTALES PREMIUM =====
+  { id: 'ch-premium-discoverychannel-720p', name: 'Discovery Channel (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Discovery_Channel_logo.svg', group: 'Cultura Premium', url: 'http://usuarios.club/usuarios/src2/DISCOVERY_CHANNEL_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-discoveryciv-720p', name: 'Discovery Civilization (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Discovery_Channel_logo.svg', group: 'Cultura Premium', url: 'http://usuarios.club/usuarios/src2/DISCOVERY_CIVILIZATION/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-discoveryhh-720p', name: 'Discovery H&H (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Discovery_Channel_logo.svg', group: 'Cultura Premium', url: 'http://usuarios.club/usuarios/src2/DISCOVERY_HOME_HEALTH_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-discoverysci-720p', name: 'Discovery Science (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Discovery_Channel_logo.svg', group: 'Cultura Premium', url: 'http://usuarios.club/usuarios/src2/DISCOVERY_SCIENCE/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-discoverytheater-720p', name: 'Discovery Theater (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Discovery_Channel_logo.svg', group: 'Cultura Premium', url: 'http://usuarios.club/usuarios/src2/DISCOVERY_THEATER_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-discoveryturbo-720p', name: 'Discovery Turbo (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Discovery_Channel_logo.svg', group: 'Cultura Premium', url: 'http://usuarios.club/usuarios/src2/DISCOVERY_TURBO/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-discoveryworld-720p', name: 'Discovery World (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Discovery_Channel_logo.svg', group: 'Cultura Premium', url: 'http://usuarios.club/usuarios/src2/DISCOVERY_WORLD_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-animalplanet-720p', name: 'Animal Planet (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Animal_Planet_logo.svg', group: 'Cultura Premium', url: 'http://usuarios.club/usuarios/src2/ANIMAL_PLANET_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+];
+
 function parseM3U(content: string, countryCode: string): IPTVChannel[] {
   const lines = content.split('\n');
   const channels: IPTVChannel[] = [];
@@ -176,6 +329,8 @@ export async function GET(request: NextRequest) {
 
           // Agregar canales personalizados
           if (playlists.includes('co')) guardianChannels.unshift(...CUSTOM_CHANNELS_CO);
+          if (playlists.includes('hbo')) guardianChannels.unshift(...CUSTOM_CHANNELS_HBO);
+          if (playlists.includes('premium')) guardianChannels.unshift(...CUSTOM_CHANNELS_PREMIUM);
 
           return NextResponse.json({
             success: true,
@@ -252,6 +407,12 @@ export async function GET(request: NextRequest) {
       'm3ucl-total': 'https://www.m3u.cl/lista/total.m3u',
       'm3ucl-music': 'https://www.m3u.cl/lista/musica.m3u',
       'telechancho': 'https://telechancho.github.io/telechancho-iptv/telechancho-infinity.m3u',
+
+      // ===== HBO PREMIUM =====
+      'hbo': 'https://raw.githubusercontent.com/lupael/IPTV/master/channels/hbo.m3u8',
+
+      // ===== PREMIUM LATINO =====
+      'premium': 'https://raw.githubusercontent.com/vivemastv/IPTV/master/PREMIUN/LATINOS/M3UP001',
     };
 
     const playlists = playlist.split(',').map(p => p.trim().toLowerCase());
@@ -294,6 +455,12 @@ export async function GET(request: NextRequest) {
     }
     if (playlists.includes('tdt')) {
       allChannels.unshift(...CUSTOM_CHANNELS_CO);
+    }
+    if (playlists.includes('hbo')) {
+      allChannels.unshift(...CUSTOM_CHANNELS_HBO);
+    }
+    if (playlists.includes('premium')) {
+      allChannels.unshift(...CUSTOM_CHANNELS_PREMIUM);
     }
 
     return NextResponse.json({
