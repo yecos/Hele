@@ -43,9 +43,14 @@ interface PlaylistSection {
 
 const PLAYLIST_SECTIONS: PlaylistSection[] = [
   {
-    title: 'Cargar Canales',
+    title: 'Cargar Todos los Canales',
     items: [
-      { id: 'all-spa', label: 'Cargar Todos los Canales', flag: '⚡' },
+      { id: 'all-spa', label: '⚡ Cargar Todos los Canales', flag: '🚀' },
+    ],
+  },
+  {
+    title: 'Idiomas',
+    items: [
       { id: 'spa', label: 'Todo Español', flag: '🌐' },
       { id: 'eng', label: 'Todo Inglés', flag: '🇺🇸' },
       { id: 'latam', label: 'Latinoamérica', flag: '🌎' },

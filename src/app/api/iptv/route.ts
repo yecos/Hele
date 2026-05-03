@@ -190,6 +190,41 @@ const CUSTOM_CHANNELS_PREMIUM: IPTVChannel[] = [
   { id: 'ch-premium-discoveryturbo-720p', name: 'Discovery Turbo (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Discovery_Channel_logo.svg', group: 'Cultura Premium', url: 'http://usuarios.club/usuarios/src2/DISCOVERY_TURBO/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
   { id: 'ch-premium-discoveryworld-720p', name: 'Discovery World (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Discovery_Channel_logo.svg', group: 'Cultura Premium', url: 'http://usuarios.club/usuarios/src2/DISCOVERY_WORLD_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
   { id: 'ch-premium-animalplanet-720p', name: 'Animal Planet (720p)', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Animal_Planet_logo.svg', group: 'Cultura Premium', url: 'http://usuarios.club/usuarios/src2/ANIMAL_PLANET_HD/demoUwD/OV0/hd.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+
+  // ===== CANALES PREMIUM ADICIONALES DESDE IPTV-ORG =====
+  // Cine Premium
+  { id: 'ch-premium-amc-lat', name: 'AMC Latin America', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/AMC_logo_2019.svg/960px-AMC_logo_2019.svg.png', group: 'Cine Premium', url: 'https://pb-fmbyorn1d0n1n.akamaized.net/v1/amc_amcespanol_3/samsungheadend_us/latest/main/hls/playlist.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-axn-lat', name: 'AXN Latinoamérica', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/AXN_logo_%282015%29.svg/960px-AXN_logo_%282015%29.svg.png', group: 'Cine Premium', url: 'https://d2ve48i6j4q0rm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-s7jtszpsde6hwz/AXN_LATAM/playlist.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-atrescine', name: 'Atrescine', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Atrescine_logo.svg/960px-Atrescine_logo.svg.png', group: 'Cine Premium', url: 'https://atres-live1.akamaized.net/atrescine/live/master.m3u8', country: 'ES', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cinecanal-south', name: 'Cinecanal South', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/CinecanalLA.png/960px-CinecanalLA.png', group: 'Cine Premium', url: 'https://d2ve48i6j4q0rm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-wwxw3fvjpkqb5/Cinecanal_South/playlist.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cine-adrenalina', name: 'Cine Adrenalina', logo: 'https://i.imgur.com/njCKaMv.png', group: 'Cine Premium', url: 'https://dai2.xumo.tv/amagi_hls_data_xumo1212A-cineadrenalina/CDN/master.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cine-premiere', name: 'Cine Premiere', logo: 'https://i.imgur.com/PdhWTO6.png', group: 'Cine Premium', url: 'https://dai2.xumo.tv/amagi_hls_data_xumo1212A-cinepremiere/CDN/master.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cine-terror', name: 'Cine Terror', logo: 'https://i.imgur.com/I5XxyLI.png', group: 'Cine Premium', url: 'https://dai2.xumo.tv/amagi_hls_data_xumo1212A-cineterror/CDN/master.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cine-romantico', name: 'Cine Romantico', logo: 'https://i.imgur.com/FUrrDrb.png', group: 'Cine Premium', url: 'https://dai2.xumo.tv/amagi_hls_data_xumo1212A-cineromantico/CDN/master.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cine-classico', name: 'Cine Clásico', logo: 'https://i.imgur.com/hCA5BRr.png', group: 'Cine Premium', url: 'https://dai2.xumo.tv/amagi_hls_data_xumo1212A-cineclasico/CDN/master.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-star-channel', name: 'Star Channel Latinoamérica', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Star_Channel_2020.svg/960px-Star_Channel_2020.svg.png', group: 'Cine Premium', url: 'https://d2ve48i6j4q0rm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-ucntv3w2gmtes/Star_Channel_LATAM_South/playlist.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-studio-universal', name: 'Studio Universal', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/StudioUniversal2016.png/960px-StudioUniversal2016.png', group: 'Cine Premium', url: 'https://d2ve48i6j4q0rm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-wwxw3fvjpkqb5/Studio_Universal_South/playlist.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-filmex', name: 'Filmex', logo: 'https://i.imgur.com/Hiz2OyC.png', group: 'Cine Premium', url: 'https://dai2.xumo.tv/amagi_hls_data_xumo1212A-filmex/CDN/master.m3u8', country: 'MX', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-filmex-classico', name: 'Filmex Clásico', logo: 'https://i.imgur.com/D3dj4mv.png', group: 'Cine Premium', url: 'https://dai2.xumo.tv/amagi_hls_data_xumo1212A-filmexclassico/CDN/master.m3u8', country: 'MX', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cine-ar', name: 'Cine.Ar', logo: 'https://i.imgur.com/Iozv4tT.png', group: 'Cine Premium', url: 'https://live-01-02-arl.vod.cine.ar:1935/live_ar/livestream/playlist.m3u8', country: 'AR', quality: 'HD', status: 'online' },
+
+  // Entretenimiento Premium adicional
+  { id: 'ch-premium-comedy-central-lat', name: 'Comedy Central Latinoamérica', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Comedy_Central_2018.svg/960px-Comedy_Central_2018.svg.png', group: 'Entretenimiento Premium', url: 'https://d2ve48i6j4q0rm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-2r4fbb7u8ly3k/Comedy_Central_LATAM/playlist.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-novelisima', name: 'Novelisima', logo: 'https://i.imgur.com/8dUS3Ih.png', group: 'Entretenimiento Premium', url: 'https://dai2.xumo.tv/amagi_hls_data_xumo1212A-novelisima/CDN/master.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-ae-lat', name: 'A&E Latinoamérica', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/A%26E_Network_logo.svg/960px-A%26E_Network_logo.svg.png', group: 'Entretenimiento Premium', url: 'https://d2ve48i6j4q0rm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-2r4fbb7u8ly3k/AE_LATAM/playlist.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+
+  // Deportes Premium adicional
+  { id: 'ch-premium-fox-sports-ar', name: 'Fox Sports Argentina', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/FOX_Sports_logo.svg/960px-FOX_Sports_logo.svg.png', group: 'Deportes Premium', url: 'https://foxsports-main.akamaized.net/hls/live/2094720/fsarg/live/playlist.m3u8', country: 'AR', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-fox-sports-3-lat', name: 'Fox Sports 3 Latinoamérica', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Fox_sports_3_logo.svg/960px-Fox_sports_3_logo.svg.png', group: 'Deportes Premium', url: 'https://d2ve48i6j4q0rm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-2r4fbb7u8ly3k/Fox_Sports_3_LATAM/playlist.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-directv-sports', name: 'DirecTV Sports', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/DirecTV_Sports_Latin_America_%282018%29.png/960px-DirecTV_Sports_Latin_America_%282018%29.png', group: 'Deportes Premium', url: 'https://d2ve48i6j4q0rm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-q2j6fp3jysj7c/DirecTV_Sports/playlist.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-espn-deportes', name: 'ESPN Deportes', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/ESPN_Deportes.svg/960px-ESPN_Deportes.svg.png', group: 'Deportes Premium', url: 'https://linear-153.frequency.stream/dist/plex/153/hls/master/playlist.m3u8', country: 'US', quality: 'SD', status: 'online' },
+  { id: 'ch-premium-fox-deportes', name: 'Fox Deportes', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/FOX_Deportes_logo.png/960px-FOX_Deportes_logo.png', group: 'Deportes Premium', url: 'https://linear-161.frequency.stream/dist/plex/161/hls/master/playlist.m3u8', country: 'US', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-cdn-deportes', name: 'CDN Deportes', logo: 'https://i.imgur.com/yU5LqTL.png', group: 'Deportes Premium', url: 'https://cdn-deportes-01.primumglobal.com/live/cdndeporteshd/stream.m3u8', country: 'DO', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-golf-channel-lat', name: 'Golf Channel Latinoamérica', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Golf_Channel_Logo_2018.png/960px-Golf_Channel_Logo_2018.png', group: 'Deportes Premium', url: 'https://d2ve48i6j4q0rm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-2r4fbb7u8ly3k/Golf_Channel_LATAM/playlist.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+  { id: 'ch-premium-fifa-plus-hisp', name: 'FIFA+ Hispanic America', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/FIFA%2B_(2025).svg/960px-FIFA%2B_(2025).svg.png', group: 'Deportes Premium', url: 'https://fifa-fantasy-games-gdc.cdn.vimeo.com/fifa-live/linear-hisp/playlist.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
+
+  // Cultura Premium adicional
+  { id: 'ch-premium-red-bull-tv-es', name: 'Red Bull TV Español', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Red_Bull_TV_logo.svg/960px-Red_Bull_TV_logo.svg.png', group: 'Cultura Premium', url: 'https://rbmn-live.akamaized.net/hls/live/590964/rokchannel1/playlist.m3u8', country: 'LAT', quality: 'HD', status: 'online' },
 ];
 
 function parseM3U(content: string, countryCode: string): IPTVChannel[] {
@@ -297,7 +332,7 @@ export async function GET(request: NextRequest) {
       try {
         const rawPlaylists = playlist.split(',').map(p => p.trim().toLowerCase());
         // Expand virtual playlist all-spa
-        const ALL_SPA = ['co','mx','ar','es','cl','ve','pe','bo','cr','cu','do','ec','sv','gt','hn','ni','pa','py','uy','pr','spa','latam','premium','hbo'];
+        const ALL_SPA = ['co','mx','ar','es','cl','ve','pe','bo','cr','cu','do','ec','sv','gt','hn','ni','pa','py','uy','pr','spa','eng','latam','premium','hbo'];
         const playlists = rawPlaylists.includes('all-spa') ? ALL_SPA : rawPlaylists;
         const guardianChannels: IPTVChannel[] = [];
 
@@ -420,7 +455,7 @@ export async function GET(request: NextRequest) {
     };
 
     // ===== VIRTUAL PLAYLIST: all-spa (todos los países hispanos + premium) =====
-    const ALL_SPA_PLAYLISTS = 'co,mx,ar,es,cl,ve,pe,bo,cr,cu,do,ec,sv,gt,hn,ni,pa,py,uy,pr,spa,latam,premium,hbo';
+    const ALL_SPA_PLAYLISTS = 'co,mx,ar,es,cl,ve,pe,bo,cr,cu,do,ec,sv,gt,hn,ni,pa,py,uy,pr,spa,eng,latam,premium,hbo';
     const expandedPlaylist = playlist === 'all-spa' ? ALL_SPA_PLAYLISTS : playlist;
 
     const playlists = expandedPlaylist.split(',').map(p => p.trim().toLowerCase());
@@ -464,6 +499,24 @@ export async function GET(request: NextRequest) {
     }
     if (playlists.includes('premium')) {
       allChannels.unshift(...CUSTOM_CHANNELS_PREMIUM);
+    }
+
+    // Filter to only Spanish and English channels
+    const VALID_COUNTRIES = new Set(['CO','MX','AR','ES','CL','VE','PE','BO','CR','CU','DO','EC','SV','GT','HN','NI','PA','PY','UY','PR','LAT','ASIA','IN','US','UK','GB','AU','CA','IE','NZ']);
+
+    // For category playlists, filter channels by language
+    const isCategoryOnly = playlists.every(pl => ['news','sports','entertainment','music','movies','kids','documentary','education','comedy','lifestyle','religious','general'].includes(pl));
+    if (isCategoryOnly) {
+      const filtered = allChannels.filter(ch => {
+        const country = ch.country.toUpperCase();
+        if (VALID_COUNTRIES.has(country)) return true;
+        // Check if channel name or group has Spanish/English indicators
+        const nameLower = (ch.name + ' ' + ch.group).toLowerCase();
+        if (nameLower.match(/spanish|español|latino|latin america|es |mx |ar |co |cl |pe |hisp/)) return true;
+        return false;
+      });
+      allChannels.length = 0;
+      allChannels.push(...filtered);
     }
 
     // Deduplicate channels by URL (keep first occurrence)
