@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useViewStore, useAuthStore } from '@/lib/store';
-import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity, Shield, MoreHorizontal, List } from 'lucide-react';
+import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity, Shield, MoreHorizontal, List, CheckCircle2, XCircle, Zap } from 'lucide-react';
 import Hls from 'hls.js';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
@@ -163,53 +163,6 @@ export function IPTVView() {
   const { t } = useT();
   const isActivelyCasting = cast.isCasting && cast.isConnected;
 
-  // Verify channels against the API
-  const verifyChannels = useCallback(async (chs: IPTVChannel[], signal?: AbortSignal) => {
-    if (chs.length === 0) return;
-
-    setIsVerifying(true);
-    setVerifyProgress({ checked: 0, total: chs.length });
-
-    const urls = chs.map(c => c.url);
-
-    // Split into batches of 150 to avoid timeout
-    const batchSize = 150;
-    const allVerified = new Set<string>();
-    let totalChecked = 0;
-
-    for (let i = 0; i < urls.length; i += batchSize) {
-      if (signal?.aborted) break;
-
-      const batch = urls.slice(i, i + batchSize);
-      try {
-        const res = await fetch('/api/iptv/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ urls: batch }),
-          signal,
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.working && Array.isArray(data.working)) {
-            data.working.forEach((url: string) => allVerified.add(url));
-          }
-          totalChecked += batch.length;
-          setVerifyProgress({ checked: totalChecked, total: urls.length });
-        }
-      } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') break;
-        console.error('Error verifying batch:', err);
-        totalChecked += batch.length;
-        setVerifyProgress({ checked: totalChecked, total: urls.length });
-      }
-    }
-
-    setVerifiedUrls(allVerified);
-    setIsVerifying(false);
-    return allVerified;
-  }, []);
-
   // Fetch channels from API
   useEffect(() => {
     const fetchChannels = async () => {
@@ -332,6 +285,15 @@ export function IPTVView() {
       });
     }
   }, []);
+
+  // Re-verify channels on demand
+  const reVerifyChannels = useCallback(() => {
+    if (channels.length === 0 || isVerifying) return;
+    if (verifyAbortRef.current) verifyAbortRef.current.abort();
+    const abortController = new AbortController();
+    verifyAbortRef.current = abortController;
+    verifyChannelsInBackground(channels, abortController.signal);
+  }, [channels, isVerifying, verifyChannelsInBackground]);
 
   // Fetch Guardian status
   useEffect(() => {
@@ -576,10 +538,34 @@ export function IPTVView() {
     } catch {}
   };
 
+  const skipToWorkingChannel = useCallback(() => {
+    if (onlineChannels.length === 0) return;
+    // Find next working channel that's different from current
+    let nextIdx = (currentIndex + 1) % onlineChannels.length;
+    // Try to find a verified working channel
+    for (let i = 0; i < onlineChannels.length; i++) {
+      const idx = (currentIndex + 1 + i) % onlineChannels.length;
+      const ch = onlineChannels[idx];
+      if (ch && (verifiedUrls.size === 0 || verifiedUrls.has(ch.url))) {
+        nextIdx = idx;
+        break;
+      }
+    }
+    setCurrentIndex(nextIdx);
+    setActiveChannel(onlineChannels[nextIdx]);
+    setRetryCount(0);
+    setChannelError(false);
+    setIsChannelLoading(true);
+    triggerTransition();
+  }, [currentIndex, onlineChannels, verifiedUrls, triggerTransition]);
+
   const skipChannel = () => {
     if (retryCount < 3 && activeChannel) {
       setRetryCount(prev => prev + 1);
       goNext();
+    } else {
+      // After 3 failed retries, skip to next working channel
+      skipToWorkingChannel();
     }
   };
 
@@ -671,17 +657,27 @@ export function IPTVView() {
               <WifiOff size={48} className="text-red-500" />
               <p className="text-white font-semibold">{t('iptv.noSignal')}</p>
               <p className="text-gray-400 text-sm">{activeChannel.name}</p>
+              {retryCount >= 3 && (
+                <p className="text-yellow-400/80 text-xs">{retryCount} intentos fallidos — saltando al siguiente canal</p>
+              )}
               <div className="flex items-center gap-3 mt-2">
                 <button
+                  onClick={skipToWorkingChannel}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors font-medium"
+                >
+                  <Zap size={16} />
+                  Canal activo
+                </button>
+                <button
                   onClick={skipChannel}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
                 >
                   <ChevronDown size={16} />
                   {t('iptv.nextChannel')}
                 </button>
                 <button
                   onClick={() => { setRetryCount(0); setChannelError(false); setIsChannelLoading(true); if (videoRef.current && activeChannel) { const url = activeChannel.url; if (url.includes('.m3u8') && Hls.isSupported()) { if (hlsRef.current) hlsRef.current.destroy(); const hls = new Hls({ enableWorker: true, lowLatencyMode: true }); hlsRef.current = hls; hls.loadSource(url); hls.attachMedia(videoRef.current); hls.on(Hls.Events.MANIFEST_PARSED, () => { videoRef.current?.play().catch(() => {}); }); } else { videoRef.current.load(); videoRef.current.play().catch(() => {}); } } }}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg text-sm hover:bg-white/20 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-white/10 text-white rounded-lg text-sm hover:bg-white/20 transition-colors"
                 >
                   <RefreshCw size={16} />
                   {t('iptv.retry')}
@@ -801,38 +797,46 @@ export function IPTVView() {
                 <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                   <Radio size={18} className="text-green-500 flex-shrink-0" />
                   <span className="text-white font-bold text-sm sm:text-base">IPTV</span>
-                  {/* Admin badge — hide on very small screens */}
+                  {/* Verification status badge — visible on ALL screen sizes */}
                   {isAdmin ? (
                     <button
                       onClick={() => setShowAdminPanel(true)}
-                      className="pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 ml-1 hover:bg-emerald-500/30 cursor-pointer transition-colors"
+                      className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 ml-1 hover:bg-emerald-500/30 cursor-pointer transition-colors"
                       title="Abrir Panel Admin"
                     >
                       <Shield size={12} className="text-emerald-400" />
-                      <span className="text-emerald-400 text-[11px] font-bold">Admin</span>
+                      <span className="text-emerald-400 text-[11px] font-bold hidden sm:inline">Admin</span>
                     </button>
                   ) : isVerifying ? (
-                    <span className="pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 border border-yellow-500/30 ml-1">
+                    <button
+                      onClick={reVerifyChannels}
+                      className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 border border-yellow-500/30 ml-1 hover:bg-yellow-500/30 transition-colors"
+                      title={`Verificando ${verifyProgress.checked}/${verifyProgress.total}...`}
+                    >
                       <Loader2 size={10} className="text-yellow-400 animate-spin" />
                       <span className="text-yellow-400 text-[10px] font-medium">
-                        Verificando {verifyProgress.checked}/{verifyProgress.total}
+                        {verifyProgress.checked}/{verifyProgress.total}
                       </span>
-                    </span>
+                    </button>
                   ) : verifiedUrls.size > 0 ? (
-                    <span className="pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1">
+                    <button
+                      onClick={reVerifyChannels}
+                      className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1 hover:bg-green-500/30 transition-colors"
+                      title={`${onlineChannels.length} canales verificados — Clic para re-verificar`}
+                    >
                       <ShieldCheck size={10} className="text-green-400" />
                       <span className="text-green-400 text-[10px] font-medium">
                         {onlineChannels.length} OK
                       </span>
-                    </span>
+                    </button>
                   ) : guardianStatus && guardianStatus.scheduler.initialized ? (
-                    <span className="pointer-events-auto hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1">
+                    <span className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 ml-1">
                       {guardianStatus.isScanning ? (
                         <Activity size={10} className="text-green-400 animate-pulse" />
                       ) : (
                         <ShieldCheck size={10} className="text-green-400" />
                       )}
-                      <span className="text-green-400 text-[10px] font-medium">
+                      <span className="text-green-400 text-[10px] font-medium hidden sm:inline">
                         {guardianStatus.isScanning ? 'Escaneando...' : guardianStatus.totalVerified > 0 ? `${guardianStatus.totalVerified} OK` : 'Guardian'}
                       </span>
                     </span>
@@ -1055,35 +1059,71 @@ export function IPTVView() {
             onClick={e => e.stopPropagation()}
           >
             {/* Panel header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-              <h2 className="text-white font-bold flex items-center gap-2">
-                <Tv size={18} />
-                {t('iptv.channels')}
-                <span className="text-green-400 text-sm font-normal">
-                  {workingCount}/{totalCount} {t('iptv.ok')}
+            <div className="px-4 py-3 border-b border-white/5">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-white font-bold flex items-center gap-2">
+                  <Tv size={18} />
+                  {t('iptv.channels')}
+                </h2>
+                <div className="flex items-center gap-2">
+                  {/* Re-verify button */}
+                  <button
+                    onClick={reVerifyChannels}
+                    disabled={isVerifying}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
+                      isVerifying
+                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                        : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white'
+                    }`}
+                    title="Re-verificar canales"
+                  >
+                    {isVerifying ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
+                    {isVerifying ? `${verifyProgress.checked}/${verifyProgress.total}` : 'Verificar'}
+                  </button>
+                  {/* Toggle: working only vs all */}
+                  <button
+                    onClick={() => setShowOnlyWorking(!showOnlyWorking)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
+                      showOnlyWorking
+                        ? 'bg-green-600/30 text-green-400 border border-green-500/30'
+                        : 'bg-white/5 text-gray-500 border border-white/10'
+                    }`}
+                  >
+                    <Signal size={10} />
+                    {showOnlyWorking ? t('iptv.onlyOK') : t('iptv.all')}
+                  </button>
+                  <button
+                    onClick={() => setShowChannelList(false)}
+                    className="text-gray-400 hover:text-white active:text-white p-3 -mr-2"
+                    style={{ touchAction: 'manipulation' }}
+                    aria-label="Cerrar"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              {/* Verification stats row */}
+              <div className="flex items-center gap-3 text-[11px]">
+                <span className="flex items-center gap-1 text-green-400">
+                  <CheckCircle2 size={10} />
+                  {workingCount} activos
                 </span>
-              </h2>
-              <div className="flex items-center gap-2">
-                {/* Toggle: working only vs all */}
-                <button
-                  onClick={() => setShowOnlyWorking(!showOnlyWorking)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
-                    showOnlyWorking
-                      ? 'bg-green-600/30 text-green-400 border border-green-500/30'
-                      : 'bg-white/5 text-gray-500 border border-white/10'
-                  }`}
-                >
-                  <Signal size={10} />
-                  {showOnlyWorking ? t('iptv.onlyOK') : t('iptv.all')}
-                </button>
-                <button
-                  onClick={() => setShowChannelList(false)}
-                  className="text-gray-400 hover:text-white active:text-white p-3 -mr-2"
-                  style={{ touchAction: 'manipulation' }}
-                  aria-label="Cerrar"
-                >
-                  ✕
-                </button>
+                <span className="flex items-center gap-1 text-red-400/60">
+                  <XCircle size={10} />
+                  {totalCount - workingCount} inactivos
+                </span>
+                <span className="text-gray-600">de {totalCount} total</span>
+                {/* Verification progress bar */}
+                {isVerifying && (
+                  <div className="flex-1 flex items-center gap-2">
+                    <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-yellow-500 rounded-full transition-all duration-300"
+                        style={{ width: `${verifyProgress.total > 0 ? (verifyProgress.checked / verifyProgress.total) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1141,16 +1181,33 @@ export function IPTVView() {
                       {group} ({groupChannels.length})
                     </h3>
                   </div>
-                  {groupChannels.map(channel => (
+                  {groupChannels.map(channel => {
+                    const isVerified = verifiedUrls.has(channel.url);
+                    const isDead = verifiedUrls.size > 0 && !isVerified;
+                    const isActive = activeChannel?.id === channel.id;
+                    return (
                     <button
                       key={channel.id}
                       onClick={() => selectChannel(channel, channels.indexOf(channel))}
                       className={`w-full flex items-center gap-3 px-4 py-3 transition-all text-left border-b border-white/5 ${
-                        activeChannel?.id === channel.id
+                        isActive
                           ? 'bg-green-600/20 border-l-2 border-l-green-500'
+                          : isDead
+                          ? 'hover:bg-white/5 opacity-50'
                           : 'hover:bg-white/5'
                       } ${channel.status === 'offline' ? 'opacity-40' : ''}`}
                     >
+                      {/* Status dot */}
+                      <div className={`flex-shrink-0 w-2 h-2 rounded-full ${
+                        isActive
+                          ? 'bg-green-500 animate-pulse'
+                          : isVerified
+                          ? 'bg-green-500'
+                          : isDead
+                          ? 'bg-red-500'
+                          : 'bg-yellow-500/50'
+                      }`} />
+
                       {/* Logo */}
                       <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center overflow-hidden">
                         {channel.logo ? (
@@ -1162,15 +1219,18 @@ export function IPTVView() {
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{channel.name}</p>
+                        <p className={`text-sm font-medium truncate ${isDead ? 'text-gray-500 line-through' : 'text-white'}`}>{channel.name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          {verifiedUrls.has(channel.url) ? (
+                          {isVerified ? (
                             <span className="flex items-center gap-1 text-green-400 text-[10px]">
-                              <Signal size={8} />
-                              {t('iptv.verified')}
+                              <CheckCircle2 size={8} />
+                              Verificado
                             </span>
-                          ) : verifiedUrls.size > 0 ? (
-                            <span className="text-red-400/60 text-[10px]">{t('iptv.noSignalShort')}</span>
+                          ) : isDead ? (
+                            <span className="flex items-center gap-1 text-red-400/70 text-[10px]">
+                              <XCircle size={8} />
+                              Sin señal
+                            </span>
                           ) : channel.status === 'offline' ? (
                             <span className="text-red-400 text-[10px]">{t('iptv.offline')}</span>
                           ) : channel.status === 'geo-blocked' ? (
@@ -1178,7 +1238,7 @@ export function IPTVView() {
                           ) : channel.status === 'partial' ? (
                             <span className="text-yellow-400 text-[10px]">{t('iptv.not24_7')}</span>
                           ) : (
-                            <span className="flex items-center gap-1 text-green-400 text-[10px]">
+                            <span className="flex items-center gap-1 text-gray-400 text-[10px]">
                               <Signal size={8} />
                               {t('iptv.live')}
                             </span>
@@ -1190,11 +1250,14 @@ export function IPTVView() {
                       </div>
 
                       {/* Active indicator */}
-                      {activeChannel?.id === channel.id && (
-                        <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      {isActive && (
+                        <div className="flex-shrink-0 flex items-center gap-1">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        </div>
                       )}
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               ))}
 

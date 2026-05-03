@@ -18,6 +18,46 @@ async function checkStream(url: string): Promise<boolean> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), CHECK_TIMEOUT);
 
+    const isHLS = url.includes('.m3u8');
+
+    // For non-HLS URLs, try HEAD first (faster, no body download)
+    if (!isHLS) {
+      try {
+        const headResponse = await fetch(url, {
+          method: 'HEAD',
+          signal: controller.signal,
+          redirect: 'follow',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': '*/*',
+          },
+        });
+        clearTimeout(timeout);
+        return headResponse.ok || headResponse.status === 206;
+      } catch {
+        // HEAD failed, fall through to GET
+        clearTimeout(timeout);
+        const controller2 = new AbortController();
+        const timeout2 = setTimeout(() => controller2.abort(), CHECK_TIMEOUT);
+        try {
+          const getResponse = await fetch(url, {
+            method: 'GET',
+            signal: controller2.signal,
+            redirect: 'follow',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': '*/*',
+            },
+          });
+          clearTimeout(timeout2);
+          return getResponse.ok || getResponse.status === 206;
+        } catch {
+          clearTimeout(timeout2);
+          return false;
+        }
+      }
+    }
+
     // For HLS streams, we need to do a GET and check for valid response
     // HEAD requests often don't work with streaming servers
     const response = await fetch(url, {
