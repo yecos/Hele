@@ -10,12 +10,14 @@ interface CastDeviceInfo {
 }
 
 export type CastStatus = 'loading' | 'unavailable' | 'available' | 'connecting' | 'connected' | 'error';
+export type CastMode = 'default' | 'custom';
 
 interface ChromecastState {
   status: CastStatus;
   isAvailable: boolean;
   isConnected: boolean;
   isCasting: boolean;
+  castMode: CastMode;
   device: CastDeviceInfo | null;
   statusMessage: string;
   castError: string | null;
@@ -23,10 +25,13 @@ interface ChromecastState {
   connect: () => Promise<boolean>;
   disconnect: () => void;
   castMedia: (url: string, contentType: string, title?: string, subtitle?: string) => Promise<boolean>;
+  castHLS: (url: string, title?: string, subtitle?: string) => Promise<boolean>;
+  castEmbed: (url: string, title?: string, subtitle?: string) => Promise<boolean>;
   stopCast: () => void;
 }
 
 const DEFAULT_RECEIVER_ID = 'CC1AD845';
+const CUSTOM_NAMESPACE = 'urn:x-cast:com.xuperstream';
 const SDK_LOAD_TIMEOUT = 20000;
 
 // ==================== HOOK ====================
@@ -46,8 +51,32 @@ export function useChromecast(): ChromecastState {
   const controllerRef = useRef<any>(null);
   const initializedRef = useRef(false);
   const mountedRef = useRef(true);
+  const currentReceiverIdRef = useRef<string>(DEFAULT_RECEIVER_ID);
 
   const clearError = useCallback(() => setCastError(null), []);
+
+  // Determine cast mode from localStorage
+  const getCastMode = useCallback((): CastMode => {
+    try {
+      const appId = localStorage.getItem('xs-cast-app-id');
+      return appId && appId.trim().length === 12 ? 'custom' : 'default';
+    } catch {
+      return 'default';
+    }
+  }, []);
+
+  const castMode = getCastMode();
+
+  // Get the receiver App ID to use
+  const getReceiverAppId = useCallback((): string => {
+    try {
+      const customId = localStorage.getItem('xs-cast-app-id');
+      if (customId && /^[A-Fa-f0-9]{12}$/.test(customId.trim())) {
+        return customId.trim().toUpperCase();
+      }
+    } catch {}
+    return DEFAULT_RECEIVER_ID;
+  }, []);
 
   // ==================== SESSION HELPERS ====================
 
@@ -76,6 +105,36 @@ export function useChromecast(): ChromecastState {
     setCastError(null);
   }, []);
 
+  // ==================== RE-INITIALIZE WITH NEW APP ID ====================
+
+  const reinitializeWithAppId = useCallback((appId: string) => {
+    if (!initializedRef.current) return;
+
+    const castFramework = (window as any).cast?.framework;
+    const chromeCast = (window as any).chrome?.cast;
+    if (!castFramework || !chromeCast) return;
+
+    try {
+      // End existing session if any
+      const context = castFramework.CastContext.getInstance();
+      const currentSession = context.getCurrentSession();
+      if (currentSession) {
+        try { currentSession.stop(() => {}, () => {}); } catch {}
+      }
+
+      // Update options with new receiver ID
+      context.setOptions({
+        receiverApplicationId: appId,
+        autoJoinPolicy: chromeCast.AutoJoinPolicy.ORIGIN_SCOPED,
+      });
+
+      currentReceiverIdRef.current = appId;
+      console.log('[Chromecast] Re-initialized with App ID:', appId);
+    } catch (err) {
+      console.error('[Chromecast] Re-init failed:', err);
+    }
+  }, []);
+
   // ==================== INITIALIZATION ====================
 
   const initializeCastFramework = useCallback(() => {
@@ -94,11 +153,14 @@ export function useChromecast(): ChromecastState {
 
       console.log('[Chromecast] Initializing CAF...');
 
+      const receiverId = getReceiverAppId();
+      currentReceiverIdRef.current = receiverId;
+
       const context = castFramework.CastContext.getInstance();
       castContextRef.current = context;
 
       context.setOptions({
-        receiverApplicationId: DEFAULT_RECEIVER_ID,
+        receiverApplicationId: receiverId,
         autoJoinPolicy: chromeCast.AutoJoinPolicy.ORIGIN_SCOPED,
       });
 
@@ -158,7 +220,7 @@ export function useChromecast(): ChromecastState {
         updateCastState(event.castState);
       });
 
-      console.log('[Chromecast] CAF ready');
+      console.log('[Chromecast] CAF ready — Mode:', receiverId === DEFAULT_RECEIVER_ID ? 'Default' : 'Custom', 'App ID:', receiverId);
       setStatusMessage('Buscando dispositivos...');
 
       return true;
@@ -169,7 +231,7 @@ export function useChromecast(): ChromecastState {
       setStatusMessage('Error al inicializar Chromecast');
       return false;
     }
-  }, [updateFromSession, resetState, isConnected]);
+  }, [updateFromSession, resetState, isConnected, getReceiverAppId]);
 
   const updateCastState = useCallback((castState: string) => {
     if (!mountedRef.current) return;
@@ -269,6 +331,26 @@ export function useChromecast(): ChromecastState {
     };
   }, []);  
 
+  // Watch for App ID changes in localStorage (when user saves a new ID in Settings)
+  useEffect(() => {
+    const checkAppIdChange = () => {
+      const newAppId = getReceiverAppId();
+      if (newAppId !== currentReceiverIdRef.current) {
+        console.log('[Chromecast] App ID changed:', currentReceiverIdRef.current, '->', newAppId);
+        reinitializeWithAppId(newAppId);
+      }
+    };
+
+    // Check on storage events (cross-tab) and focus (same tab)
+    window.addEventListener('storage', checkAppIdChange);
+    window.addEventListener('focus', checkAppIdChange);
+
+    return () => {
+      window.removeEventListener('storage', checkAppIdChange);
+      window.removeEventListener('focus', checkAppIdChange);
+    };
+  }, [getReceiverAppId, reinitializeWithAppId]);
+
   // ==================== CONNECT / DISCONNECT ====================
 
   const connect = useCallback(async (): Promise<boolean> => {
@@ -318,7 +400,28 @@ export function useChromecast(): ChromecastState {
     }
   }, [resetState]);
 
-  // ==================== CAST MEDIA ====================
+  // ==================== SEND MESSAGE TO CUSTOM RECEIVER ====================
+
+  const sendCustomMessage = useCallback(async (message: object): Promise<boolean> => {
+    const context = castContextRef.current;
+    if (!context) return false;
+
+    try {
+      let session = context.getCurrentSession() || sessionRef.current;
+      if (!session) {
+        session = await context.requestSession();
+        updateFromSession(session);
+      }
+
+      session.sendMessage(CUSTOM_NAMESPACE, message);
+      return true;
+    } catch (err) {
+      console.error('[Chromecast] Send message failed:', err);
+      return false;
+    }
+  }, [updateFromSession]);
+
+  // ==================== CAST MEDIA (Default Receiver) ====================
 
   const castMedia = useCallback(async (
     url: string,
@@ -329,7 +432,7 @@ export function useChromecast(): ChromecastState {
     const context = castContextRef.current;
     if (!context) return false;
 
-    console.log('[Chromecast] Casting:', contentType, url.substring(0, 80));
+    console.log('[Chromecast] Casting media:', contentType, url.substring(0, 80));
     setCastError(null);
 
     try {
@@ -347,6 +450,11 @@ export function useChromecast(): ChromecastState {
       if (title) metadata.title = title;
       if (subtitle) metadata.subtitle = subtitle;
       mediaInfo.metadata = metadata;
+
+      // For HLS streams, set stream type
+      if (contentType === 'application/x-mpegurl' || contentType === 'application/vnd.apple.mpegurl') {
+        mediaInfo.streamType = chromeCast.media.StreamType.LIVE;
+      }
 
       const loadRequest = new chromeCast.media.LoadRequest(mediaInfo);
       setStatusMessage(`Enviando a ${device?.friendlyName || 'Chromecast'}...`);
@@ -376,9 +484,91 @@ export function useChromecast(): ChromecastState {
     }
   }, [device, updateFromSession]);
 
+  // ==================== CAST HLS (For IPTV and direct HLS streams) ====================
+
+  const castHLS = useCallback(async (
+    url: string,
+    title?: string,
+    subtitle?: string
+  ): Promise<boolean> => {
+    console.log('[Chromecast] Casting HLS:', url.substring(0, 80));
+    setCastError(null);
+
+    const currentMode = getCastMode();
+
+    if (currentMode === 'custom') {
+      // Custom receiver: send message to load HLS in the custom receiver page
+      const success = await sendCustomMessage({
+        action: 'PLAY_HLS',
+        url,
+        title: title || '',
+        subtitle: subtitle || '',
+      });
+
+      if (success) {
+        setIsCasting(true);
+        setStatusMessage(`Reproduciendo en ${device?.friendlyName || 'Chromecast'}`);
+        return true;
+      }
+
+      // Fallback to default receiver if custom message fails
+      console.log('[Chromecast] Custom message failed, falling back to default receiver');
+    }
+
+    // Default receiver: use loadMedia with HLS content type
+    return castMedia(url, 'application/x-mpegurl', title, subtitle);
+  }, [castMedia, device, getCastMode, sendCustomMessage]);
+
+  // ==================== CAST EMBED (For movie/series embed URLs) ====================
+
+  const castEmbed = useCallback(async (
+    url: string,
+    title?: string,
+    subtitle?: string
+  ): Promise<boolean> => {
+    console.log('[Chromecast] Casting embed:', url.substring(0, 80));
+    setCastError(null);
+
+    const currentMode = getCastMode();
+
+    if (currentMode === 'custom') {
+      // Custom receiver: send embed URL to be loaded in iframe
+      const success = await sendCustomMessage({
+        action: 'PLAY_EMBED',
+        url,
+        title: title || '',
+        subtitle: subtitle || '',
+      });
+
+      if (success) {
+        setIsCasting(true);
+        setStatusMessage(`Reproduciendo en ${device?.friendlyName || 'Chromecast'}`);
+        return true;
+      }
+
+      // Custom receiver failed
+      setCastError('No se pudo enviar el contenido al Custom Receiver.');
+      return false;
+    }
+
+    // Default receiver: embed URLs cannot be cast without custom receiver
+    console.warn('[Chromecast] Cannot cast embed URL without custom receiver');
+    setCastError('Los servidores de películas requieren un Custom Receiver para funcionar en TV. Configúralo en Ajustes > Chromecast.');
+    return false;
+  }, [device, getCastMode, sendCustomMessage]);
+
+  // ==================== STOP CAST ====================
+
   const stopCast = useCallback(() => {
+    const currentMode = getCastMode();
+
+    // If using custom receiver, send STOP message
+    if (currentMode === 'custom' && isConnected) {
+      sendCustomMessage({ action: 'STOP' }).catch(() => {});
+    }
+
     disconnect();
-  }, [disconnect]);
+  }, [disconnect, getCastMode, isConnected, sendCustomMessage]);
 
   // ==================== CLEANUP ====================
 
@@ -395,6 +585,7 @@ export function useChromecast(): ChromecastState {
     isAvailable,
     isConnected,
     isCasting,
+    castMode,
     device,
     statusMessage,
     castError,
@@ -402,6 +593,8 @@ export function useChromecast(): ChromecastState {
     connect,
     disconnect,
     castMedia,
+    castHLS,
+    castEmbed,
     stopCast,
   };
 }

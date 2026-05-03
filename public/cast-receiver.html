@@ -4,7 +4,7 @@
   <title>XuperStream Cast</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
+    body { background: #000; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; }
 
     /* Loading screen */
     #loading-screen {
@@ -12,13 +12,13 @@
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       background: #0a0a0a; color: #fff;
     }
-    #loading-screen .logo { width: 64px; height: 64px; margin-bottom: 20px; }
-    #loading-screen h2 { font-size: 22px; margin-bottom: 6px; }
+    #loading-screen .logo { width: 72px; height: 72px; margin-bottom: 24px; opacity: 0.9; }
+    #loading-screen h2 { font-size: 24px; margin-bottom: 6px; letter-spacing: -0.5px; }
     #loading-screen h2 span { color: #dc2626; }
-    #loading-screen p { color: #666; font-size: 13px; }
+    #loading-screen p { color: #555; font-size: 13px; margin-top: 4px; }
     .spinner {
-      width: 36px; height: 36px; margin-bottom: 16px;
-      border: 3px solid rgba(255,255,255,0.08);
+      width: 40px; height: 40px; margin-bottom: 20px;
+      border: 3px solid rgba(255,255,255,0.06);
       border-top-color: #dc2626;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
@@ -49,13 +49,67 @@
     #info-bar {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
       background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.7), transparent);
-      padding: 40px 32px 20px;
-      opacity: 0; transition: opacity 0.3s;
+      padding: 48px 32px 20px;
+      opacity: 0; transition: opacity 0.4s ease;
       pointer-events: none;
     }
     #info-bar.visible { opacity: 1; }
-    #info-bar .title { color: #fff; font-size: 20px; font-weight: 700; }
-    #info-bar .subtitle { color: #999; font-size: 13px; margin-top: 4px; }
+    #info-bar .title { color: #fff; font-size: 22px; font-weight: 700; }
+    #info-bar .subtitle { color: #999; font-size: 14px; margin-top: 4px; }
+    #info-bar .metadata { color: #666; font-size: 12px; margin-top: 8px; display: flex; align-items: center; gap: 12px; }
+    #info-bar .metadata .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(220,38,38,0.2); color: #ef4444;
+      padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+    }
+
+    /* Error overlay */
+    #error-overlay {
+      position: fixed; inset: 0; z-index: 90;
+      display: none; align-items: center; justify-content: center;
+      background: #0a0a0a; color: #fff;
+      flex-direction: column; gap: 12px;
+    }
+    #error-overlay.visible { display: flex; }
+    #error-overlay .error-icon { font-size: 48px; }
+    #error-overlay .error-title { font-size: 18px; font-weight: 600; }
+    #error-overlay .error-msg { color: #666; font-size: 13px; max-width: 400px; text-align: center; }
+
+    /* Playback controls for HLS */
+    #playback-controls {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 55;
+      padding: 0 32px 20px;
+      opacity: 0; transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    #playback-controls.visible { opacity: 1; pointer-events: auto; }
+    #playback-controls .progress-bar {
+      width: 100%; height: 4px; background: rgba(255,255,255,0.1);
+      border-radius: 2px; margin-bottom: 12px; cursor: pointer;
+      position: relative;
+    }
+    #playback-controls .progress-bar .progress {
+      height: 100%; background: #dc2626; border-radius: 2px;
+      transition: width 0.3s linear;
+    }
+    #playback-controls .time-row {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    #playback-controls .time { color: #999; font-size: 12px; font-variant-numeric: tabular-nums; }
+    #playback-controls .controls { display: flex; align-items: center; gap: 16px; }
+    #playback-controls button {
+      background: none; border: none; color: #fff; cursor: pointer;
+      padding: 8px; border-radius: 50%; transition: background 0.2s;
+    }
+    #playback-controls button:hover { background: rgba(255,255,255,0.1); }
+    #playback-controls .volume-container { display: flex; align-items: center; gap: 8px; }
+    #playback-controls .volume-slider {
+      width: 80px; height: 4px; background: rgba(255,255,255,0.2);
+      border-radius: 2px; cursor: pointer; position: relative;
+    }
+    #playback-controls .volume-slider .volume-level {
+      height: 100%; background: #fff; border-radius: 2px;
+    }
   </style>
 </head>
 <body>
@@ -66,6 +120,13 @@
     <img class="logo" src="/logo.svg" alt="XuperStream" />
     <h2>Xuper<span>Stream</span></h2>
     <p>Esperando contenido...</p>
+  </div>
+
+  <!-- Error Overlay -->
+  <div id="error-overlay">
+    <div class="error-icon">&#9888;</div>
+    <div class="error-title" id="error-title">Error de reproduccion</div>
+    <div class="error-msg" id="error-msg">El contenido no esta disponible en este momento.</div>
   </div>
 
   <!-- HLS Video Player -->
@@ -82,6 +143,32 @@
   <div id="info-bar">
     <div class="title" id="info-title"></div>
     <div class="subtitle" id="info-subtitle"></div>
+    <div class="metadata">
+      <span class="badge" id="info-type-badge">LIVE</span>
+      <span id="info-extra"></span>
+    </div>
+  </div>
+
+  <!-- Playback Controls (for HLS/video) -->
+  <div id="playback-controls">
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress" id="progress-fill"></div>
+    </div>
+    <div class="time-row">
+      <span class="time" id="time-current">0:00</span>
+      <div class="controls">
+        <button id="btn-rewind" title="Retroceder 10s">&#9194;</button>
+        <button id="btn-play-pause" title="Pausar/Reanudar">&#9654;</button>
+        <button id="btn-forward" title="Adelantar 10s">&#9193;</button>
+      </div>
+      <div class="volume-container">
+        <button id="btn-mute" title="Mutear/Activar">&#128264;</button>
+        <div class="volume-slider" id="volume-slider">
+          <div class="volume-level" id="volume-level" style="width:100%"></div>
+        </div>
+      </div>
+      <span class="time" id="time-duration">--:--</span>
+    </div>
   </div>
 
   <!-- Cast Receiver SDK -->
@@ -92,30 +179,83 @@
     const context = cast.framework.CastReceiverContext.getInstance();
     const playerManager = context.getPlayerManager();
     const NAMESPACE = 'urn:x-cast:com.xuperstream';
-    const INFO_TIMEOUT = 6000;
+    const INFO_TIMEOUT = 8000;
 
     let hlsInstance = null;
     let infoTimeout = null;
+    let controlsTimeout = null;
+    let currentMediaType = null; // 'hls' | 'embed' | 'video'
+    let isLiveStream = false;
 
-    // Show info bar
-    function showInfo(title, subtitle) {
+    // ==================== UI HELPERS ====================
+
+    function showInfo(title, subtitle, isLive) {
       const bar = document.getElementById('info-bar');
       document.getElementById('info-title').textContent = title || '';
       document.getElementById('info-subtitle').textContent = subtitle || '';
+
+      const badge = document.getElementById('info-type-badge');
+      if (isLive) {
+        badge.textContent = 'LIVE';
+        badge.style.background = 'rgba(220,38,38,0.3)';
+        badge.style.color = '#ef4444';
+      } else if (currentMediaType === 'embed') {
+        badge.textContent = 'EMBED';
+        badge.style.background = 'rgba(99,102,241,0.3)';
+        badge.style.color = '#818cf8';
+      } else {
+        badge.textContent = 'PLAYING';
+        badge.style.background = 'rgba(34,197,94,0.3)';
+        badge.style.color = '#22c55e';
+      }
+
       bar.classList.add('visible');
       if (infoTimeout) clearTimeout(infoTimeout);
       infoTimeout = setTimeout(() => bar.classList.remove('visible'), INFO_TIMEOUT);
     }
 
-    // Hide loading screen
     function hideLoading() {
       const el = document.getElementById('loading-screen');
       if (el) el.style.display = 'none';
+      hideError();
     }
 
-    // Play HLS stream
+    function showError(title, msg) {
+      document.getElementById('error-title').textContent = title || 'Error de reproduccion';
+      document.getElementById('error-msg').textContent = msg || 'El contenido no esta disponible.';
+      document.getElementById('error-overlay').classList.add('visible');
+    }
+
+    function hideError() {
+      document.getElementById('error-overlay').classList.remove('visible');
+    }
+
+    function showControls() {
+      const controls = document.getElementById('playback-controls');
+      controls.classList.add('visible');
+      if (controlsTimeout) clearTimeout(controlsTimeout);
+      controlsTimeout = setTimeout(() => controls.classList.remove('visible'), 6000);
+    }
+
+    function hideControls() {
+      document.getElementById('playback-controls').classList.remove('visible');
+    }
+
+    function formatTime(seconds) {
+      if (!seconds || !isFinite(seconds)) return '--:--';
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = Math.floor(seconds % 60);
+      if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      return `${m}:${String(s).padStart(2,'0')}`;
+    }
+
+    // ==================== PLAYBACK ====================
+
     function playHLS(url, metadata) {
       hideLoading();
+      currentMediaType = 'hls';
+      isLiveStream = true;
       const videoPlayer = document.getElementById('video-player');
       const video = document.getElementById('media-video');
       videoPlayer.style.display = 'flex';
@@ -127,37 +267,64 @@
           enableWorker: true,
           lowLatencyMode: true,
           maxBufferLength: 30,
+          maxMaxBufferLength: 60,
         });
         hlsInstance.loadSource(url);
         hlsInstance.attachMedia(video);
-        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+          // Check if live or VOD
+          isLiveStream = !data.levels?.[0]?.details?.live;
           video.play().catch(() => {});
-          if (metadata) showInfo(metadata.title, metadata.subtitle);
+          if (metadata) showInfo(metadata.title, metadata.subtitle, isLiveStream);
         });
         hlsInstance.on(Hls.Events.ERROR, (event, data) => {
           if (data.fatal) {
-            showInfo('Error de reproduccion', 'El stream no esta disponible');
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                hlsInstance.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                hlsInstance.recoverMediaError();
+                break;
+              default:
+                showError('Error de reproduccion', 'El stream no esta disponible. Intenta con otro contenido.');
+                break;
+            }
           }
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
         video.load();
         video.play().catch(() => {});
-        if (metadata) showInfo(metadata.title, metadata.subtitle);
+        if (metadata) showInfo(metadata.title, metadata.subtitle, true);
       }
     }
 
-    // Load embed URL in iframe
     function playEmbed(url, metadata) {
       hideLoading();
+      currentMediaType = 'embed';
       const iframePlayer = document.getElementById('iframe-player');
       const iframe = document.getElementById('media-iframe');
       iframePlayer.style.display = 'block';
       iframe.src = url;
-      if (metadata) showInfo(metadata.title, metadata.subtitle);
+      if (metadata) showInfo(metadata.title, metadata.subtitle, false);
+      // Hide playback controls for embed (not controllable)
+      hideControls();
     }
 
-    // Stop everything
+    function playVideo(url, metadata) {
+      hideLoading();
+      currentMediaType = 'video';
+      isLiveStream = false;
+      const videoPlayer = document.getElementById('video-player');
+      const video = document.getElementById('media-video');
+      videoPlayer.style.display = 'flex';
+      video.src = url;
+      video.load();
+      video.play().catch(() => {});
+      if (metadata) showInfo(metadata.title, metadata.subtitle, false);
+    }
+
     function stopPlayback() {
       if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
       document.getElementById('video-player').style.display = 'none';
@@ -167,11 +334,110 @@
       video.pause();
       video.removeAttribute('src');
       video.load();
+      currentMediaType = null;
+      isLiveStream = false;
       document.getElementById('info-bar').classList.remove('visible');
+      document.getElementById('playback-controls').classList.remove('visible');
+      hideError();
       document.getElementById('loading-screen').style.display = 'flex';
     }
 
-    // Handle messages from sender
+    // ==================== PLAYBACK CONTROLS ====================
+
+    const video = document.getElementById('media-video');
+
+    // Update progress bar
+    video.addEventListener('timeupdate', () => {
+      if (currentMediaType === 'embed') return;
+      const fill = document.getElementById('progress-fill');
+      const currentTime = document.getElementById('time-current');
+      const durationEl = document.getElementById('time-duration');
+
+      if (video.duration && isFinite(video.duration)) {
+        const pct = (video.currentTime / video.duration) * 100;
+        fill.style.width = pct + '%';
+        currentTime.textContent = formatTime(video.currentTime);
+        durationEl.textContent = formatTime(video.duration);
+      } else if (isLiveStream) {
+        fill.style.width = '100%';
+        currentTime.textContent = 'LIVE';
+        durationEl.textContent = '';
+      }
+    });
+
+    video.addEventListener('playing', () => {
+      document.getElementById('btn-play-pause').innerHTML = '&#9646;&#9646;';
+    });
+
+    video.addEventListener('pause', () => {
+      document.getElementById('btn-play-pause').innerHTML = '&#9654;';
+    });
+
+    video.addEventListener('error', () => {
+      showError('Error de reproduccion', 'No se pudo cargar el video.');
+    });
+
+    // Play/Pause button
+    document.getElementById('btn-play-pause').addEventListener('click', () => {
+      if (video.paused) {
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+      showControls();
+    });
+
+    // Rewind
+    document.getElementById('btn-rewind').addEventListener('click', () => {
+      video.currentTime = Math.max(0, video.currentTime - 10);
+      showControls();
+    });
+
+    // Forward
+    document.getElementById('btn-forward').addEventListener('click', () => {
+      if (video.duration && isFinite(video.duration)) {
+        video.currentTime = Math.min(video.duration, video.currentTime + 10);
+      }
+      showControls();
+    });
+
+    // Mute toggle
+    document.getElementById('btn-mute').addEventListener('click', () => {
+      video.muted = !video.muted;
+      document.getElementById('btn-mute').innerHTML = video.muted ? '&#128263;' : '&#128264;';
+      document.getElementById('volume-level').style.width = video.muted ? '0%' : (video.volume * 100) + '%';
+      showControls();
+    });
+
+    // Progress bar click to seek
+    document.getElementById('progress-bar').addEventListener('click', (e) => {
+      if (!video.duration || !isFinite(video.duration)) return;
+      const rect = e.target.getBoundingClientRect();
+      const pct = (e.clientX - rect.left) / rect.width;
+      video.currentTime = pct * video.duration;
+      showControls();
+    });
+
+    // Volume slider click
+    document.getElementById('volume-slider').addEventListener('click', (e) => {
+      const rect = e.target.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      video.volume = pct;
+      video.muted = pct === 0;
+      document.getElementById('volume-level').style.width = (pct * 100) + '%';
+      document.getElementById('btn-mute').innerHTML = video.muted ? '&#128263;' : '&#128264;';
+      showControls();
+    });
+
+    // Show controls on mouse movement
+    document.addEventListener('mousemove', () => {
+      if (currentMediaType && currentMediaType !== 'embed') {
+        showControls();
+      }
+    });
+
+    // ==================== MESSAGE HANDLING ====================
+
     context.addMessageListener(NAMESPACE, (event) => {
       const data = event.data;
       if (!data || !data.action) return;
@@ -183,11 +449,29 @@
         case 'PLAY_EMBED':
           playEmbed(data.url, { title: data.title, subtitle: data.subtitle });
           break;
+        case 'PLAY_VIDEO':
+          playVideo(data.url, { title: data.title, subtitle: data.subtitle });
+          break;
         case 'STOP':
           stopPlayback();
           break;
         case 'SHOW_INFO':
-          showInfo(data.title, data.subtitle);
+          showInfo(data.title, data.subtitle, false);
+          break;
+        case 'PAUSE':
+          video.pause();
+          break;
+        case 'RESUME':
+          video.play().catch(() => {});
+          break;
+        case 'SEEK':
+          if (data.time && isFinite(data.time)) video.currentTime = data.time;
+          break;
+        case 'SET_VOLUME':
+          if (data.volume !== undefined) {
+            video.volume = Math.max(0, Math.min(1, data.volume));
+            document.getElementById('volume-level').style.width = (video.volume * 100) + '%';
+          }
           break;
       }
     });
@@ -207,6 +491,8 @@
 
           if (url.includes('.m3u8')) {
             playHLS(url, metadata);
+          } else if (url.match(/\.(mp4|webm|mkv|avi)/i)) {
+            playVideo(url, metadata);
           } else {
             playEmbed(url, metadata);
           }
@@ -218,22 +504,27 @@
     playerManager.addEventListener(
       cast.framework.events.EventType.PLAYBACK_STARTED,
       () => {
-        const video = document.getElementById('media-video');
-        showInfo('Reproduciendo', video.src || '');
+        showInfo('Reproduciendo', '');
       }
     );
 
     playerManager.addEventListener(
       cast.framework.events.EventType.PLAYBACK_ENDED,
       () => {
-        // Show idle screen
+        showInfo('Finalizado', '');
+        setTimeout(() => {
+          document.getElementById('info-bar').classList.remove('visible');
+        }, 3000);
       }
     );
 
     // Start receiver
     context.start({
-      statusText: 'XuperStream listo'
+      statusText: 'XuperStream listo',
+      disableIdleTimeout: true,
     });
+
+    console.log('[XuperStream Receiver] Ready');
   </script>
 </body>
 </html>

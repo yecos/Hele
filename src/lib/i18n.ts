@@ -341,6 +341,24 @@ const translations: Record<AppLocale, Record<string, string>> = {
     // ---- META ----
     'meta.title': 'XuperStream - Ver Películas y Series Online',
     'meta.description': 'Tu plataforma personal de streaming. Películas, series y TV en vivo en español latino, HD.',
+
+    // ---- NEW SETTINGS ----
+    'settings.playback': 'Reproducción',
+    'settings.defaultAudio': 'Idioma de audio predeterminado',
+    'settings.autoPlay': 'Reproducción automática',
+    'settings.autoPlayDesc': 'Reproducir automáticamente al seleccionar',
+    'settings.showServerStatus': 'Mostrar estado de servidores',
+    'settings.showServerStatusDesc': 'Indicadores de disponibilidad en los servidores',
+    'settings.backupDesc': 'Exporta o importa tus datos para respaldar tu configuración.',
+    'settings.export': 'Exportar',
+    'settings.import': 'Importar',
+    'settings.importConfirm': '¿Importar datos? Esto reemplazará los datos actuales.',
+    'settings.importError': 'Error al importar. Asegúrate de que el archivo es válido.',
+    'settings.storageUsed': 'Espacio utilizado',
+    'settings.showDetails': 'Ver detalles',
+    'settings.hideDetails': 'Ocultar detalles',
+    'settings.clearCache': 'Borrar caché de servidores',
+    'settings.clearCacheConfirm': '¿Borrar la caché de servidores? Esto no afecta tus favoritos ni historial.',
   },
 
   en: {
@@ -655,6 +673,24 @@ const translations: Record<AppLocale, Record<string, string>> = {
     // ---- META ----
     'meta.title': 'XuperStream - Watch Movies and Series Online',
     'meta.description': 'Your personal streaming platform. Movies, series and live TV in HD.',
+
+    // ---- NEW SETTINGS ----
+    'settings.playback': 'Playback',
+    'settings.defaultAudio': 'Default audio language',
+    'settings.autoPlay': 'Auto-play',
+    'settings.autoPlayDesc': 'Automatically play when selecting content',
+    'settings.showServerStatus': 'Show server status',
+    'settings.showServerStatusDesc': 'Availability indicators on servers',
+    'settings.backupDesc': 'Export or import your data to back up your settings.',
+    'settings.export': 'Export',
+    'settings.import': 'Import',
+    'settings.importConfirm': 'Import data? This will replace your current data.',
+    'settings.importError': 'Import failed. Make sure the file is valid.',
+    'settings.storageUsed': 'Storage used',
+    'settings.showDetails': 'Show details',
+    'settings.hideDetails': 'Hide details',
+    'settings.clearCache': 'Clear server cache',
+    'settings.clearCacheConfirm': 'Clear server cache? This won\'t affect your favorites or history.',
   },
 
   pt: {
@@ -969,6 +1005,24 @@ const translations: Record<AppLocale, Record<string, string>> = {
     // ---- META ----
     'meta.title': 'XuperStream - Assistir Filmes e Séries Online',
     'meta.description': 'Sua plataforma pessoal de streaming. Filmes, séries e TV ao vivo em HD.',
+
+    // ---- NEW SETTINGS ----
+    'settings.playback': 'Reprodução',
+    'settings.defaultAudio': 'Idioma de áudio padrão',
+    'settings.autoPlay': 'Reprodução automática',
+    'settings.autoPlayDesc': 'Reproduzir automaticamente ao selecionar',
+    'settings.showServerStatus': 'Mostrar status dos servidores',
+    'settings.showServerStatusDesc': 'Indicadores de disponibilidade nos servidores',
+    'settings.backupDesc': 'Exporte ou importe seus dados para fazer backup.',
+    'settings.export': 'Exportar',
+    'settings.import': 'Importar',
+    'settings.importConfirm': 'Importar dados? Isso substituirá os dados atuais.',
+    'settings.importError': 'Erro ao importar. Certifique-se de que o arquivo é válido.',
+    'settings.storageUsed': 'Espaço utilizado',
+    'settings.showDetails': 'Ver detalhes',
+    'settings.hideDetails': 'Ocultar detalhes',
+    'settings.clearCache': 'Limpar cache de servidores',
+    'settings.clearCacheConfirm': 'Limpar cache de servidores? Isso não afeta seus favoritos ou histórico.',
   },
 };
 
