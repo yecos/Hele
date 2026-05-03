@@ -36,6 +36,7 @@ export const GUARDIAN_SOURCES: SourceDefinition[] = [
 
   // ===== IDIOMA / REGIÓN =====
   { id: 'spa', name: 'Todo Español', url: 'https://iptv-org.github.io/iptv/languages/spa.m3u', category: 'language', priority: 110 },
+  { id: 'eng', name: 'Todo Inglés', url: 'https://iptv-org.github.io/iptv/languages/eng.m3u', category: 'language', priority: 108 },
   { id: 'latam', name: 'Latinoamérica', url: 'https://iptv-org.github.io/iptv/regions/latam.m3u', category: 'language', priority: 105 },
 
   // ===== CATEGORÍAS =====

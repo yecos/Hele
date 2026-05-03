@@ -24,7 +24,6 @@ const COUNTRIES = [
   { id: 'pa', name: 'Panamá', flag: '🇵🇦' },
   { id: 'uy', name: 'Uruguay', flag: '🇺🇾' },
   { id: 'py', name: 'Paraguay', flag: '🇵🇾' },
-  { id: 'br', name: 'Brasil', flag: '🇧🇷' },
 ];
 
 interface CountryCarouselProps {

@@ -43,9 +43,11 @@ interface PlaylistSection {
 
 const PLAYLIST_SECTIONS: PlaylistSection[] = [
   {
-    title: 'Mundo',
+    title: 'Cargar Canales',
     items: [
+      { id: 'all-spa', label: 'Cargar Todos los Canales', flag: '⚡' },
       { id: 'spa', label: 'Todo Español', flag: '🌐' },
+      { id: 'eng', label: 'Todo Inglés', flag: '🇺🇸' },
       { id: 'latam', label: 'Latinoamérica', flag: '🌎' },
     ],
   },
@@ -120,7 +122,7 @@ export function IPTVView() {
   const [channelError, setChannelError] = useState(false);
   const [isChannelLoading, setIsChannelLoading] = useState(true);
   const [loadingPlaylist, setLoadingPlaylist] = useState(true);
-  const [selectedPlaylist, setSelectedPlaylist] = useState('co');
+  const [selectedPlaylist, setSelectedPlaylist] = useState('all-spa');
   const [searchQuery, setSearchQuery] = useState('');
   const [showChannelList, setShowChannelList] = useState(false);
   const [infoTimeout, setInfoTimeout] = useState<NodeJS.Timeout | null>(null);

@@ -289,13 +289,16 @@ function parseM3U(content: string, countryCode: string): IPTVChannel[] {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const playlist = searchParams.get('playlist') || 'co';
+    const playlist = searchParams.get('playlist') || 'all-spa';
     const useGuardian = searchParams.get('guardian') !== 'false'; // Por defecto usa guardian
 
     // ===== SI HAY CANALES VERIFICADOS POR EL GUARDIAN, USARLOS =====
     if (useGuardian) {
       try {
-        const playlists = playlist.split(',').map(p => p.trim().toLowerCase());
+        const rawPlaylists = playlist.split(',').map(p => p.trim().toLowerCase());
+        // Expand virtual playlist all-spa
+        const ALL_SPA = ['co','mx','ar','es','cl','ve','pe','bo','cr','cu','do','ec','sv','gt','hn','ni','pa','py','uy','pr','spa','latam','premium','hbo'];
+        const playlists = rawPlaylists.includes('all-spa') ? ALL_SPA : rawPlaylists;
         const guardianChannels: IPTVChannel[] = [];
 
         // Construir condiciones OR para playlists
@@ -372,6 +375,7 @@ export async function GET(request: NextRequest) {
 
       // ===== IDIOMA / REGIÓN =====
       spa: 'https://iptv-org.github.io/iptv/languages/spa.m3u',
+      eng: 'https://iptv-org.github.io/iptv/languages/eng.m3u',
       latam: 'https://iptv-org.github.io/iptv/regions/latam.m3u',
 
       // ===== CATEGORÍAS (iptv-org) =====
@@ -415,7 +419,11 @@ export async function GET(request: NextRequest) {
       'premium': 'https://raw.githubusercontent.com/vivemastv/IPTV/master/PREMIUN/LATINOS/M3UP001',
     };
 
-    const playlists = playlist.split(',').map(p => p.trim().toLowerCase());
+    // ===== VIRTUAL PLAYLIST: all-spa (todos los países hispanos + premium) =====
+    const ALL_SPA_PLAYLISTS = 'co,mx,ar,es,cl,ve,pe,bo,cr,cu,do,ec,sv,gt,hn,ni,pa,py,uy,pr,spa,latam,premium,hbo';
+    const expandedPlaylist = playlist === 'all-spa' ? ALL_SPA_PLAYLISTS : playlist;
+
+    const playlists = expandedPlaylist.split(',').map(p => p.trim().toLowerCase());
     const allChannels: IPTVChannel[] = [];
 
     for (const pl of playlists) {
@@ -447,13 +455,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (playlists.includes('co')) {
-      allChannels.unshift(...CUSTOM_CHANNELS_CO);
-    }
-    if (playlists.includes('sports') || playlists.includes('spa')) {
-      allChannels.unshift(...CUSTOM_CHANNELS_CO);
-    }
-    if (playlists.includes('tdt')) {
+    // Add custom channels for relevant playlists
+    if (playlists.includes('co') || playlists.includes('spa')) {
       allChannels.unshift(...CUSTOM_CHANNELS_CO);
     }
     if (playlists.includes('hbo')) {
@@ -463,10 +466,18 @@ export async function GET(request: NextRequest) {
       allChannels.unshift(...CUSTOM_CHANNELS_PREMIUM);
     }
 
+    // Deduplicate channels by URL (keep first occurrence)
+    const seenUrls = new Set<string>();
+    const dedupedChannels = allChannels.filter(ch => {
+      if (seenUrls.has(ch.url)) return false;
+      seenUrls.add(ch.url);
+      return true;
+    });
+
     return NextResponse.json({
       success: true,
-      channels: allChannels,
-      total: allChannels.length,
+      channels: dedupedChannels,
+      total: dedupedChannels.length,
       playlists: playlists,
       source: 'direct',
     });
