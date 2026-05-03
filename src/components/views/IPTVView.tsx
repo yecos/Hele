@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useViewStore, useAuthStore } from '@/lib/store';
-import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity, Shield, MoreHorizontal, List, CheckCircle2, XCircle, Zap } from 'lucide-react';
+import { useViewStore, useAuthStore, useIptvFavoritesStore, useIptvRecentStore } from '@/lib/store';
+import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity, Shield, MoreHorizontal, List, CheckCircle2, XCircle, Zap, Heart, History, RotateCcw } from 'lucide-react';
+import { IPTVChannel as IPTVChannelType } from '@/lib/iptv-channels';
 import Hls from 'hls.js';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
@@ -35,6 +36,8 @@ interface IPTVChannel {
   status: string;
   verified?: boolean;
 }
+// Re-export for external use
+export type { IPTVChannel };
 
 interface PlaylistSection {
   title: string;
@@ -162,6 +165,17 @@ export function IPTVView() {
   const cast = useChromecast();
   const { t } = useT();
   const isActivelyCasting = cast.isCasting && cast.isConnected;
+
+  // IPTV favorites and recent stores
+  const { toggleIptvFavorite, isIptvFavorite, favorites: iptvFavorites } = useIptvFavoritesStore();
+  const { addToRecent, recent: iptvRecent } = useIptvRecentStore();
+
+  // Previous channel (for "Last" button)
+  const [previousChannel, setPreviousChannel] = useState<IPTVChannel | null>(null);
+
+  // Auto-skip countdown
+  const [autoSkipCountdown, setAutoSkipCountdown] = useState<number | null>(null);
+  const autoSkipTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Fetch channels from API
   useEffect(() => {
@@ -338,6 +352,55 @@ export function IPTVView() {
     }
   }, [activeChannel?.id, cast.isConnected]);  
 
+  // Ref for skipToWorkingChannel so auto-skip timer can call it
+  const skipToWorkingChannelRef = useRef<() => void>(() => {});
+
+  // Auto-skip countdown — when channelError becomes true, start 3s countdown
+  useEffect(() => {
+    // Clear any existing timer
+    if (autoSkipTimerRef.current) {
+      clearInterval(autoSkipTimerRef.current);
+      autoSkipTimerRef.current = null;
+    }
+
+    if (channelError && activeChannel) {
+      setAutoSkipCountdown(3);
+
+      autoSkipTimerRef.current = setInterval(() => {
+        setAutoSkipCountdown(prev => {
+          if (prev === null || prev <= 1) {
+            if (autoSkipTimerRef.current) {
+              clearInterval(autoSkipTimerRef.current);
+              autoSkipTimerRef.current = null;
+            }
+            // Auto-skip to next channel via ref
+            skipToWorkingChannelRef.current();
+            return null;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setAutoSkipCountdown(null);
+    }
+
+    return () => {
+      if (autoSkipTimerRef.current) {
+        clearInterval(autoSkipTimerRef.current);
+        autoSkipTimerRef.current = null;
+      }
+    };
+  }, [channelError, activeChannel?.id]);
+
+  // Reset auto-skip timer on user interaction
+  const resetAutoSkipTimer = useCallback(() => {
+    setAutoSkipCountdown(null);
+    if (autoSkipTimerRef.current) {
+      clearInterval(autoSkipTimerRef.current);
+      autoSkipTimerRef.current = null;
+    }
+  }, []);
+
   // Play channel when activeChannel changes
   useEffect(() => {
     if (!activeChannel || !videoRef.current) return;
@@ -419,6 +482,51 @@ export function IPTVView() {
     };
   }, [activeChannel?.id]);  
 
+  // Show channel transition overlay helper
+  const triggerTransition = useCallback(() => {
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    setShowTransition(true);
+    transitionTimerRef.current = setTimeout(() => setShowTransition(false), 3000);
+  }, []);
+
+  // Cleanup transition timer on unmount
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    };
+  }, []);
+
+  const goNext = useCallback(() => {
+    if (onlineChannels.length === 0) return;
+    if (activeChannel) setPreviousChannel(activeChannel);
+    const next = (currentIndex + 1) % onlineChannels.length;
+    setCurrentIndex(next);
+    setActiveChannel(onlineChannels[next]);
+    setRetryCount(0);
+    triggerTransition();
+  }, [currentIndex, onlineChannels, triggerTransition, activeChannel]);
+
+  const goPrev = useCallback(() => {
+    if (onlineChannels.length === 0) return;
+    if (activeChannel) setPreviousChannel(activeChannel);
+    const prev = (currentIndex - 1 + onlineChannels.length) % onlineChannels.length;
+    setCurrentIndex(prev);
+    setActiveChannel(onlineChannels[prev]);
+    setRetryCount(0);
+    triggerTransition();
+  }, [currentIndex, onlineChannels, triggerTransition, activeChannel]);
+
+  const goLastChannel = useCallback(() => {
+    if (!previousChannel) return;
+    const current = activeChannel;
+    if (current) setPreviousChannel(current);
+    setActiveChannel(previousChannel);
+    const onlineIdx = onlineChannels.findIndex(c => c.id === previousChannel.id);
+    if (onlineIdx !== -1) setCurrentIndex(onlineIdx);
+    setRetryCount(0);
+    triggerTransition();
+  }, [previousChannel, activeChannel, onlineChannels, triggerTransition]);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -448,6 +556,10 @@ export function IPTVView() {
           e.preventDefault();
           toggleFullscreen();
           break;
+        case 'b':
+          e.preventDefault();
+          goLastChannel();
+          break;
         case 'Escape':
           e.preventDefault();
           if (isFullscreen) {
@@ -459,42 +571,15 @@ export function IPTVView() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showChannelList, searchQuery, isFullscreen, currentIndex, onlineChannels.length]);  
-
-  // Show channel transition overlay helper
-  const triggerTransition = useCallback(() => {
-    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
-    setShowTransition(true);
-    transitionTimerRef.current = setTimeout(() => setShowTransition(false), 3000);
-  }, []);
-
-  // Cleanup transition timer on unmount
-  useEffect(() => {
-    return () => {
-      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
-    };
-  }, []);
-
-  const goNext = useCallback(() => {
-    if (onlineChannels.length === 0) return;
-    const next = (currentIndex + 1) % onlineChannels.length;
-    setCurrentIndex(next);
-    setActiveChannel(onlineChannels[next]);
-    setRetryCount(0);
-    triggerTransition();
-  }, [currentIndex, onlineChannels, triggerTransition]);
-
-  const goPrev = useCallback(() => {
-    if (onlineChannels.length === 0) return;
-    const prev = (currentIndex - 1 + onlineChannels.length) % onlineChannels.length;
-    setCurrentIndex(prev);
-    setActiveChannel(onlineChannels[prev]);
-    setRetryCount(0);
-    triggerTransition();
-  }, [currentIndex, onlineChannels, triggerTransition]);
+  }, [showChannelList, searchQuery, isFullscreen, currentIndex, onlineChannels.length, goNext, goPrev, goLastChannel]);
 
   const selectChannel = (channel: IPTVChannel, index: number) => {
+    if (activeChannel && activeChannel.id !== channel.id) {
+      setPreviousChannel(activeChannel);
+    }
     setActiveChannel(channel);
+    // Add to recent channels
+    addToRecent(channel.id);
     // Find in online channels
     const onlineIdx = onlineChannels.findIndex(c => c.id === channel.id);
     if (onlineIdx !== -1) {
@@ -540,6 +625,7 @@ export function IPTVView() {
 
   const skipToWorkingChannel = useCallback(() => {
     if (onlineChannels.length === 0) return;
+    if (activeChannel) setPreviousChannel(activeChannel);
     // Find next working channel that's different from current
     let nextIdx = (currentIndex + 1) % onlineChannels.length;
     // Try to find a verified working channel
@@ -557,9 +643,15 @@ export function IPTVView() {
     setChannelError(false);
     setIsChannelLoading(true);
     triggerTransition();
-  }, [currentIndex, onlineChannels, verifiedUrls, triggerTransition]);
+  }, [currentIndex, onlineChannels, verifiedUrls, triggerTransition, activeChannel]);
+
+  // Keep ref in sync for auto-skip timer
+  useEffect(() => {
+    skipToWorkingChannelRef.current = skipToWorkingChannel;
+  }, [skipToWorkingChannel]);
 
   const skipChannel = () => {
+    resetAutoSkipTimer();
     if (retryCount < 3 && activeChannel) {
       setRetryCount(prev => prev + 1);
       goNext();
@@ -577,6 +669,9 @@ export function IPTVView() {
   const handleVideoPlaying = () => {
     setIsChannelLoading(false);
     setChannelError(false);
+    resetAutoSkipTimer();
+    // Add to recent when channel starts playing
+    if (activeChannel) addToRecent(activeChannel.id);
   };
 
   const handleVideoCanPlay = () => {
@@ -586,6 +681,7 @@ export function IPTVView() {
   // Move mouse / tap to show info
   const handleMouseMove = () => {
     setShowInfo(true);
+    resetAutoSkipTimer();
     if (infoTimeout) clearTimeout(infoTimeout);
     const timeout = setTimeout(() => setShowInfo(false), 4000);
     setInfoTimeout(timeout);
@@ -593,6 +689,7 @@ export function IPTVView() {
 
   // Touch toggle for controls overlay (tap to show/hide)
   const handleTouchToggle = useCallback(() => {
+    resetAutoSkipTimer();
     setShowInfo(prev => {
       if (infoTimeout) clearTimeout(infoTimeout);
       if (prev) {
@@ -604,7 +701,7 @@ export function IPTVView() {
       setInfoTimeout(timeout);
       return true;
     });
-  }, [infoTimeout]);
+  }, [infoTimeout, resetAutoSkipTimer]);
 
   // Group channels for list display
   const groupedChannels: Record<string, IPTVChannel[]> = {};
@@ -658,25 +755,28 @@ export function IPTVView() {
               <p className="text-white font-semibold">{t('iptv.noSignal')}</p>
               <p className="text-gray-400 text-sm">{activeChannel.name}</p>
               {retryCount >= 3 && (
-                <p className="text-yellow-400/80 text-xs">{retryCount} intentos fallidos — saltando al siguiente canal</p>
+                <p className="text-yellow-400/80 text-xs">{retryCount} {t('iptv.failedAttemptsSkip')}</p>
+              )}
+              {autoSkipCountdown !== null && (
+                <p className="text-white text-lg font-bold animate-pulse">{t('iptv.autoSkipIn', { n: autoSkipCountdown })}</p>
               )}
               <div className="flex items-center gap-3 mt-2">
                 <button
-                  onClick={skipToWorkingChannel}
+                  onClick={() => { resetAutoSkipTimer(); skipToWorkingChannel(); }}
                   className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors font-medium"
                 >
                   <Zap size={16} />
-                  Canal activo
+                  {t('iptv.activeChannel')}
                 </button>
                 <button
-                  onClick={skipChannel}
+                  onClick={() => { resetAutoSkipTimer(); skipChannel(); }}
                   className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
                 >
                   <ChevronDown size={16} />
                   {t('iptv.nextChannel')}
                 </button>
                 <button
-                  onClick={() => { setRetryCount(0); setChannelError(false); setIsChannelLoading(true); if (videoRef.current && activeChannel) { const url = activeChannel.url; if (url.includes('.m3u8') && Hls.isSupported()) { if (hlsRef.current) hlsRef.current.destroy(); const hls = new Hls({ enableWorker: true, lowLatencyMode: true }); hlsRef.current = hls; hls.loadSource(url); hls.attachMedia(videoRef.current); hls.on(Hls.Events.MANIFEST_PARSED, () => { videoRef.current?.play().catch(() => {}); }); } else { videoRef.current.load(); videoRef.current.play().catch(() => {}); } } }}
+                  onClick={() => { resetAutoSkipTimer(); setRetryCount(0); setChannelError(false); setIsChannelLoading(true); if (videoRef.current && activeChannel) { const url = activeChannel.url; if (url.includes('.m3u8') && Hls.isSupported()) { if (hlsRef.current) hlsRef.current.destroy(); const hls = new Hls({ enableWorker: true, lowLatencyMode: true }); hlsRef.current = hls; hls.loadSource(url); hls.attachMedia(videoRef.current); hls.on(Hls.Events.MANIFEST_PARSED, () => { videoRef.current?.play().catch(() => {}); }); } else { videoRef.current.load(); videoRef.current.play().catch(() => {}); } } }}
                   className="flex items-center gap-2 px-4 py-2.5 bg-white/10 text-white rounded-lg text-sm hover:bg-white/20 transition-colors"
                 >
                   <RefreshCw size={16} />
@@ -767,7 +867,7 @@ export function IPTVView() {
               </div>
               {/* Tap hint — mobile only */}
               <div className="sm:hidden text-gray-600 text-[10px] shrink-0">
-                Toca para controles
+                {t('iptv.tapForControls')}
               </div>
             </div>
           </div>
@@ -877,6 +977,18 @@ export function IPTVView() {
                   <ChevronRight size={18} className="sm:hidden" />
                   <ChevronDown size={18} className="hidden sm:block" />
                 </button>
+
+                {/* Last channel button */}
+                {previousChannel && (
+                  <button
+                    onClick={goLastChannel}
+                    className="p-2.5 rounded-full bg-white/10 active:bg-white/30 hover:bg-white/20 text-white transition-all"
+                    title={t('iptv.lastChannel')}
+                    style={{ touchAction: 'manipulation' }}
+                  >
+                    <RotateCcw size={18} />
+                  </button>
+                )}
 
                 {/* Desktop: Mute + Fullscreen + Cast + Channels */}
                 <div className="hidden sm:flex items-center gap-2">
@@ -1011,7 +1123,7 @@ export function IPTVView() {
                             style={{ touchAction: 'manipulation' }}
                           >
                             <Shield size={16} />
-                            Admin Panel
+                            {t('iptv.adminPanel')}
                           </button>
                         )}
                       </div>
@@ -1075,10 +1187,10 @@ export function IPTVView() {
                         ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
                         : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white'
                     }`}
-                    title="Re-verificar canales"
+                    title={t('iptv.reVerify')}
                   >
                     {isVerifying ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
-                    {isVerifying ? `${verifyProgress.checked}/${verifyProgress.total}` : 'Verificar'}
+                    {isVerifying ? `${verifyProgress.checked}/${verifyProgress.total}` : t('iptv.verify')}
                   </button>
                   {/* Toggle: working only vs all */}
                   <button
@@ -1106,13 +1218,13 @@ export function IPTVView() {
               <div className="flex items-center gap-3 text-[11px]">
                 <span className="flex items-center gap-1 text-green-400">
                   <CheckCircle2 size={10} />
-                  {workingCount} activos
+                  {workingCount} {t('iptv.active')}
                 </span>
                 <span className="flex items-center gap-1 text-red-400/60">
                   <XCircle size={10} />
-                  {totalCount - workingCount} inactivos
+                  {totalCount - workingCount} {t('iptv.inactive')}
                 </span>
-                <span className="text-gray-600">de {totalCount} total</span>
+                <span className="text-gray-600">{t('iptv.of')} {totalCount} {t('iptv.total')}</span>
                 {/* Verification progress bar */}
                 {isVerifying && (
                   <div className="flex-1 flex items-center gap-2">
@@ -1174,6 +1286,103 @@ export function IPTVView() {
 
             {/* Channel list */}
             <div className="flex-1 overflow-y-auto overscroll-contain">
+              {/* Recent channels section */}
+              {iptvRecent.length > 0 && !searchQuery.trim() && (
+                <div>
+                  <div className="sticky top-0 bg-gray-950/95 backdrop-blur-sm px-4 py-2 border-b border-white/5">
+                    <h3 className="text-yellow-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                      <History size={10} />
+                      {t('iptv.recent')}
+                    </h3>
+                  </div>
+                  {iptvRecent.slice(0, 10).map(item => {
+                    const ch = onlineChannels.find(c => c.id === item.id) || channels.find(c => c.id === item.id);
+                    if (!ch) return null;
+                    const isActive = activeChannel?.id === ch.id;
+                    const isFav = isIptvFavorite(ch.id);
+                    return (
+                      <button
+                        key={`recent-${ch.id}`}
+                        onClick={() => selectChannel(ch, channels.indexOf(ch))}
+                        className={`w-full flex items-center gap-3 px-4 py-3 transition-all text-left border-b border-white/5 ${
+                          isActive
+                            ? 'bg-green-600/20 border-l-2 border-l-green-500'
+                            : 'hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="flex-shrink-0 w-2 h-2 rounded-full bg-yellow-500" />
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center overflow-hidden">
+                          {ch.logo ? (
+                            <img src={ch.logo} alt="" className="w-8 h-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          ) : (
+                            <Tv size={16} className="text-gray-600" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate text-white">{ch.name}</p>
+                          <p className="text-gray-500 text-[10px]">{ch.group}</p>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleIptvFavorite(ch.id); }}
+                          className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                          aria-label={isFav ? t('aria.removeFromFavorites') : t('aria.addToFavorites')}
+                        >
+                          <Heart size={16} className={isFav ? 'text-red-500 fill-red-500' : 'text-gray-500'} />
+                        </button>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Favorites section */}
+              {iptvFavorites.length > 0 && !searchQuery.trim() && (
+                <div>
+                  <div className="sticky top-0 bg-gray-950/95 backdrop-blur-sm px-4 py-2 border-b border-white/5">
+                    <h3 className="text-red-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                      <Heart size={10} />
+                      {t('iptv.favorites')}
+                    </h3>
+                  </div>
+                  {iptvFavorites.map(favId => {
+                    const ch = onlineChannels.find(c => c.id === favId) || channels.find(c => c.id === favId);
+                    if (!ch) return null;
+                    const isActive = activeChannel?.id === ch.id;
+                    return (
+                      <button
+                        key={`fav-${ch.id}`}
+                        onClick={() => selectChannel(ch, channels.indexOf(ch))}
+                        className={`w-full flex items-center gap-3 px-4 py-3 transition-all text-left border-b border-white/5 ${
+                          isActive
+                            ? 'bg-green-600/20 border-l-2 border-l-green-500'
+                            : 'hover:bg-white/5'
+                        }`}
+                      >
+                        <Heart size={8} className="text-red-500 fill-red-500 flex-shrink-0" />
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center overflow-hidden">
+                          {ch.logo ? (
+                            <img src={ch.logo} alt="" className="w-8 h-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          ) : (
+                            <Tv size={16} className="text-gray-600" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate text-white">{ch.name}</p>
+                          <p className="text-gray-500 text-[10px]">{ch.group}</p>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleIptvFavorite(ch.id); }}
+                          className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                          aria-label={t('aria.removeFromFavorites')}
+                        >
+                          <Heart size={16} className="text-red-500 fill-red-500" />
+                        </button>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               {Object.entries(groupedChannels).map(([group, groupChannels]) => (
                 <div key={group}>
                   <div className="sticky top-0 bg-gray-950/95 backdrop-blur-sm px-4 py-2 border-b border-white/5">
@@ -1185,6 +1394,7 @@ export function IPTVView() {
                     const isVerified = verifiedUrls.has(channel.url);
                     const isDead = verifiedUrls.size > 0 && !isVerified;
                     const isActive = activeChannel?.id === channel.id;
+                    const isFav = isIptvFavorite(channel.id);
                     return (
                     <button
                       key={channel.id}
@@ -1224,12 +1434,12 @@ export function IPTVView() {
                           {isVerified ? (
                             <span className="flex items-center gap-1 text-green-400 text-[10px]">
                               <CheckCircle2 size={8} />
-                              Verificado
+                              {t('iptv.verified')}
                             </span>
                           ) : isDead ? (
                             <span className="flex items-center gap-1 text-red-400/70 text-[10px]">
                               <XCircle size={8} />
-                              Sin señal
+                              {t('iptv.noSignalShort')}
                             </span>
                           ) : channel.status === 'offline' ? (
                             <span className="text-red-400 text-[10px]">{t('iptv.offline')}</span>
@@ -1248,6 +1458,15 @@ export function IPTVView() {
                           )}
                         </div>
                       </div>
+
+                      {/* Favorite button */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleIptvFavorite(channel.id); }}
+                        className="p-1.5 rounded-full hover:bg-white/10 transition-colors flex-shrink-0"
+                        aria-label={isFav ? t('aria.removeFromFavorites') : t('aria.addToFavorites')}
+                      >
+                        <Heart size={16} className={isFav ? 'text-red-500 fill-red-500' : 'text-gray-600'} />
+                      </button>
 
                       {/* Active indicator */}
                       {isActive && (

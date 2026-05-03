@@ -352,6 +352,50 @@ interface XuperClientState {
   checkXuperStatus: () => Promise<void>;
 }
 
+// ==================== IPTV FAVORITES STATE ====================
+interface IptvFavoritesState {
+  favorites: string[];
+  toggleIptvFavorite: (id: string) => void;
+  isIptvFavorite: (id: string) => boolean;
+}
+
+export const useIptvFavoritesStore = create<IptvFavoritesState>((set, get) => ({
+  favorites: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('xs-iptv-favorites') || '[]') : [],
+
+  toggleIptvFavorite: (id) => {
+    const current = get().favorites;
+    const updated = current.includes(id)
+      ? current.filter(f => f !== id)
+      : [...current, id];
+    localStorage.setItem('xs-iptv-favorites', JSON.stringify(updated));
+    set({ favorites: updated });
+  },
+
+  isIptvFavorite: (id) => get().favorites.includes(id),
+}));
+
+// ==================== IPTV RECENT CHANNELS STATE ====================
+interface IptvRecentItem {
+  id: string;
+  timestamp: number;
+}
+
+interface IptvRecentState {
+  recent: IptvRecentItem[];
+  addToRecent: (id: string) => void;
+}
+
+export const useIptvRecentStore = create<IptvRecentState>((set, get) => ({
+  recent: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('xs-iptv-recent') || '[]') : [],
+
+  addToRecent: (id) => {
+    const current = get().recent.filter(r => r.id !== id);
+    const updated = [{ id, timestamp: Date.now() }, ...current].slice(0, 20);
+    localStorage.setItem('xs-iptv-recent', JSON.stringify(updated));
+    set({ recent: updated });
+  },
+}));
+
 export const useXuperStore = create<XuperClientState>((set) => ({
   isLoggedIn: false,
   username: '',
