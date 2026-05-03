@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useT } from '@/lib/i18n';
 import { usePlayerStore, useFavoritesStore, useHistoryStore } from '@/lib/store';
 import type { MovieItem } from '@/lib/tmdb';
+import { mapTmdbToMovieItem, cachedCategoryLoader } from '@/lib/tmdb-utils';
 import { HeroBanner } from '@/components/streaming/HeroBanner';
 import { CategoryRow } from '@/components/streaming/MovieCard';
 import { TopTenCarousel } from '@/components/streaming/TopTenCarousel';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Play, Info } from 'lucide-react';
 
 interface CategoryData {
   title: string;
@@ -23,67 +23,66 @@ export function HomeView() {
   const [categories, setCategories] = useState<{ title: string; movies: MovieItem[] }[]>([]);
   const [heroMovies, setHeroMovies] = useState<MovieItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [genres, setGenres] = useState<Map<number, string>>(new Map());
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const categoryLoaders: CategoryData[] = [
           // ── Trending & Popular ──
-          { title: '🔥 ' + t('home.trending'), loader: () => fetch('/api/tmdb?endpoint=/trending/all/week').then(r => r.json()).then(d => (d.results || []).filter((i: any) => i.media_type === 'movie' || i.media_type === 'tv').map(mapItem)) },
-          { title: '🎬 ' + t('home.popularMovies'), loader: () => fetch('/api/tmdb?endpoint=/movie/popular').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '📺 ' + t('home.popularSeries'), loader: () => fetch('/api/tmdb?endpoint=/tv/popular').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '🔥 ' + t('home.trending'), loader: () => cachedCategoryLoader('/trending/all/week', 20, 3 * 60 * 1000).then(items => items.filter(i => i.mediaType === 'movie' || i.mediaType === 'tv')) },
+          { title: '🎬 ' + t('home.popularMovies'), loader: () => cachedCategoryLoader('/movie/popular') },
+          { title: '📺 ' + t('home.popularSeries'), loader: () => cachedCategoryLoader('/tv/popular') },
 
           // ── Top Rated & Now ──
-          { title: '⭐ ' + t('home.topRated'), loader: () => fetch('/api/tmdb?endpoint=/movie/top_rated').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🆕 ' + t('home.nowPlaying'), loader: () => fetch('/api/tmdb?endpoint=/movie/now_playing&region=CO').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '🚀 ' + t('home.upcoming'), loader: () => fetch('/api/tmdb?endpoint=/movie/upcoming&region=CO').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '🎭 ' + t('home.topRatedSeries'), loader: () => fetch('/api/tmdb?endpoint=/tv/top_rated').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '📡 ' + t('home.airingToday'), loader: () => fetch('/api/tmdb?endpoint=/tv/airing_today').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '⭐ ' + t('home.topRated'), loader: () => cachedCategoryLoader('/movie/top_rated', 15) },
+          { title: '🆕 ' + t('home.nowPlaying'), loader: () => cachedCategoryLoader('/movie/now_playing&region=CO') },
+          { title: '🚀 ' + t('home.upcoming'), loader: () => cachedCategoryLoader('/movie/upcoming&region=CO') },
+          { title: '🎭 ' + t('home.topRatedSeries'), loader: () => cachedCategoryLoader('/tv/top_rated', 15) },
+          { title: '📡 ' + t('home.airingToday'), loader: () => cachedCategoryLoader('/tv/airing_today') },
 
           // ── Géneros de Película ──
-          { title: '💥 ' + t('home.action'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=28').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '😂 ' + t('home.comedy'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=35').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '😱 ' + t('home.horror'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=27').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🔬 ' + t('home.scifi'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=878').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🦸 ' + t('home.animation'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=16').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '💎 ' + t('home.drama'), loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=18&sort_by=vote_average.desc&vote_count.gte=500').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '💕 Romance', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=10749').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🕵️ Thriller', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=53').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🔍 Misterio', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=9648').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🐉 Fantasía', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=14').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🔫 Crimen', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=80').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🌄 Aventura', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=12').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎵 Musical', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=10402').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '👨‍👩‍👧 Familiar', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=10751').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🤠 Western', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=37').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '⚔️ Guerra', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=10752').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '📖 Historia', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=36').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '💥 ' + t('home.action'), loader: () => cachedCategoryLoader('/discover/movie&with_genres=28') },
+          { title: '😂 ' + t('home.comedy'), loader: () => cachedCategoryLoader('/discover/movie&with_genres=35', 15) },
+          { title: '😱 ' + t('home.horror'), loader: () => cachedCategoryLoader('/discover/movie&with_genres=27', 15) },
+          { title: '🔬 ' + t('home.scifi'), loader: () => cachedCategoryLoader('/discover/movie&with_genres=878', 15) },
+          { title: '🦸 ' + t('home.animation'), loader: () => cachedCategoryLoader('/discover/movie&with_genres=16', 15) },
+          { title: '💎 ' + t('home.drama'), loader: () => cachedCategoryLoader('/discover/movie&with_genres=18&sort_by=vote_average.desc&vote_count.gte=500', 15) },
+          { title: '💕 Romance', loader: () => cachedCategoryLoader('/discover/movie&with_genres=10749', 15) },
+          { title: '🕵️ Thriller', loader: () => cachedCategoryLoader('/discover/movie&with_genres=53', 15) },
+          { title: '🔍 Misterio', loader: () => cachedCategoryLoader('/discover/movie&with_genres=9648', 15) },
+          { title: '🐉 Fantasía', loader: () => cachedCategoryLoader('/discover/movie&with_genres=14', 15) },
+          { title: '🔫 Crimen', loader: () => cachedCategoryLoader('/discover/movie&with_genres=80', 15) },
+          { title: '🌄 Aventura', loader: () => cachedCategoryLoader('/discover/movie&with_genres=12', 15) },
+          { title: '🎵 Musical', loader: () => cachedCategoryLoader('/discover/movie&with_genres=10402', 15) },
+          { title: '👨‍👩‍👧 Familiar', loader: () => cachedCategoryLoader('/discover/movie&with_genres=10751', 15) },
+          { title: '🤠 Western', loader: () => cachedCategoryLoader('/discover/movie&with_genres=37', 15) },
+          { title: '⚔️ Guerra', loader: () => cachedCategoryLoader('/discover/movie&with_genres=10752', 15) },
+          { title: '📖 Historia', loader: () => cachedCategoryLoader('/discover/movie&with_genres=36', 15) },
 
           // ── Géneros de Serie ──
-          { title: '🗡️ Series Acción', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10759').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '😂 Series Comedia', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=35').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🔍 Series Misterio', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=9648').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🧪 Series Sci-Fi & Fantasía', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10765').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎬 Documentales', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=99').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🗡️ Series Acción', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10759', 15) },
+          { title: '😂 Series Comedia', loader: () => cachedCategoryLoader('/discover/tv&with_genres=35', 15) },
+          { title: '🔍 Series Misterio', loader: () => cachedCategoryLoader('/discover/tv&with_genres=9648', 15) },
+          { title: '🧪 Series Sci-Fi & Fantasía', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10765', 15) },
+          { title: '🎬 Documentales', loader: () => cachedCategoryLoader('/discover/tv&with_genres=99', 15) },
 
           // ── Por Año ──
-          { title: '🎬 Estrenos 2026', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&primary_release_year=2026&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎬 Lo Mejor 2025', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&primary_release_year=2025&sort_by=vote_average.desc&vote_count.gte=200').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎬 Clásicos Modernos (2020s)', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&primary_release_date.gte=2020-01-01&primary_release_date.lte=2024-12-31&sort_by=vote_average.desc&vote_count.gte=2000').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎞️ Clásicos de los 90s', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&primary_release_date.gte=1990-01-01&primary_release_date.lte=1999-12-31&sort_by=vote_average.desc&vote_count.gte=2000').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎞️ Joyas de los 2000s', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&primary_release_date.gte=2000-01-01&primary_release_date.lte=2009-12-31&sort_by=vote_average.desc&vote_count.gte=2000').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🎬 Estrenos 2026', loader: () => cachedCategoryLoader('/discover/movie&primary_release_year=2026&sort_by=popularity.desc', 15) },
+          { title: '🎬 Lo Mejor 2025', loader: () => cachedCategoryLoader('/discover/movie&primary_release_year=2025&sort_by=vote_average.desc&vote_count.gte=200', 15) },
+          { title: '🎬 Clásicos Modernos (2020s)', loader: () => cachedCategoryLoader('/discover/movie&primary_release_date.gte=2020-01-01&primary_release_date.lte=2024-12-31&sort_by=vote_average.desc&vote_count.gte=2000', 15) },
+          { title: '🎞️ Clásicos de los 90s', loader: () => cachedCategoryLoader('/discover/movie&primary_release_date.gte=1990-01-01&primary_release_date.lte=1999-12-31&sort_by=vote_average.desc&vote_count.gte=2000', 15) },
+          { title: '🎞️ Joyas de los 2000s', loader: () => cachedCategoryLoader('/discover/movie&primary_release_date.gte=2000-01-01&primary_release_date.lte=2009-12-31&sort_by=vote_average.desc&vote_count.gte=2000', 15) },
 
           // ── Por Región / Idioma ──
-          { title: '🇪🇸 Cine Español', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_original_language=es&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🇰🇷 Cine Coreano', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_original_language=ko&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🇯🇵 Anime & Cine Japonés', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_original_language=ja&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🇫🇷 Cine Francés', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_original_language=fr&sort_by=popularity.desc&vote_count.gte=100').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🇪🇸 Cine Español', loader: () => cachedCategoryLoader('/discover/movie&with_original_language=es&sort_by=popularity.desc', 15) },
+          { title: '🇰🇷 Cine Coreano', loader: () => cachedCategoryLoader('/discover/movie&with_original_language=ko&sort_by=popularity.desc', 15) },
+          { title: '🇯🇵 Anime & Cine Japonés', loader: () => cachedCategoryLoader('/discover/movie&with_original_language=ja&sort_by=popularity.desc', 15) },
+          { title: '🇫🇷 Cine Francés', loader: () => cachedCategoryLoader('/discover/movie&with_original_language=fr&sort_by=popularity.desc&vote_count.gte=100', 15) },
 
           // ── Especiales ──
-          { title: '🏆 Premios Oscar (Mejor Valoradas)', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&sort_by=vote_average.desc&vote_count.gte=5000').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎭 Películas Independientes', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=18&without_genres=28,12,878&sort_by=vote_average.desc&vote_count.gte=200').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🧒 Para Toda la Familia', loader: () => fetch('/api/tmdb?endpoint=/discover/movie&with_genres=10751&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🏆 Premios Oscar (Mejor Valoradas)', loader: () => cachedCategoryLoader('/discover/movie&sort_by=vote_average.desc&vote_count.gte=5000', 15) },
+          { title: '🎭 Películas Independientes', loader: () => cachedCategoryLoader('/discover/movie&with_genres=18&without_genres=28,12,878&sort_by=vote_average.desc&vote_count.gte=200', 15) },
+          { title: '🧒 Para Toda la Familia', loader: () => cachedCategoryLoader('/discover/movie&with_genres=10751&sort_by=popularity.desc', 15) },
         ];
 
         const results = await Promise.allSettled(categoryLoaders.map(c => c.loader()));
@@ -108,17 +107,6 @@ export function HomeView() {
         // Set hero movies from trending
         const trending = loaded[0]?.movies || [];
         setHeroMovies(trending.slice(0, 10));
-
-        // Load genres
-        try {
-          const [mg, tg] = await Promise.all([
-            fetch('/api/tmdb?endpoint=/genre/movie/list').then(r => r.json()),
-            fetch('/api/tmdb?endpoint=/genre/tv/list').then(r => r.json()),
-          ]);
-          const map = new Map<number, string>();
-          [...(mg.genres || []), ...(tg.genres || [])].forEach((g: any) => map.set(g.id, g.name));
-          setGenres(map);
-        } catch {}
       } catch (err) {
         console.error('Error loading home:', err);
       } finally {
@@ -128,6 +116,30 @@ export function HomeView() {
 
     loadData();
   }, []);
+
+  // Continue watching items from history with progress
+  const continueWatching = history
+    .filter(h => h.posterUrl && h.progress > 0 && h.duration > 0)
+    .slice(0, 10)
+    .map(h => ({
+      id: h.movieId,
+      tmdbId: parseInt(h.movieId) || 0,
+      title: h.title,
+      mediaType: h.mediaType,
+      posterUrl: h.posterUrl,
+      backdropUrl: h.backdropUrl || '',
+      rating: h.rating || 0,
+      year: h.year || 0,
+      overview: h.overview || '',
+      genreIds: [],
+    }));
+
+  const continueProgressMap = Object.fromEntries(
+    history
+      .filter(h => h.progress > 0 && h.duration > 0)
+      .slice(0, 10)
+      .map(h => [h.movieId, h.progress / h.duration])
+  );
 
   if (loading) {
     return (
@@ -155,25 +167,12 @@ export function HomeView() {
   return (
     <div className="pt-20">
       {/* Continue Watching */}
-      {history.length > 0 && (
+      {continueWatching.length > 0 && (
         <div className="max-w-[1400px] mx-auto px-4 pt-4 pb-2">
           <CategoryRow
             title={'▶️ ' + t('home.continueWatching')}
-            movies={history.slice(0, 10).map(h => ({
-              id: h.movieId,
-              tmdbId: parseInt(h.movieId) || 0,
-              title: h.title,
-              mediaType: h.mediaType,
-              posterUrl: h.posterUrl,
-              backdropUrl: '',
-              rating: 0,
-              year: 0,
-              overview: '',
-              genreIds: [],
-            }))}
-            progressMap={Object.fromEntries(
-              history.slice(0, 10).filter(h => h.progress > 0 && h.duration > 0).map(h => [h.movieId, h.progress / h.duration])
-            )}
+            movies={continueWatching}
+            progressMap={continueProgressMap}
           />
         </div>
       )}
@@ -197,22 +196,4 @@ export function HomeView() {
       <div className="h-20" />
     </div>
   );
-}
-
-// Helper to map TMDB API response to MovieItem
-function mapItem(item: any): MovieItem {
-  const isTV = !!item.name || item.media_type === 'tv';
-  const date = isTV ? item.first_air_date : item.release_date;
-  return {
-    id: String(item.id),
-    tmdbId: item.id,
-    title: isTV ? (item.name || '') : (item.title || ''),
-    mediaType: isTV ? 'tv' : 'movie',
-    posterUrl: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : '/placeholder-poster.svg',
-    backdropUrl: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : '',
-    rating: item.vote_average || 0,
-    year: date ? parseInt(date.substring(0, 4)) : 0,
-    overview: item.overview || '',
-    genreIds: item.genre_ids || [],
-  };
 }

@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { usePlayerStore, useFavoritesStore } from '@/lib/store';
-import type { TMDBMovieDetail, TMDBSeasonDetail } from '@/lib/tmdb';
+import type { TMDBMovieDetail, TMDBSeasonDetail, MovieItem } from '@/lib/tmdb';
 import { getPosterUrl, getBackdropUrl } from '@/lib/tmdb';
-import { Star, Heart, Play, Calendar, Clock, X, ChevronLeft, ChevronRight, Tv, Film } from 'lucide-react';
+import { mapTmdbToMovieItem } from '@/lib/tmdb-utils';
+import { Star, Heart, Play, Calendar, Clock, X, ChevronLeft, ChevronRight, Tv, Film, Users, Building2, ThumbsUp, ChevronDown } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { CategoryRow } from '@/components/streaming/MovieCard';
 
 export function MovieDetailModal() {
   const { t } = useT();
@@ -18,6 +20,8 @@ export function MovieDetailModal() {
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const [seasonDetail, setSeasonDetail] = useState<TMDBSeasonDetail | null>(null);
   const [activeSeason, setActiveSeason] = useState(1);
+  const [showFullOverview, setShowFullOverview] = useState(false);
+  const [similarMovies, setSimilarMovies] = useState<MovieItem[]>([]);
 
   // Derived season: sync with player state for TV shows
   const displaySeason = isPlaying && currentMovie?.mediaType === 'tv' ? currentSeason : activeSeason;
@@ -41,6 +45,16 @@ export function MovieDetailModal() {
     };
     fetchDetail();
   }, [currentMovie?.id, isPlaying]);
+
+  // Fetch similar movies
+  useEffect(() => {
+    if (!currentMovie || !isPlaying || !currentDetail?.similar?.results) return;
+    const items = currentDetail.similar.results
+      .filter((i: any) => i.media_type === 'movie' || i.media_type === 'tv' || !i.media_type)
+      .slice(0, 15)
+      .map(mapTmdbToMovieItem);
+    setSimilarMovies(items);
+  }, [currentDetail?.similar, currentMovie?.id]);
 
   // Fetch season detail
   useEffect(() => {
@@ -67,6 +81,18 @@ export function MovieDetailModal() {
 
   // Find trailer
   const trailer = detail?.videos?.results?.find(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
+
+  // Get top 5 production companies
+  const productionCompanies = detail?.production_companies?.slice(0, 5) || [];
+
+  // Calculate total runtime for series
+  const totalEpisodes = detail?.number_of_episodes || 0;
+  const totalSeasons = detail?.number_of_seasons || 0;
+
+  // Overview truncation
+  const overview = detail?.overview || currentMovie.overview || '';
+  const isOverviewLong = overview.length > 300;
+  const displayOverview = showFullOverview ? overview : (isOverviewLong ? overview.slice(0, 300) + '...' : overview);
 
   return (
     <div className="fixed inset-0 z-[200] bg-black/95 overflow-y-auto">
@@ -117,9 +143,19 @@ export function MovieDetailModal() {
                 <Clock size={12} /> {detail.runtime} {t('detail.min')}
               </span>
             )}
+            {isTV && totalSeasons > 0 && (
+              <span className="flex items-center gap-1 text-gray-400 text-xs">
+                <Tv size={12} /> {totalSeasons} {totalSeasons === 1 ? 'temporada' : 'temporadas'} · {totalEpisodes} episodios
+              </span>
+            )}
             {detail?.first_air_date && (
               <span className="flex items-center gap-1 text-gray-400 text-xs">
                 <Calendar size={12} /> {detail.first_air_date.substring(0, 4)}
+              </span>
+            )}
+            {detail?.release_date && (
+              <span className="flex items-center gap-1 text-gray-400 text-xs">
+                <Calendar size={12} /> {detail.release_date.substring(0, 4)}
               </span>
             )}
             {detail?.status && detail.status !== 'Released' && detail.status !== 'Returning Series' && (
@@ -151,7 +187,7 @@ export function MovieDetailModal() {
             </button>
 
             <button
-              onClick={() => toggleFavorite(currentMovie.id)}
+              onClick={() => toggleFavorite(currentMovie)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all ${
                 favorite ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-gray-300 hover:bg-white/20'
               }`}
@@ -165,24 +201,48 @@ export function MovieDetailModal() {
           {detail?.genres && detail.genres.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-1">
               {detail.genres.map(g => (
-                <span key={g.id} className="bg-white/5 text-gray-400 px-3 py-1 rounded-full text-xs">
+                <span key={g.id} className="bg-white/5 text-gray-400 px-3 py-1 rounded-full text-xs hover:bg-white/10 transition-colors cursor-default">
                   {g.name}
                 </span>
               ))}
             </div>
           )}
 
-          {/* Overview */}
-          {detail?.overview && (
-            <p className="text-gray-300 text-sm sm:text-base leading-relaxed max-w-3xl pt-1">
-              {detail.overview}
-            </p>
+          {/* Overview with expand/collapse */}
+          {overview && (
+            <div className="pt-1">
+              <p className="text-gray-300 text-sm sm:text-base leading-relaxed max-w-3xl">
+                {displayOverview}
+              </p>
+              {isOverviewLong && (
+                <button
+                  onClick={() => setShowFullOverview(!showFullOverview)}
+                  className="text-gray-500 hover:text-gray-300 text-xs mt-1 flex items-center gap-1 transition-colors"
+                >
+                  {showFullOverview ? 'Ver menos' : 'Ver más'}
+                  <ChevronDown size={12} className={`transition-transform ${showFullOverview ? 'rotate-180' : ''}`} />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Production companies */}
+          {productionCompanies.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap pt-1">
+              <Building2 size={12} className="text-gray-500" />
+              {productionCompanies.map(c => (
+                <span key={c.name} className="text-gray-500 text-xs">{c.name}</span>
+              )).reduce((prev: any, curr: any) => [prev, <span key="sep" className="text-gray-700 text-xs">·</span>, curr])}
+            </div>
           )}
 
           {/* Trailer */}
           {trailer && (
-            <div className="pt-2">
-              <h3 className="text-white font-semibold text-sm mb-2">{t('detail.trailer')}</h3>
+            <div className="pt-3">
+              <h3 className="text-white font-semibold text-sm mb-2 flex items-center gap-2">
+                <Play size={14} />
+                {t('detail.trailer')}
+              </h3>
               <div className="relative w-full max-w-xl aspect-video rounded-xl overflow-hidden bg-gray-900">
                 <iframe
                   src={`https://www.youtube.com/embed/${trailer.key}`}
@@ -198,9 +258,12 @@ export function MovieDetailModal() {
           {/* Cast */}
           {detail?.credits?.cast && detail.credits.cast.length > 0 && (
             <div className="pt-4">
-              <h3 className="text-white font-semibold text-sm mb-3">{t('detail.cast')}</h3>
+              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
+                <Users size={14} />
+                {t('detail.cast')}
+              </h3>
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
-                {detail.credits.cast.slice(0, 15).map(person => (
+                {detail.credits.cast.slice(0, 20).map(person => (
                   <div key={person.id} className="flex-shrink-0 w-20 text-center">
                     <div className="w-16 h-16 mx-auto rounded-full overflow-hidden bg-gray-800 mb-1">
                       {person.profile_path ? (
@@ -302,6 +365,17 @@ export function MovieDetailModal() {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Similar content */}
+        {similarMovies.length > 0 && (
+          <div className="mt-10">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <ThumbsUp size={18} />
+              {isTV ? 'Series Similares' : 'Películas Similares'}
+            </h2>
+            <CategoryRow title="" movies={similarMovies} />
           </div>
         )}
       </div>

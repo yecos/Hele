@@ -72,7 +72,7 @@ export function MovieCard({ movie, showProgress, progress }: MovieCardProps) {
           </button>
 
           <button
-            onClick={(e) => { e.stopPropagation(); setTouchActive(false); toggleFavorite(movie.id); }}
+            onClick={(e) => { e.stopPropagation(); setTouchActive(false); toggleFavorite(movie); }}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
             aria-label={favorite ? t('aria.removeFromFavorites') : t('aria.addToFavorites')}
           >

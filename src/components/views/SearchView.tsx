@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useT } from '@/lib/i18n';
 import { useViewStore, usePlayerStore } from '@/lib/store';
 import type { MovieItem } from '@/lib/tmdb';
+import { mapTmdbToMovieItem, cachedCategoryLoader } from '@/lib/tmdb-utils';
 import { CategoryRow } from '@/components/streaming/MovieCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search as SearchIcon, SlidersHorizontal, X, Star } from 'lucide-react';
@@ -41,7 +42,7 @@ export function SearchView() {
           const data = await res.json();
           const items = (data.results || [])
             .filter((i: any) => i.media_type === 'movie' || i.media_type === 'tv')
-            .map(mapItem);
+            .map(mapTmdbToMovieItem);
           setResults(items);
         }
       } catch (err: any) {
@@ -200,9 +201,8 @@ function DiscoverRow({ title, endpoint }: { title: string; endpoint: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/tmdb?endpoint=${endpoint}`)
-      .then(r => r.json())
-      .then(d => { setMovies((d.results || []).slice(0, 15).map(mapItem)); setLoading(false); })
+    cachedCategoryLoader(endpoint, 15)
+      .then(items => { setMovies(items); setLoading(false); })
       .catch(() => setLoading(false));
   }, [endpoint]);
 
@@ -222,19 +222,4 @@ function DiscoverRow({ title, endpoint }: { title: string; endpoint: string }) {
   return <CategoryRow title={title} movies={movies} />;
 }
 
-function mapItem(item: any): MovieItem {
-  const isTV = !!item.name || item.media_type === 'tv';
-  const date = isTV ? item.first_air_date : item.release_date;
-  return {
-    id: String(item.id),
-    tmdbId: item.id,
-    title: isTV ? (item.name || '') : (item.title || ''),
-    mediaType: isTV ? 'tv' : 'movie',
-    posterUrl: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : '/placeholder-poster.svg',
-    backdropUrl: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : '',
-    rating: item.vote_average || 0,
-    year: date ? parseInt(date.substring(0, 4)) : 0,
-    overview: item.overview || '',
-    genreIds: item.genre_ids || [],
-  };
-}
+// mapItem removed — using shared mapTmdbToMovieItem from tmdb-utils

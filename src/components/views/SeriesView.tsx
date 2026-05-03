@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useT } from '@/lib/i18n';
 import type { MovieItem } from '@/lib/tmdb';
+import { cachedCategoryLoader } from '@/lib/tmdb-utils';
 import { CategoryRow } from '@/components/streaming/MovieCard';
 import { TopTenCarousel } from '@/components/streaming/TopTenCarousel';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,59 +24,59 @@ export function SeriesView() {
       try {
         const categoryLoaders: CategoryData[] = [
           // ── Trending & Popular ──
-          { title: '📺 ' + t('series.trending'), loader: () => fetch('/api/tmdb?endpoint=/trending/tv/week').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '🔥 ' + t('series.popular'), loader: () => fetch('/api/tmdb?endpoint=/tv/popular').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '⭐ ' + t('series.topRated'), loader: () => fetch('/api/tmdb?endpoint=/tv/top_rated').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '📡 ' + t('series.airingToday'), loader: () => fetch('/api/tmdb?endpoint=/tv/airing_today').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
-          { title: '🆕 ' + t('series.onTheAir'), loader: () => fetch('/api/tmdb?endpoint=/tv/on_the_air').then(r => r.json()).then(d => (d.results || []).map(mapItem)) },
+          { title: '📺 ' + t('series.trending'), loader: () => cachedCategoryLoader('/trending/tv/week') },
+          { title: '🔥 ' + t('series.popular'), loader: () => cachedCategoryLoader('/tv/popular') },
+          { title: '⭐ ' + t('series.topRated'), loader: () => cachedCategoryLoader('/tv/top_rated', 15) },
+          { title: '📡 ' + t('series.airingToday'), loader: () => cachedCategoryLoader('/tv/airing_today') },
+          { title: '🆕 ' + t('series.onTheAir'), loader: () => cachedCategoryLoader('/tv/on_the_air') },
 
           // ── Géneros ──
-          { title: '🎭 ' + t('series.drama'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=18&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '😂 ' + t('series.comedy'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=35').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🔍 ' + t('series.mystery'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=9648').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🧪 ' + t('series.scifi'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10765').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '📺 ' + t('series.animation'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=16').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '📸 ' + t('series.documentary'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=99').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🧟 ' + t('series.horror'), loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=27').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🗡️ Acción & Aventura', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10759').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🔫 Crimen', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=80').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '💕 Romance en TV', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10749').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '👨‍👩‍👧 Familiar', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10751').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🧒 Infantil', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10762').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎤 Reality Shows', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10764').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '📰 Noticias', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10763').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎙️ Talk Shows', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10767').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '⚔️ Guerra & Política', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10768').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🧼 Telenovelas', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10766').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🎭 ' + t('series.drama'), loader: () => cachedCategoryLoader('/discover/tv&with_genres=18&sort_by=popularity.desc', 15) },
+          { title: '😂 ' + t('series.comedy'), loader: () => cachedCategoryLoader('/discover/tv&with_genres=35', 15) },
+          { title: '🔍 ' + t('series.mystery'), loader: () => cachedCategoryLoader('/discover/tv&with_genres=9648', 15) },
+          { title: '🧪 ' + t('series.scifi'), loader: () => cachedCategoryLoader('/discover/tv&with_genres=10765', 15) },
+          { title: '📺 ' + t('series.animation'), loader: () => cachedCategoryLoader('/discover/tv&with_genres=16', 15) },
+          { title: '📸 ' + t('series.documentary'), loader: () => cachedCategoryLoader('/discover/tv&with_genres=99', 15) },
+          { title: '🧟 ' + t('series.horror'), loader: () => cachedCategoryLoader('/discover/tv&with_genres=27', 15) },
+          { title: '🗡️ Acción & Aventura', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10759', 15) },
+          { title: '🔫 Crimen', loader: () => cachedCategoryLoader('/discover/tv&with_genres=80', 15) },
+          { title: '💕 Romance en TV', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10749', 15) },
+          { title: '👨‍👩‍👧 Familiar', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10751', 15) },
+          { title: '🧒 Infantil', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10762', 15) },
+          { title: '🎤 Reality Shows', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10764', 15) },
+          { title: '📰 Noticias', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10763', 15) },
+          { title: '🎙️ Talk Shows', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10767', 15) },
+          { title: '⚔️ Guerra & Política', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10768', 15) },
+          { title: '🧼 Telenovelas', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10766', 15) },
 
           // ── Por Año ──
-          { title: '🆕 Series 2026', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&first_air_date_year=2026&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🌟 Lo Mejor 2025', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&first_air_date_year=2025&sort_by=vote_average.desc&vote_count.gte=100').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🔥 Populares 2024', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&first_air_date_year=2024&sort_by=popularity.desc&vote_count.gte=100').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎞️ Series Clásicas (90s)', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&first_air_date.gte=1990-01-01&first_air_date.lte=1999-12-31&sort_by=vote_average.desc&vote_count.gte=500').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎞️ Series de los 2000s', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&first_air_date.gte=2000-01-01&first_air_date.lte=2009-12-31&sort_by=vote_average.desc&vote_count.gte=500').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎞️ Series de los 2010s', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&first_air_date.gte=2010-01-01&first_air_date.lte=2019-12-31&sort_by=vote_average.desc&vote_count.gte=1000').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🆕 Series 2026', loader: () => cachedCategoryLoader('/discover/tv&first_air_date_year=2026&sort_by=popularity.desc', 15) },
+          { title: '🌟 Lo Mejor 2025', loader: () => cachedCategoryLoader('/discover/tv&first_air_date_year=2025&sort_by=vote_average.desc&vote_count.gte=100', 15) },
+          { title: '🔥 Populares 2024', loader: () => cachedCategoryLoader('/discover/tv&first_air_date_year=2024&sort_by=popularity.desc&vote_count.gte=100', 15) },
+          { title: '🎞️ Series Clásicas (90s)', loader: () => cachedCategoryLoader('/discover/tv&first_air_date.gte=1990-01-01&first_air_date.lte=1999-12-31&sort_by=vote_average.desc&vote_count.gte=500', 15) },
+          { title: '🎞️ Series de los 2000s', loader: () => cachedCategoryLoader('/discover/tv&first_air_date.gte=2000-01-01&first_air_date.lte=2009-12-31&sort_by=vote_average.desc&vote_count.gte=500', 15) },
+          { title: '🎞️ Series de los 2010s', loader: () => cachedCategoryLoader('/discover/tv&first_air_date.gte=2010-01-01&first_air_date.lte=2019-12-31&sort_by=vote_average.desc&vote_count.gte=1000', 15) },
 
           // ── Por Región / Idioma ──
-          { title: '🇪🇸 Series Españolas', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_original_language=es&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🇰🇷 K-Dramas', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_original_language=ko&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🇯🇵 Anime Series', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_original_language=ja&with_genres=16&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🇯🇵 Series Japonesas', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_original_language=ja&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🇩🇪 Series Alemanas', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_original_language=de&sort_by=popularity.desc&vote_count.gte=50').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🇹🇷 Series Turcas', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_original_language=tr&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🇮🇳 Series Indias', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_original_language=hi&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🇧🇷 Series Brasileñas', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_original_language=pt&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🇫🇷 Series Francesas', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_original_language=fr&sort_by=popularity.desc&vote_count.gte=50').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🇪🇸 Series Españolas', loader: () => cachedCategoryLoader('/discover/tv&with_original_language=es&sort_by=popularity.desc', 15) },
+          { title: '🇰🇷 K-Dramas', loader: () => cachedCategoryLoader('/discover/tv&with_original_language=ko&sort_by=popularity.desc', 15) },
+          { title: '🇯🇵 Anime Series', loader: () => cachedCategoryLoader('/discover/tv&with_original_language=ja&with_genres=16&sort_by=popularity.desc', 15) },
+          { title: '🇯🇵 Series Japonesas', loader: () => cachedCategoryLoader('/discover/tv&with_original_language=ja&sort_by=popularity.desc', 15) },
+          { title: '🇩🇪 Series Alemanas', loader: () => cachedCategoryLoader('/discover/tv&with_original_language=de&sort_by=popularity.desc&vote_count.gte=50', 15) },
+          { title: '🇹🇷 Series Turcas', loader: () => cachedCategoryLoader('/discover/tv&with_original_language=tr&sort_by=popularity.desc', 15) },
+          { title: '🇮🇳 Series Indias', loader: () => cachedCategoryLoader('/discover/tv&with_original_language=hi&sort_by=popularity.desc', 15) },
+          { title: '🇧🇷 Series Brasileñas', loader: () => cachedCategoryLoader('/discover/tv&with_original_language=pt&sort_by=popularity.desc', 15) },
+          { title: '🇫🇷 Series Francesas', loader: () => cachedCategoryLoader('/discover/tv&with_original_language=fr&sort_by=popularity.desc&vote_count.gte=50', 15) },
 
           // ── Especiales ──
-          { title: '🏆 Mejor Valoradas de Todos los Tiempos', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&sort_by=vote_average.desc&vote_count.gte=3000').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🔪 Crimen + Misterio', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=80,9648').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🧪 Sci-Fi + Fantasía Popular', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10765&sort_by=popularity.desc').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎭 Drama + Crimen', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=18,80').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🧟 Terror + Misterio', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=27,9648').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '😂 Comedia + Romance', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=35,10749').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '⚔️ Acción + Sci-Fi', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=10759,10765').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
-          { title: '🎬 Miniseries (1 temporada)', loader: () => fetch('/api/tmdb?endpoint=/discover/tv&with_genres=18&with_runtime=30&sort_by=vote_average.desc&vote_count.gte=500').then(r => r.json()).then(d => (d.results || []).slice(0, 15).map(mapItem)) },
+          { title: '🏆 Mejor Valoradas de Todos los Tiempos', loader: () => cachedCategoryLoader('/discover/tv&sort_by=vote_average.desc&vote_count.gte=3000', 15) },
+          { title: '🔪 Crimen + Misterio', loader: () => cachedCategoryLoader('/discover/tv&with_genres=80,9648', 15) },
+          { title: '🧪 Sci-Fi + Fantasía Popular', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10765&sort_by=popularity.desc', 15) },
+          { title: '🎭 Drama + Crimen', loader: () => cachedCategoryLoader('/discover/tv&with_genres=18,80', 15) },
+          { title: '🧟 Terror + Misterio', loader: () => cachedCategoryLoader('/discover/tv&with_genres=27,9648', 15) },
+          { title: '😂 Comedia + Romance', loader: () => cachedCategoryLoader('/discover/tv&with_genres=35,10749', 15) },
+          { title: '⚔️ Acción + Sci-Fi', loader: () => cachedCategoryLoader('/discover/tv&with_genres=10759,10765', 15) },
+          { title: '🎬 Miniseries (1 temporada)', loader: () => cachedCategoryLoader('/discover/tv&with_genres=18&with_runtime=30&sort_by=vote_average.desc&vote_count.gte=500', 15) },
         ];
 
         const results = await Promise.allSettled(categoryLoaders.map(c => c.loader()));
@@ -141,19 +142,4 @@ export function SeriesView() {
       <div className="h-20" />
     </div>
   );
-}
-
-function mapItem(item: any): MovieItem {
-  return {
-    id: String(item.id),
-    tmdbId: item.id,
-    title: item.name || '',
-    mediaType: 'tv',
-    posterUrl: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : '',
-    backdropUrl: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : '',
-    rating: item.vote_average || 0,
-    year: item.first_air_date ? parseInt(item.first_air_date.substring(0, 4)) : 0,
-    overview: item.overview || '',
-    genreIds: item.genre_ids || [],
-  };
 }

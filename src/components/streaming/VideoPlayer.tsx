@@ -259,7 +259,7 @@ export function VideoPlayer() {
     return () => { window.open = originalOpen; };
   }, [isPlaying]);
 
-  // Track watch history when movie starts playing
+  // Track watch history when movie starts playing - with full metadata
   useEffect(() => {
     if (isPlaying && currentMovie && currentServerUrl) {
       const history = useHistoryStore.getState();
@@ -267,12 +267,35 @@ export function VideoPlayer() {
         movieId: currentMovie.id,
         title: currentMovie.title,
         posterUrl: currentMovie.posterUrl,
+        backdropUrl: currentMovie.backdropUrl,
         mediaType: currentMovie.mediaType as 'movie' | 'tv',
         progress: 0,
         duration: 0,
+        season: currentMovie.mediaType === 'tv' ? currentSeason : undefined,
+        episode: currentMovie.mediaType === 'tv' ? currentEpisode : undefined,
+        rating: currentMovie.rating,
+        year: currentMovie.year,
+        overview: currentMovie.overview,
       });
     }
-  }, [isPlaying && currentMovie?.id && currentServerUrl]);  
+  }, [isPlaying && currentMovie?.id && currentServerUrl]);
+
+  // Simulate progress tracking for iframe-based playback
+  // Since we can't access iframe video duration, we estimate based on watch time
+  useEffect(() => {
+    if (!isPlaying || !currentMovie || !currentServerUrl) return;
+    
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      // Estimate movie duration: 90 min for movies, 45 min for TV episodes
+      const estimatedDuration = currentMovie.mediaType === 'tv' ? 45 * 60 : 90 * 60;
+      const history = useHistoryStore.getState();
+      history.updateProgress(currentMovie.id, elapsed, estimatedDuration);
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [isPlaying, currentMovie?.id, currentServerUrl]);  
 
   const currentGroupSources = serverGroups.find(g => g.lang === currentLang)?.sources || [];
   const hasMultipleLangs = availableLangs.length > 1;

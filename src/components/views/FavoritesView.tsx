@@ -1,110 +1,173 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useFavoritesStore, usePlayerStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
-import type { MovieItem } from '@/lib/tmdb';
-import { Heart, Trash2, Play, Star } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Heart, Play, Star, Film, Tv, Trash2, ArrowUpDown } from 'lucide-react';
+
+type SortMode = 'recent' | 'rating' | 'year' | 'title';
+type FilterMode = 'all' | 'movie' | 'tv';
 
 export function FavoritesView() {
-  const { favorites } = useFavoritesStore();
+  const { favorites, toggleFavorite } = useFavoritesStore();
   const playMovie = usePlayerStore(s => s.playMovie);
   const { t } = useT();
-  const [movies, setMovies] = useState<MovieItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<FilterMode>('all');
+  const [sortMode, setSortMode] = useState<SortMode>('recent');
 
-  useEffect(() => {
-    if (favorites.length === 0) {
-      setMovies([]);
-      setLoading(false);
-      return;
+  // Filter favorites
+  const filtered = filter === 'all'
+    ? favorites
+    : favorites.filter(f => f.mediaType === filter);
+
+  // Sort favorites
+  const sorted = [...filtered].sort((a, b) => {
+    switch (sortMode) {
+      case 'rating': return b.rating - a.rating;
+      case 'year': return b.year - a.year;
+      case 'title': return a.title.localeCompare(b.title);
+      case 'recent':
+      default: return (b.addedAt || 0) - (a.addedAt || 0);
     }
+  });
 
-    const fetchFavorites = async () => {
-      setLoading(true);
-      try {
-        // Fetch each favorite by TMDB ID
-        const items = await Promise.allSettled(
-          favorites.map(async (id) => {
-            const isTV = id.startsWith('tv-');
-            const tmdbId = isTV ? parseInt(id.replace('tv-', '')) : parseInt(id);
-            const type = isTV ? 'tv' : 'movie';
-            const endpoint = `/${type}/${tmdbId}`;
-            const res = await fetch(`/api/tmdb?endpoint=${endpoint}`);
-            if (!res.ok) return null;
-            const data = await res.json();
-            return {
-              id: String(data.id),
-              tmdbId: data.id,
-              title: isTV ? (data.name || '') : (data.title || ''),
-              mediaType: type as 'movie' | 'tv',
-              posterUrl: data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '',
-              backdropUrl: data.backdrop_path ? `https://image.tmdb.org/t/p/w1280${data.backdrop_path}` : '',
-              rating: data.vote_average || 0,
-              year: (isTV ? data.first_air_date : data.release_date)?.substring(0, 4) ? parseInt((isTV ? data.first_air_date : data.release_date).substring(0, 4)) : 0,
-              overview: data.overview || '',
-              genreIds: data.genre_ids || [],
-            } as MovieItem;
-          })
-        );
-        setMovies(items.filter((r): r is PromiseFulfilledResult<MovieItem> => r.status === 'fulfilled' && r.value !== null).map(r => r.value));
-      } catch (err) {
-        console.error('Error loading favorites:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Movies with posters (for grid display)
+  const withPosters = sorted.filter(f => f.posterUrl && f.title);
+  // Movies without posters (old migrated format - need API fetch)
+  const withoutPosters = sorted.filter(f => !f.posterUrl || !f.title);
 
-    fetchFavorites();
-  }, [favorites]);
+  const sortLabels: Record<SortMode, string> = {
+    recent: 'Recientes',
+    rating: 'Valoración',
+    year: 'Año',
+    title: 'Título',
+  };
 
   return (
     <div className="pt-20 px-4 max-w-[1400px] mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <Heart size={28} className="text-red-500" />
-        <h1 className="text-2xl font-bold text-white">{t('favorites.title')}</h1>
-        <span className="text-gray-500 text-sm">({favorites.length})</span>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Heart size={28} className="text-red-500" />
+          <h1 className="text-2xl font-bold text-white">{t('favorites.title')}</h1>
+          <span className="text-gray-500 text-sm">({favorites.length})</span>
+        </div>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-4">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-[2/3] rounded-xl" />
-          ))}
+      {/* Filter and sort controls */}
+      {favorites.length > 0 && (
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
+          {/* Filter tabs */}
+          <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
+            {[
+              { id: 'all' as const, label: t('search.all') },
+              { id: 'movie' as const, label: t('search.movies') },
+              { id: 'tv' as const, label: t('search.series') },
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  filter === f.id
+                    ? 'bg-white text-black'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Sort dropdown */}
+          <div className="flex items-center gap-2">
+            <ArrowUpDown size={14} className="text-gray-500" />
+            {Object.entries(sortLabels).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setSortMode(key as SortMode)}
+                className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                  sortMode === key
+                    ? 'bg-red-600/20 text-red-400'
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-      ) : movies.length > 0 ? (
+      )}
+
+      {sorted.length > 0 ? (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-4">
-          {movies.map(movie => (
+          {sorted.map(item => (
             <div
-              key={movie.id}
-              onClick={() => playMovie(movie)}
-              className="group cursor-pointer"
+              key={item.id}
+              className="group cursor-pointer relative"
+              onClick={() => playMovie({
+                id: item.id,
+                tmdbId: item.tmdbId,
+                title: item.title,
+                mediaType: item.mediaType,
+                posterUrl: item.posterUrl,
+                backdropUrl: item.backdropUrl,
+                rating: item.rating,
+                year: item.year,
+                overview: item.overview,
+                genreIds: item.genreIds,
+              })}
             >
               <div className="relative rounded-xl overflow-hidden aspect-[2/3] bg-gray-900">
-                <img
-                  src={movie.posterUrl}
-                  alt={movie.title}
-                  loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
+                {item.posterUrl ? (
+                  <img
+                    src={item.posterUrl}
+                    alt={item.title}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-gray-800 to-gray-900">
+                    {item.mediaType === 'tv' ? <Tv size={24} className="text-gray-600" /> : <Film size={24} className="text-gray-600" />}
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
                   <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Play size={20} fill="white" className="ml-0.5" />
                   </div>
                 </div>
-                {movie.rating > 0 && (
+                {item.rating > 0 && (
                   <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-yellow-400 px-2 py-0.5 rounded-md text-xs font-bold">
                     <Star size={10} fill="currentColor" />
-                    {movie.rating.toFixed(1)}
+                    {item.rating.toFixed(1)}
                   </div>
                 )}
                 <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase">
-                  {movie.mediaType === 'movie' ? t('misc.peli') : t('misc.serie')}
+                  {item.mediaType === 'movie' ? t('misc.peli') : t('misc.serie')}
                 </div>
+                {/* Remove button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite({
+                      id: item.id,
+                      tmdbId: item.tmdbId,
+                      title: item.title,
+                      mediaType: item.mediaType,
+                      posterUrl: item.posterUrl,
+                      backdropUrl: item.backdropUrl,
+                      rating: item.rating,
+                      year: item.year,
+                      overview: item.overview,
+                      genreIds: item.genreIds,
+                    });
+                  }}
+                  className="absolute bottom-2 right-2 p-1.5 rounded-full bg-red-600/80 hover:bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-all"
+                  title="Quitar de mi lista"
+                >
+                  <Trash2 size={12} />
+                </button>
               </div>
-              <p className="text-white text-sm font-medium mt-2 truncate">{movie.title}</p>
-              <p className="text-gray-500 text-xs">{movie.year > 0 ? movie.year : ''}</p>
+              <p className="text-white text-sm font-medium mt-2 truncate">{item.title || 'Cargando...'}</p>
+              <p className="text-gray-500 text-xs">{item.year > 0 ? item.year : ''}</p>
             </div>
           ))}
         </div>

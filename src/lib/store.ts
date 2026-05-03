@@ -280,42 +280,121 @@ export const useCastStore = create<CastState>((set) => ({
 }));
 
 // ==================== FAVORITES STATE ====================
+// Stores full MovieItem metadata alongside IDs to avoid N+1 API calls
+
+export interface FavoriteItem {
+  id: string;
+  tmdbId: number;
+  title: string;
+  mediaType: 'movie' | 'tv';
+  posterUrl: string;
+  backdropUrl: string;
+  rating: number;
+  year: number;
+  overview: string;
+  genreIds: number[];
+  addedAt: number; // timestamp when added
+}
+
 interface FavoritesState {
-  favorites: string[];
-  toggleFavorite: (id: string) => void;
+  favorites: FavoriteItem[];
+  toggleFavorite: (movie: MovieItem) => void;
   isFavorite: (id: string) => boolean;
+  getFavoriteItem: (id: string) => FavoriteItem | undefined;
+}
+
+// Migration helper: convert old format (string[]) to new format (FavoriteItem[])
+function migrateFavorites(): FavoriteItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem('xuper-favorites');
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    // Old format: array of strings (IDs only)
+    if (parsed.length > 0 && typeof parsed[0] === 'string') {
+      // Migrate: convert IDs to minimal FavoriteItem objects
+      const migrated = parsed.map((id: string) => ({
+        id,
+        tmdbId: parseInt(id.replace('tv-', '')) || 0,
+        title: '',
+        mediaType: (id.startsWith('tv-') ? 'tv' : 'movie') as 'movie' | 'tv',
+        posterUrl: '',
+        backdropUrl: '',
+        rating: 0,
+        year: 0,
+        overview: '',
+        genreIds: [],
+        addedAt: Date.now(),
+      }));
+      localStorage.setItem('xuper-favorites', JSON.stringify(migrated));
+      return migrated;
+    }
+    return parsed;
+  } catch {
+    return [];
+  }
 }
 
 export const useFavoritesStore = create<FavoritesState>((set, get) => ({
-  favorites: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('xuper-favorites') || '[]') : [],
+  favorites: typeof window !== 'undefined' ? migrateFavorites() : [],
 
-  toggleFavorite: (id) => {
+  toggleFavorite: (movie) => {
     const current = get().favorites;
-    const updated = current.includes(id)
-      ? current.filter(f => f !== id)
-      : [...current, id];
+    const existing = current.find(f => f.id === movie.id);
+    let updated: FavoriteItem[];
+
+    if (existing) {
+      // Remove from favorites
+      updated = current.filter(f => f.id !== movie.id);
+    } else {
+      // Add to favorites with full metadata
+      const newItem: FavoriteItem = {
+        id: movie.id,
+        tmdbId: movie.tmdbId,
+        title: movie.title,
+        mediaType: movie.mediaType,
+        posterUrl: movie.posterUrl,
+        backdropUrl: movie.backdropUrl,
+        rating: movie.rating,
+        year: movie.year,
+        overview: movie.overview,
+        genreIds: movie.genreIds,
+        addedAt: Date.now(),
+      };
+      updated = [newItem, ...current];
+    }
+
     localStorage.setItem('xuper-favorites', JSON.stringify(updated));
     set({ favorites: updated });
   },
 
-  isFavorite: (id) => get().favorites.includes(id),
+  isFavorite: (id) => get().favorites.some(f => f.id === id),
+
+  getFavoriteItem: (id) => get().favorites.find(f => f.id === id),
 }));
 
 // ==================== WATCH HISTORY ====================
-interface WatchHistoryItem {
+export interface WatchHistoryItem {
   id: string;
   movieId: string;
   title: string;
   posterUrl: string;
+  backdropUrl: string;
   mediaType: 'movie' | 'tv';
   timestamp: number;
-  progress: number;
-  duration: number;
+  progress: number; // seconds watched
+  duration: number; // total duration in seconds
+  season?: number; // for TV shows
+  episode?: number; // for TV shows
+  rating: number;
+  year: number;
+  overview: string;
 }
 
 interface HistoryState {
   history: WatchHistoryItem[];
   addToHistory: (item: Omit<WatchHistoryItem, 'timestamp'>) => void;
+  updateProgress: (movieId: string, progress: number, duration: number) => void;
   removeFromHistory: (movieId: string) => void;
 }
 
@@ -325,6 +404,15 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   addToHistory: (item) => {
     const current = get().history.filter(h => h.movieId !== item.movieId);
     const updated = [{ ...item, timestamp: Date.now() }, ...current].slice(0, 50);
+    localStorage.setItem('xuper-history', JSON.stringify(updated));
+    set({ history: updated });
+  },
+
+  updateProgress: (movieId, progress, duration) => {
+    const current = get().history;
+    const updated = current.map(h =>
+      h.movieId === movieId ? { ...h, progress, duration } : h
+    );
     localStorage.setItem('xuper-history', JSON.stringify(updated));
     set({ history: updated });
   },
