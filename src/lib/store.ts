@@ -91,24 +91,28 @@ export const useAuthStore = create<AuthState>((set) => ({
   loginWithGoogle: async () => {
     set({ isLoading: true });
     try {
-      // Use next-auth/react signIn for proper Google OAuth flow
-      // This will redirect the browser to Google's consent screen,
-      // then back to the app where SessionSync will pick up the session.
       const { signIn } = await import('next-auth/react');
+      // Use redirect: false so we can check the result before navigating
       const result = await signIn('google', {
         callbackUrl: '/',
-        redirect: true,
+        redirect: false,
       });
 
-      // If redirect is true (default), the browser will navigate away
-      // and SessionSync will handle the state update on return.
-      // This code only runs if something went wrong before redirect.
-      if (result === undefined) {
-        // signIn threw or was blocked
+      if (result?.error) {
+        // Actual error from NextAuth
+        console.warn('[Google Login] NextAuth error:', result.error);
         set({ isLoading: false });
         return false;
       }
 
+      if (result?.url) {
+        // Success — manually redirect to the callback URL
+        window.location.href = result.url;
+        return true;
+      }
+
+      // No error and no URL — unexpected, but treat as success
+      // (the session might already be active)
       return true;
     } catch (error) {
       console.error('Google login error:', error);
