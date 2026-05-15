@@ -163,13 +163,10 @@ export function LoginView() {
           </button>
         </form>
 
-        {/* Default credentials hint */}
+        {/* Secure login hint */}
         <div className="mt-6 text-center">
           <p className="text-gray-600 text-xs">
-            {t('login.availableUsers')} <span className="text-gray-400">admin</span> / <span className="text-gray-400">hele</span> / <span className="text-gray-400">usuario</span>
-          </p>
-          <p className="text-gray-700 text-xs mt-1">
-            {t('login.defaultPassword')} <span className="text-gray-500">admin123</span> / <span className="text-gray-500">hele123</span> / <span className="text-gray-500">usuario123</span>
+            {t('login.secureHint') || 'Sign in with Google or your account credentials'}
           </p>
         </div>
       </div>

@@ -60,8 +60,7 @@ const translations: Record<AppLocale, Record<string, string>> = {
     'login.fillAll': 'Completa todos los campos',
     'login.invalidCredentials': 'Usuario o contraseña incorrectos',
     'login.googleFailed': 'No se pudo iniciar sesión con Google',
-    'login.availableUsers': 'Usuarios disponibles:',
-    'login.defaultPassword': 'Contraseña por defecto:',
+    'login.secureHint': 'Inicia sesión con Google o tus credenciales',
 
     // ---- VIDEO PLAYER ----
     'player.loadingServer': 'Cargando servidor...',
@@ -392,8 +391,7 @@ const translations: Record<AppLocale, Record<string, string>> = {
     'login.fillAll': 'Fill in all fields',
     'login.invalidCredentials': 'Invalid username or password',
     'login.googleFailed': 'Could not sign in with Google',
-    'login.availableUsers': 'Available users:',
-    'login.defaultPassword': 'Default password:',
+    'login.secureHint': 'Sign in with Google or your credentials',
 
     // ---- VIDEO PLAYER ----
     'player.loadingServer': 'Loading server...',
@@ -724,8 +722,7 @@ const translations: Record<AppLocale, Record<string, string>> = {
     'login.fillAll': 'Preencha todos os campos',
     'login.invalidCredentials': 'Usuário ou senha incorretos',
     'login.googleFailed': 'Não foi possível entrar com Google',
-    'login.availableUsers': 'Usuários disponíveis:',
-    'login.defaultPassword': 'Senha padrão:',
+    'login.secureHint': 'Entre com Google ou suas credenciais',
 
     // ---- VIDEO PLAYER ----
     'player.loadingServer': 'Carregando servidor...',

@@ -2,21 +2,34 @@
  * Admin Guard - Verificación de permisos de administrador
  *
  * Server-side: Lee el header X-Admin-Auth que contiene el xs-auth JSON
- * Formato esperado: { username: string, token: string }
+ * Formato esperado: { username: string, token: string, email?: string, role?: string }
  */
 
-// Usuarios con permisos de admin (siempre en minúsculas)
+// Usuarios con permisos de admin por username (siempre en minúsculas)
 const ADMIN_USERS = ['admin'];
+
+// Emails de Google con permisos de admin
+const ADMIN_EMAILS = ['yecos11@gmail.com'];
 
 /**
  * Verifica si un xs-auth JSON pertenece a un usuario admin
- * Espera formato: JSON.stringify({ username, token, ... })
+ * Espera formato: JSON.stringify({ username, token, email?, role? })
  */
 export function isAdminFromAuthData(authData: string): boolean {
   try {
     const parsed = JSON.parse(authData);
     if (!parsed.username) return false;
-    return ADMIN_USERS.includes(parsed.username.toLowerCase());
+
+    // Check by explicit role
+    if (parsed.role === 'admin') return true;
+
+    // Check by username
+    if (ADMIN_USERS.includes(parsed.username.toLowerCase())) return true;
+
+    // Check by email (for Google OAuth users)
+    if (parsed.email && ADMIN_EMAILS.includes(parsed.email.toLowerCase())) return true;
+
+    return false;
   } catch {
     return false;
   }

@@ -2,11 +2,27 @@ import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
-const USERS_DB: Record<string, { password: string; name: string }> = {
-  admin: { password: 'admin123', name: 'Admin' },
-  hele: { password: 'hele123', name: 'Hele' },
-  usuario: { password: 'usuario123', name: 'Usuario' },
+// ========================================
+// USER DATABASE
+// ========================================
+const USERS_DB: Record<string, { password: string; name: string; role: string }> = {
+  admin: { password: 'admin123', name: 'Admin', role: 'admin' },
+  hele: { password: 'hele123', name: 'Hele', role: 'user' },
+  usuario: { password: 'usuario123', name: 'Usuario', role: 'user' },
 };
+
+// Google accounts that get admin access
+const GOOGLE_ADMIN_EMAILS = ['yecos11@gmail.com'];
+
+// All allowed Google accounts (admin emails + any gmail is allowed)
+// If you want to restrict to only specific emails, change this logic
+function getGoogleUserRole(email: string): { username: string; role: string } {
+  const emailPrefix = email.split('@')[0].toLowerCase();
+  if (GOOGLE_ADMIN_EMAILS.includes(email.toLowerCase())) {
+    return { username: 'admin', role: 'admin' };
+  }
+  return { username: emailPrefix, role: 'user' };
+}
 
 const handler = NextAuth({
   providers: [
@@ -44,7 +60,6 @@ const handler = NextAuth({
   },
   callbacks: {
     async signIn({ user, account }) {
-      // For Google OAuth: allow all Google sign-ins
       if (account?.provider === 'google') {
         console.log(`[NextAuth] Google sign-in: ${user.email}`);
         return true;
@@ -59,9 +74,20 @@ const handler = NextAuth({
         token.picture = user.image || '';
       }
       // Mark if this was a Google OAuth sign-in
-      if (account?.provider === 'google') {
+      if (account?.provider === 'google' && user.email) {
         token.provider = 'google';
-        token.email = user.email || '';
+        token.email = user.email;
+        // Assign role based on email
+        const { username, role } = getGoogleUserRole(user.email);
+        token.username = username;
+        token.role = role;
+      }
+      // For credentials, check role from DB
+      if (account?.provider === 'credentials') {
+        const dbUser = USERS_DB[token.id as string];
+        if (dbUser) {
+          token.role = dbUser.role;
+        }
       }
       return token;
     },
@@ -69,12 +95,13 @@ const handler = NextAuth({
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.name = token.name as string;
-        // Preserve the Google image
         if (token.picture) {
           session.user.image = token.picture as string;
         }
-        // Add provider info for client-side detection
+        // Custom fields for client-side
         (session.user as Record<string, unknown>).provider = token.provider;
+        (session.user as Record<string, unknown>).username = token.username;
+        (session.user as Record<string, unknown>).role = token.role;
       }
       return session;
     },

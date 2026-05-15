@@ -3,6 +3,26 @@
 import { SessionProvider, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/store';
+import React from 'react';
+
+// Google emails that should be mapped to admin
+const GOOGLE_ADMIN_EMAILS = ['yecos11@gmail.com'];
+
+/** Maps a Google session to a local username and role */
+function mapGoogleUser(email: string, name: string, image?: string) {
+  const isAdmin = GOOGLE_ADMIN_EMAILS.includes(email.toLowerCase());
+  const username = isAdmin ? 'admin' : email.split('@')[0].toLowerCase();
+
+  return {
+    username,
+    name: name || 'Google User',
+    email,
+    image: image || '',
+    token: 'nextauth-session',
+    provider: 'google',
+    role: isAdmin ? 'admin' : 'user',
+  };
+}
 
 /** Inner component that syncs NextAuth session → Zustand auth store */
 function SessionSync({ children }: { children: React.ReactNode }) {
@@ -10,26 +30,40 @@ function SessionSync({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
-      const username = session.user.email?.split('@')[0] || session.user.name || 'google-user';
-      const authData = {
-        username,
-        name: session.user.name || 'Google User',
-        email: session.user.email || '',
-        image: session.user.image || '',
-        token: 'nextauth-session',
-        provider: 'google',
-      };
+      const email = session.user.email || '';
+      const name = session.user.name || '';
+      const image = session.user.image || '';
 
-      // Only update if not already logged in with the same data
+      // Use server-assigned username/role if available, otherwise map locally
+      const serverUsername = (session.user as Record<string, unknown>).username as string | undefined;
+      const serverRole = (session.user as Record<string, unknown>).role as string | undefined;
+
+      let authData;
+      if (serverUsername) {
+        // Server mapped the user already
+        authData = {
+          username: serverUsername,
+          name,
+          email,
+          image,
+          token: 'nextauth-session',
+          provider: 'google',
+          role: serverRole || 'user',
+        };
+      } else {
+        // Fallback: map locally
+        authData = mapGoogleUser(email, name, image);
+      }
+
       try {
         const stored = localStorage.getItem('xs-auth');
         const parsed = stored ? JSON.parse(stored) : null;
 
-        if (!parsed || parsed.username !== username || parsed.provider !== 'google') {
+        if (!parsed || parsed.username !== authData.username || parsed.provider !== 'google') {
           localStorage.setItem('xs-auth', JSON.stringify(authData));
           useAuthStore.setState({
             isLoggedIn: true,
-            username,
+            username: authData.username,
             isLoading: false,
           });
         }
@@ -48,7 +82,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [hasError, setHasError] = useState(false);
 
   if (hasError) {
-    // If SessionProvider fails, just render children without it
     return <>{children}</>;
   }
 
@@ -87,5 +120,3 @@ class ErrorBoundary extends React.Component<
     return this.props.children;
   }
 }
-
-import React from 'react';
