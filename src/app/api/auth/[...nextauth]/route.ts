@@ -43,10 +43,25 @@ const handler = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account }) {
+      // For Google OAuth: allow all Google sign-ins
+      if (account?.provider === 'google') {
+        console.log(`[NextAuth] Google sign-in: ${user.email}`);
+        return true;
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
+      // On first sign-in, `user` and `account` are populated
       if (user) {
-        token.id = user.id;
-        token.name = user.name;
+        token.id = user.id || user.email || '';
+        token.name = user.name || '';
+        token.picture = user.image || '';
+      }
+      // Mark if this was a Google OAuth sign-in
+      if (account?.provider === 'google') {
+        token.provider = 'google';
+        token.email = user.email || '';
       }
       return token;
     },
@@ -54,11 +69,18 @@ const handler = NextAuth({
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.name = token.name as string;
+        // Preserve the Google image
+        if (token.picture) {
+          session.user.image = token.picture as string;
+        }
+        // Add provider info for client-side detection
+        (session.user as Record<string, unknown>).provider = token.provider;
       }
       return session;
     },
   },
   secret: process.env.NEXTAUTH_SECRET || 'xuperstream-secret-key-change-in-production-2024',
+  debug: process.env.NODE_ENV === 'development',
 });
 
 export { handler as GET, handler as POST };

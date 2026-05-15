@@ -91,42 +91,27 @@ export const useAuthStore = create<AuthState>((set) => ({
   loginWithGoogle: async () => {
     set({ isLoading: true });
     try {
-      // Try NextAuth Google OAuth
-      const res = await fetch('/api/auth/signin/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ redirect: false, callbackUrl: '/' }),
+      // Use next-auth/react signIn for proper Google OAuth flow
+      // This will redirect the browser to Google's consent screen,
+      // then back to the app where SessionSync will pick up the session.
+      const { signIn } = await import('next-auth/react');
+      const result = await signIn('google', {
+        callbackUrl: '/',
+        redirect: true,
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.url) {
-          // Google OAuth configured — redirect to Google consent screen
-          window.location.href = data.url;
-          return true;
-        }
+      // If redirect is true (default), the browser will navigate away
+      // and SessionSync will handle the state update on return.
+      // This code only runs if something went wrong before redirect.
+      if (result === undefined) {
+        // signIn threw or was blocked
+        set({ isLoading: false });
+        return false;
       }
 
-      // Google OAuth not configured — use demo mode
-      console.log('Google OAuth not configured (missing GOOGLE_CLIENT_ID). Using demo mode.');
-      const googleUser = {
-        username: 'Google User',
-        name: 'Google User',
-        email: 'user@gmail.com',
-        image: '',
-        provider: 'google',
-      };
-      localStorage.setItem('xs-auth', JSON.stringify({
-        username: googleUser.username,
-        name: googleUser.name,
-        email: googleUser.email,
-        image: googleUser.image,
-        token: 'google-demo-token',
-        provider: 'google',
-      }));
-      set({ isLoggedIn: true, username: googleUser.username, isLoading: false });
       return true;
-    } catch {
+    } catch (error) {
+      console.error('Google login error:', error);
       set({ isLoading: false });
       return false;
     }
@@ -135,6 +120,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('xs-auth');
     set({ isLoggedIn: false, username: '' });
+    // Also sign out from NextAuth so Google session is cleared
+    try {
+      import('next-auth/react').then(({ signOut }) => {
+        signOut({ redirect: false });
+      });
+    } catch {
+      // NextAuth not available, that's fine
+    }
   },
 
   checkAuth: () => {
