@@ -13,6 +13,45 @@ interface VerifyRequest {
   urls: string[];
 }
 
+/**
+ * Check if a URL points to a private/internal IP address (SSRF protection)
+ */
+function isPrivateUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    const hostname = url.hostname;
+
+    // Block non-http(s) protocols
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return true;
+    }
+
+    // Block localhost variations
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '0.0.0.0') {
+      return true;
+    }
+
+    // Block private IP ranges
+    // 10.x.x.x
+    if (/^10\./.test(hostname)) return true;
+    // 172.16.x.x - 172.31.x.x
+    if (/^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname)) return true;
+    // 192.168.x.x
+    if (/^192\.168\./.test(hostname)) return true;
+    // 169.254.x.x (link-local)
+    if (/^169\.254\./.test(hostname)) return true;
+    // 127.x.x.x (loopback range)
+    if (/^127\./.test(hostname)) return true;
+    // 0.x.x.x
+    if (/^0\./.test(hostname)) return true;
+
+    return false;
+  } catch {
+    // If URL parsing fails, consider it invalid
+    return true;
+  }
+}
+
 async function checkStream(url: string): Promise<boolean> {
   try {
     const controller = new AbortController();
@@ -174,8 +213,27 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // SSRF protection: filter out private/internal URLs
+    const safeUrls = urls.filter(url => {
+      if (isPrivateUrl(url)) {
+        console.warn(`[IPTV Verify] Blocked private/internal URL: ${url}`);
+        return false;
+      }
+      return true;
+    });
+
+    if (safeUrls.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'No valid public URLs provided',
+        results: {},
+        total: 0,
+        working: 0,
+      });
+    }
+
     // Limit to 300 URLs per request to prevent timeouts
-    const urlsToCheck = urls.slice(0, 300);
+    const urlsToCheck = safeUrls.slice(0, 300);
     const results = await checkBatch(urlsToCheck);
 
     const workingUrls = Object.entries(results)

@@ -1,6 +1,6 @@
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
-const TMDB_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY || '2dca580c2a14b55200e784d157207b4d';
+const TMDB_KEY = process.env.TMDB_API_KEY || '';
 const LANG = 'es-ES';
 const REGION = 'CO';
 

@@ -48,8 +48,9 @@ export const useAuthStore = create<AuthState>((set) => ({
               return true;
             }
           }
-        } catch {
+        } catch (e) {
           // Fallback: use legacy login endpoint
+          console.warn('[Auth] NextAuth signin failed, falling back:', e);
         }
 
         // Fallback to legacy auth
@@ -82,7 +83,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           set({ isLoggedIn: true, username: data.username.toLowerCase(), isLoading: false });
           return true;
         }
-      } catch {}
+      } catch (e) { console.warn('[Auth] Legacy login error:', e); }
       set({ isLoading: false });
       return false;
     }
@@ -106,8 +107,18 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       if (result?.url) {
-        // Success — manually redirect to the callback URL
-        window.location.href = result.url;
+        // Validate URL is from our domain before redirecting
+        try {
+          const url = new URL(result.url);
+          if (url.origin === window.location.origin || url.pathname === '/') {
+            window.location.href = result.url;
+          } else {
+            window.location.href = '/';
+          }
+        } catch (e) {
+          console.warn('[Auth] Invalid redirect URL:', e);
+          window.location.href = '/';
+        }
         return true;
       }
 
@@ -129,8 +140,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       import('next-auth/react').then(({ signOut }) => {
         signOut({ redirect: false });
       });
-    } catch {
+    } catch (e) {
       // NextAuth not available, that's fine
+      console.warn('[Auth] NextAuth signOut error:', e);
     }
   },
 
@@ -144,7 +156,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           return;
         }
       }
-    } catch {}
+    } catch (e) { console.warn('[Auth] checkAuth error:', e); }
     set({ isLoggedIn: false, username: '' });
   },
 }));
@@ -327,7 +339,8 @@ function migrateFavorites(): FavoriteItem[] {
       return migrated;
     }
     return parsed;
-  } catch {
+  } catch (e) {
+    console.warn('[Favorites] Corrupted data, resetting:', e);
     return [];
   }
 }
@@ -396,7 +409,7 @@ interface HistoryState {
 }
 
 export const useHistoryStore = create<HistoryState>((set, get) => ({
-  history: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('xuper-history') || '[]') : [],
+  history: typeof window !== 'undefined' ? (() => { try { return JSON.parse(localStorage.getItem('xuper-history') || '[]'); } catch (e) { console.warn('[History] Corrupted data, resetting:', e); return []; } })() : [],
 
   addToHistory: (item) => {
     const current = get().history.filter(h => h.movieId !== item.movieId);
@@ -445,7 +458,7 @@ interface IptvFavoritesState {
 }
 
 export const useIptvFavoritesStore = create<IptvFavoritesState>((set, get) => ({
-  favorites: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('xs-iptv-favorites') || '[]') : [],
+  favorites: typeof window !== 'undefined' ? (() => { try { return JSON.parse(localStorage.getItem('xs-iptv-favorites') || '[]'); } catch (e) { console.warn('[IPTV Favorites] Corrupted data, resetting:', e); return []; } })() : [],
 
   toggleIptvFavorite: (id) => {
     const current = get().favorites;
@@ -471,7 +484,7 @@ interface IptvRecentState {
 }
 
 export const useIptvRecentStore = create<IptvRecentState>((set, get) => ({
-  recent: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('xs-iptv-recent') || '[]') : [],
+  recent: typeof window !== 'undefined' ? (() => { try { return JSON.parse(localStorage.getItem('xs-iptv-recent') || '[]'); } catch (e) { console.warn('[IPTV Recent] Corrupted data, resetting:', e); return []; } })() : [],
 
   addToRecent: (id) => {
     const current = get().recent.filter(r => r.id !== id);
@@ -519,7 +532,8 @@ export const useXuperStore = create<XuperClientState>((set) => ({
         });
         return false;
       }
-    } catch {
+    } catch (e) {
+      console.warn('[Xuper] Login connection error:', e);
       set({
         isConnecting: false,
         error: 'Error de conexión',
@@ -552,7 +566,8 @@ export const useXuperStore = create<XuperClientState>((set) => ({
           isLoggedIn: data.client?.isLoggedIn || false,
         });
       }
-    } catch {
+    } catch (e) {
+      console.warn('[Xuper] Status check error:', e);
       set({ available: false, dcsOk: false, portalOk: false });
     }
   },

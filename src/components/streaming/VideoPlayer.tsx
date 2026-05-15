@@ -223,7 +223,7 @@ export function VideoPlayer() {
       if (currentMovie) {
         try {
           localStorage.setItem(`xs-working-${currentMovie.id}`, currentServerUrl);
-        } catch {}
+        } catch (e) { console.warn('[VideoPlayer] Failed to save working server URL:', e); }
       }
     }
   }, [currentServerUrl, currentMovie?.id]);
@@ -261,7 +261,8 @@ export function VideoPlayer() {
 
   // Track watch history when movie starts playing - with full metadata
   useEffect(() => {
-    if (isPlaying && currentMovie && currentServerUrl) {
+    if (!isPlaying) return;
+    if (currentMovie && currentServerUrl) {
       const history = useHistoryStore.getState();
       history.addToHistory({
         movieId: currentMovie.id,
@@ -278,7 +279,7 @@ export function VideoPlayer() {
         overview: currentMovie.overview,
       });
     }
-  }, [isPlaying && currentMovie?.id && currentServerUrl]);
+  }, [isPlaying, currentMovie?.id, currentServerUrl]);
 
   // Simulate progress tracking for iframe-based playback
   // Since we can't access iframe video duration, we estimate based on watch time

@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes } from 'crypto';
+import { USERS_DB } from '@/lib/users';
 
-// Simple auth - credentials stored server-side
-const USERS: Record<string, string> = {
-  admin: 'admin123',
-  hele: 'hele123',
-  usuario: 'usuario123',
-};
-
-// Simple token generation (for personal use only)
+// Secure token generation using crypto
 function generateToken(username: string): string {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 10);
-  return Buffer.from(`${username}:${timestamp}:${random}`).toString('base64');
+  const random = randomBytes(32).toString('hex');
+  return Buffer.from(`${username}:${Date.now()}:${random}`).toString('base64');
 }
 
 export async function POST(request: NextRequest) {
@@ -22,8 +16,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Usuario y contraseña requeridos' });
     }
 
-    const expectedPassword = USERS[username.toLowerCase()];
-    if (!expectedPassword || expectedPassword !== password) {
+    const user = USERS_DB[username.toLowerCase()];
+    if (!user || user.password !== password) {
       return NextResponse.json({ success: false, error: 'Credenciales incorrectas' });
     }
 
@@ -34,7 +28,8 @@ export async function POST(request: NextRequest) {
       username: username.toLowerCase(),
       token,
     });
-  } catch {
+  } catch (e) {
+    console.warn('[Auth Login] Server error:', e);
     return NextResponse.json({ success: false, error: 'Error del servidor' });
   }
 }

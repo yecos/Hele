@@ -5,12 +5,11 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/store';
 import React from 'react';
 
-// Google emails that should be mapped to admin
-const GOOGLE_ADMIN_EMAILS = ['yecos11@gmail.com'];
+import { ADMIN_EMAILS } from '@/lib/admin-config';
 
 /** Maps a Google session to a local username and role */
 function mapGoogleUser(email: string, name: string, image?: string) {
-  const isAdmin = GOOGLE_ADMIN_EMAILS.includes(email.toLowerCase());
+  const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
   const username = isAdmin ? 'admin' : email.split('@')[0].toLowerCase();
 
   return {

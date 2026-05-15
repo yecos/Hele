@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedChannels } from '@/lib/guardian/scanner';
 import { db } from '@/lib/db';
+import { isAdminFromSession } from '@/lib/admin-guard';
 
 /**
  * GET /api/guardian/channels
@@ -74,9 +75,19 @@ export async function GET(request: NextRequest) {
 /**
  * DELETE /api/guardian/channels
  * Limpia todos los canales verificados (útil para forzar re-escaneo)
+ * Requires admin authentication
  */
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
+    // Auth check: only admins can delete channels
+    const { isAdmin } = await isAdminFromSession(request);
+    if (!isAdmin) {
+      return NextResponse.json({
+        success: false,
+        error: 'Acceso denegado - Se requieren permisos de administrador',
+      }, { status: 403 });
+    }
+
     await db.verifiedChannel.deleteMany({});
     return NextResponse.json({
       success: true,

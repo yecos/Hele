@@ -1,12 +1,12 @@
 'use client';
 
-import type { MovieItem } from './tmdb';
+import type { MovieItem, TMDBMovie } from './tmdb';
 
 // ==================== SHARED MAPITEM ====================
 // Single source of truth for mapping TMDB API responses to MovieItem
 // Eliminates duplication across HomeView, MoviesView, SeriesView, SearchView
 
-export function mapTmdbToMovieItem(item: any): MovieItem {
+export function mapTmdbToMovieItem(item: TMDBMovie): MovieItem {
   const isTV = !!item.name || item.media_type === 'tv';
   const date = isTV ? item.first_air_date : item.release_date;
   return {
@@ -38,7 +38,7 @@ interface CacheEntry<T> {
 }
 
 class TmdbCache {
-  private cache = new Map<string, CacheEntry<any>>();
+  private cache = new Map<string, CacheEntry<unknown>>();
   private defaultTTL = 5 * 60 * 1000; // 5 minutes
 
   get<T>(key: string): T | null {
@@ -93,7 +93,7 @@ export async function cachedCategoryLoader(
   ttl?: number
 ): Promise<MovieItem[]> {
   try {
-    const data = await cachedTmdbFetch<{ results?: any[] }>(endpoint, ttl);
+    const data = await cachedTmdbFetch<{ results?: TMDBMovie[] }>(endpoint, ttl);
     return (data.results || []).slice(0, limit).map(mapTmdbToMovieItem);
   } catch (err) {
     console.error('Error loading category:', endpoint, err);

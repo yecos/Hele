@@ -1,28 +1,8 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
-
-// ========================================
-// USER DATABASE
-// ========================================
-const USERS_DB: Record<string, { password: string; name: string; role: string }> = {
-  admin: { password: 'admin123', name: 'Admin', role: 'admin' },
-  hele: { password: 'hele123', name: 'Hele', role: 'user' },
-  usuario: { password: 'usuario123', name: 'Usuario', role: 'user' },
-};
-
-// Google accounts that get admin access
-const GOOGLE_ADMIN_EMAILS = ['yecos11@gmail.com'];
-
-// All allowed Google accounts (admin emails + any gmail is allowed)
-// If you want to restrict to only specific emails, change this logic
-function getGoogleUserRole(email: string): { username: string; role: string } {
-  const emailPrefix = email.split('@')[0].toLowerCase();
-  if (GOOGLE_ADMIN_EMAILS.includes(email.toLowerCase())) {
-    return { username: 'admin', role: 'admin' };
-  }
-  return { username: emailPrefix, role: 'user' };
-}
+import { USERS_DB } from '@/lib/users';
+import { getGoogleUserRole, ADMIN_EMAILS } from '@/lib/admin-config';
 
 const handler = NextAuth({
   providers: [
@@ -106,7 +86,9 @@ const handler = NextAuth({
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || 'xuperstream-secret-key-change-in-production-2024',
+  secret: process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV === 'production'
+    ? (() => { throw new Error('NEXTAUTH_SECRET must be set in production') })()
+    : 'dev-only-secret-not-for-production'),
   debug: process.env.NODE_ENV === 'development',
 });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { MovieItem } from '@/lib/tmdb';
 import { usePlayerStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
@@ -16,13 +16,15 @@ export function HeroBanner({ movies }: HeroBannerProps) {
   const [prevIndex, setPrevIndex] = useState(-1);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const playMovie = usePlayerStore(s => s.playMovie);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const goTo = useCallback((idx: number) => {
     if (idx === current || isTransitioning) return;
     setPrevIndex(current);
     setCurrent(idx);
     setIsTransitioning(true);
-    setTimeout(() => setIsTransitioning(false), 800);
+    if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    transitionTimeoutRef.current = setTimeout(() => setIsTransitioning(false), 800);
   }, [current, isTransitioning]);
 
   const next = useCallback(() => goTo((current + 1) % movies.length), [current, movies.length, goTo]);
@@ -33,6 +35,13 @@ export function HeroBanner({ movies }: HeroBannerProps) {
     const interval = setInterval(next, 8000);
     return () => clearInterval(interval);
   }, [next, movies.length]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    };
+  }, []);
 
   if (movies.length === 0) return null;
 

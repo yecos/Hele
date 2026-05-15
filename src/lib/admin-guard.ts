@@ -5,11 +5,10 @@
  * Formato esperado: { username: string, token: string, email?: string, role?: string }
  */
 
-// Usuarios con permisos de admin por username (siempre en minúsculas)
-const ADMIN_USERS = ['admin'];
+import { ADMIN_USERS, ADMIN_EMAILS } from '@/lib/admin-config';
 
-// Emails de Google con permisos de admin
-const ADMIN_EMAILS = ['yecos11@gmail.com'];
+// Re-export for convenience
+export { ADMIN_USERS, ADMIN_EMAILS };
 
 /**
  * Verifica si un xs-auth JSON pertenece a un usuario admin
@@ -74,4 +73,49 @@ export function requireAdmin(request: Request): { isAdmin: true; username: strin
   }
   const parsed = JSON.parse(authData);
   return { isAdmin: true, username: parsed.username.toLowerCase() };
+}
+
+/**
+ * Verifies admin access using NextAuth server session.
+ * This is the SECURE method — validates the JWT cryptographically.
+ */
+export async function isAdminFromSession(request: Request): Promise<{ isAdmin: boolean; username: string; email?: string }> {
+  try {
+    // Dynamically import to avoid circular deps
+    const { getServerSession } = await import('next-auth');
+    const { default: authOptions } = await import('@/app/api/auth/[...nextauth]/route');
+    const session = await getServerSession(authOptions as any);
+
+    if (!session?.user) {
+      return { isAdmin: false, username: '' };
+    }
+
+    const email = (session.user as any).email || '';
+    const username = (session.user as any).username || session.user.id || email.split('@')[0];
+
+    // Check if this email is in the admin list
+    if (ADMIN_EMAILS.includes(email.toLowerCase())) {
+      return { isAdmin: true, username, email };
+    }
+
+    // Check by username
+    if (ADMIN_USERS.includes(username.toLowerCase())) {
+      return { isAdmin: true, username, email };
+    }
+
+    // Check by role from token
+    if ((session.user as any).role === 'admin') {
+      return { isAdmin: true, username, email };
+    }
+
+    return { isAdmin: false, username, email };
+  } catch {
+    // If NextAuth session check fails, fall back to header-based check
+    const authData = getAdminAuthData(request);
+    if (authData && isAdminFromAuthData(authData)) {
+      const parsed = JSON.parse(authData);
+      return { isAdmin: true, username: parsed.username?.toLowerCase() || '' };
+    }
+    return { isAdmin: false, username: '' };
+  }
 }

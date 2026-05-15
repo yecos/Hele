@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import type { MovieItem } from '@/lib/tmdb';
 import { usePlayerStore, useFavoritesStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
@@ -12,7 +12,7 @@ interface MovieCardProps {
   progress?: number;
 }
 
-export function MovieCard({ movie, showProgress, progress }: MovieCardProps) {
+export const MovieCard = React.memo(function MovieCard({ movie, showProgress, progress }: MovieCardProps) {
   const { t } = useT();
   const playMovie = usePlayerStore(s => s.playMovie);
   const { openDetail } = usePlayerStore();
@@ -118,7 +118,7 @@ export function MovieCard({ movie, showProgress, progress }: MovieCardProps) {
       </div>
     </div>
   );
-}
+});
 
 // Horizontal scrollable row
 interface CategoryRowProps {

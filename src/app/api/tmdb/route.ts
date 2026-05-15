@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Proxy TMDB API calls from the backend (API key is hidden)
 const TMDB_BASE = 'https://api.themoviedb.org/3';
-const TMDB_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY || '2dca580c2a14b55200e784d157207b4d';
+const TMDB_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY || '';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const endpoint = searchParams.get('endpoint');
   if (!endpoint) return NextResponse.json({ error: 'Missing endpoint' }, { status: 400 });
+
+  // SSRF protection: validate endpoint parameter
+  if (!endpoint.startsWith('/') || endpoint.includes('..')) {
+    return NextResponse.json({ error: 'Invalid endpoint' }, { status: 400 });
+  }
 
   const url = new URL(`${TMDB_BASE}${endpoint}`);
   url.searchParams.set('api_key', TMDB_KEY);

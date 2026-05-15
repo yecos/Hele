@@ -25,6 +25,8 @@ export function HomeView() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const loadData = async () => {
       try {
         const categoryLoaders: CategoryData[] = [
@@ -102,19 +104,25 @@ export function HomeView() {
           });
         }
 
+        if (controller.signal.aborted) return;
+
         setCategories(loaded);
 
         // Set hero movies from trending
         const trending = loaded[0]?.movies || [];
         setHeroMovies(trending.slice(0, 10));
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error('Error loading home:', err);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     loadData();
+    return () => controller.abort();
   }, []);
 
   // Continue watching items from history with progress
