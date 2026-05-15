@@ -151,8 +151,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { tmdbId, type, season, episode } = body;
 
+    // Input validation
     if (!tmdbId || !type) {
-      return NextResponse.json({ error: 'Missing tmdbId or type' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Missing tmdbId or type' }, { status: 400 });
+    }
+    if (!['movie', 'tv'].includes(type)) {
+      return NextResponse.json({ success: false, error: 'Invalid type: must be "movie" or "tv"' }, { status: 400 });
+    }
+    if (typeof tmdbId !== 'number' || tmdbId <= 0 || !Number.isInteger(tmdbId)) {
+      return NextResponse.json({ success: false, error: 'Invalid tmdbId: must be a positive integer' }, { status: 400 });
+    }
+    if (season !== undefined && (typeof season !== 'number' || season < 1)) {
+      return NextResponse.json({ success: false, error: 'Invalid season: must be a positive number' }, { status: 400 });
+    }
+    if (episode !== undefined && (typeof episode !== 'number' || episode < 1)) {
+      return NextResponse.json({ success: false, error: 'Invalid episode: must be a positive number' }, { status: 400 });
     }
 
     // Probe all servers in parallel

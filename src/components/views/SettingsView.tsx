@@ -211,8 +211,16 @@ export function SettingsView() {
         const data = JSON.parse(text);
 
         if (confirm(t('settings.importConfirm', { default: '¿Importar datos? Esto reemplazará los datos actuales.' }))) {
+          // Only allow whitelisted localStorage keys to prevent overwriting auth/secure data
+          const ALLOWED_IMPORT_KEYS = new Set([
+            'xuper-favorites', 'xuper-history', 'xs-iptv-favorites',
+            'xs-iptv-recent', 'xs-default-lang', 'xs-cast-app-id',
+            'xuper-session',
+          ]);
           for (const [key, value] of Object.entries(data)) {
-            localStorage.setItem(key, value as string);
+            if (ALLOWED_IMPORT_KEYS.has(key)) {
+              localStorage.setItem(key, value as string);
+            }
           }
           window.location.reload();
         }
@@ -422,7 +430,7 @@ export function SettingsView() {
             <div className={`p-3 rounded-lg border text-center text-xs ${
               !isCustomReceiver ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-white/5 bg-white/[0.02]'
             }`}>
-              <p className="font-semibold mb-1 {!isCustomReceiver ? 'text-yellow-400' : 'text-gray-500'}">
+              <p className={`font-semibold mb-1 ${!isCustomReceiver ? 'text-yellow-400' : 'text-gray-500'}`}>
                 {t('settings.standardMode')}
               </p>
               <p className="text-gray-500 text-[10px]">{t('settings.chromecastIPTV')}</p>

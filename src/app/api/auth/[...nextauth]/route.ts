@@ -86,9 +86,17 @@ const handler = NextAuth({
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV === 'production'
-    ? (() => { throw new Error('NEXTAUTH_SECRET must be set in production') })()
-    : 'dev-only-secret-not-for-production'),
+  secret: process.env.NEXTAUTH_SECRET || (
+    process.env.NODE_ENV === 'production'
+      ? (() => {
+          // Only warn at runtime, not during build (next build sets NODE_ENV=production)
+          if (typeof window === 'undefined' && process.env.NEXT_PHASE !== 'phase-production-build') {
+            console.error('[NextAuth] WARNING: NEXTAUTH_SECRET is not set. This is insecure in production.');
+          }
+          return 'insecure-no-secret-set';
+        })()
+      : 'dev-only-secret-not-for-production'
+  ),
   debug: process.env.NODE_ENV === 'development',
 });
 

@@ -34,8 +34,8 @@ const XUPER_CONFIG = {
 };
 
 // ===== Clave 3DES =====
-// La clave se obtiene del endpoint de configuración o se usa la conocida
-const DES_KEY = 'xuper2024key@#$'; // 24 chars = 3DES key
+// La clave se obtiene de variable de entorno o se usa la conocida como fallback
+const DES_KEY = process.env.XUPER_DES_KEY || 'xuper2024key@#$'; // 24 chars = 3DES key
 
 // ===== Tipos =====
 export interface XuperDomain {
@@ -164,7 +164,8 @@ class XuperTVClient {
       lastLogin: 0,
       isLoggedIn: false,
     };
-    this.desKey = DES_KEY;
+    // Use env var if available, otherwise fall back to known key
+    this.desKey = process.env.XUPER_DES_KEY || DES_KEY;
   }
 
   // ===== 1. DCS - Obtener dominios activos =====

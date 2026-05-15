@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { runDiscovery, promoteToGuardian } from '@/lib/guardian/discovery';
-import { requireAdmin } from '@/lib/admin-guard';
+import { isAdminFromSession } from '@/lib/admin-guard';
 
 // Discovery can take 2-3 minutes with validation. Vercel default is 10s.
 export const maxDuration = 300;
@@ -12,11 +12,23 @@ export const maxDuration = 300;
  */
 export async function POST(request: Request) {
   try {
-    requireAdmin(request);
+    const { isAdmin } = await isAdminFromSession(request);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, error: 'Acceso denegado - Se requieren permisos de administrador' }, { status: 403 });
+    }
 
     const body = await request.json().catch(() => ({}));
 
     if (body.action === 'promote' && body.url) {
+      // Validate URL protocol
+      try {
+        const url = new URL(body.url);
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          return NextResponse.json({ success: false, error: 'Solo se permiten URLs HTTP(S)' }, { status: 400 });
+        }
+      } catch {
+        return NextResponse.json({ success: false, error: 'URL inválida' }, { status: 400 });
+      }
       const result = await promoteToGuardian(body.url);
       return NextResponse.json(result);
     }
@@ -37,9 +49,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error desconocido';
-    if (msg.includes('denegado') || msg.includes('token')) {
-      return NextResponse.json({ success: false, error: msg }, { status: 403 });
-    }
     console.error('[Discovery API] Error:', error);
     return NextResponse.json({
       success: false,

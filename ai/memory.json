@@ -1,0 +1,118 @@
+{
+  "project": {
+    "name": "XuperStream",
+    "codename": "Hele",
+    "version": "0.2.0",
+    "repo": "https://github.com/yecos/Hele",
+    "deploy": "https://hele-nu.vercel.app",
+    "admin_email": "yecos11@gmail.com"
+  },
+  "sessions": [
+    {
+      "id": "session-001",
+      "date": "2026-05-14",
+      "summary": "Configuración de Google OAuth con NextAuth",
+      "changes": [
+        "Creado AuthProvider.tsx con SessionProvider + SessionSync",
+        "Modificado route.ts para Google Provider",
+        "Fix: loginWithGoogle usa signIn('google', { redirect: false })",
+        "Logout también llama signOut() de NextAuth"
+      ],
+      "files_modified": [
+        "src/components/AuthProvider.tsx",
+        "src/app/api/auth/[...nextauth]/route.ts",
+        "src/lib/store.ts",
+        "src/app/layout.tsx"
+      ]
+    },
+    {
+      "id": "session-002",
+      "date": "2026-05-14",
+      "summary": "Fix splash screen blocking y error rojo falso",
+      "changes": [
+        "SplashScreen reescrito sin framer-motion",
+        "CSS transitions + safety timer de 3s",
+        "LoginView: limpiar URL error params de NextAuth",
+        "signIn con redirect: false para evitar error falso"
+      ],
+      "files_modified": [
+        "src/components/SplashScreen.tsx",
+        "src/app/globals.css",
+        "src/components/views/LoginView.tsx"
+      ]
+    },
+    {
+      "id": "session-003",
+      "date": "2026-05-14",
+      "summary": "Admin config y deploy a Vercel",
+      "changes": [
+        "admin-config.ts creado con ADMIN_EMAILS",
+        "admin-guard.ts actualizado para verificar por email/role",
+        "Credenciales visibles removidas del LoginView",
+        "vercel.json creado",
+        "Traducciones actualizadas (es, en, pt)"
+      ],
+      "files_modified": [
+        "src/lib/admin-config.ts",
+        "src/lib/admin-guard.ts",
+        "src/components/views/LoginView.tsx",
+        "vercel.json",
+        "src/lib/i18n.ts"
+      ]
+    },
+    {
+      "id": "session-004",
+      "date": "2026-05-15",
+      "summary": "Auditoría completa y aplicación de Sistema Operativo para IA",
+      "changes": [
+        "Creada estructura /docs/ profesional",
+        "Creada estructura /ai/ para contexto persistente",
+        "CHANGELOG.md y roadmap.md creados",
+        "Clave 3DES movida a env var (XUPER_DES_KEY)",
+        "next.config.ts mejorado: strictMode activado"
+      ],
+      "files_modified": [
+        "docs/arquitectura.md",
+        "docs/reglas.md",
+        "docs/decisiones.md",
+        "docs/bitacora.md",
+        "docs/api-map.md",
+        "docs/database-schema.md",
+        "ai/context.md",
+        "ai/memory.json",
+        "ai/system-rules.md",
+        "CHANGELOG.md",
+        "roadmap.md",
+        "src/lib/guardian/xuper-client.ts",
+        "next.config.ts"
+      ]
+    }
+  ],
+  "known_bugs": [
+    {
+      "id": "BUG-001",
+      "description": "ignoreBuildErrors en next.config oculta errores TS",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "id": "BUG-002",
+      "description": "3DES key hardcodeada en xuper-client.ts",
+      "severity": "high",
+      "status": "fixed"
+    },
+    {
+      "id": "BUG-003",
+      "description": "No hay rate limiting en API routes",
+      "severity": "medium",
+      "status": "open"
+    }
+  ],
+  "technical_debt": [
+    "Auth legacy + NextAuth coexisten",
+    "i18n inline (~1000 líneas)",
+    "reactStrictMode desactivado",
+    "No hay tests",
+    "Modelos User/Post en Prisma sin uso"
+  ]
+}

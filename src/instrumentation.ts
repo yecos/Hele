@@ -9,8 +9,13 @@
 export async function register() {
   // Solo ejecutar en el servidor (Node.js runtime)
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    // Importar dinámicamente para no bloquear el arranque de Next.js
-    const { startGuardianScheduler } = await import('@/lib/guardian/scheduler');
-    startGuardianScheduler();
+    try {
+      // Importar dinámicamente para no bloquear el arranque de Next.js
+      const { startGuardianScheduler } = await import('@/lib/guardian/scheduler');
+      startGuardianScheduler();
+      console.log('[Instrumentation] Guardian scheduler started successfully');
+    } catch (err) {
+      console.error('[Instrumentation] Failed to start Guardian scheduler:', err);
+    }
   }
 }

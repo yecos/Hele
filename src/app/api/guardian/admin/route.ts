@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/admin-guard';
+import { isAdminFromSession } from '@/lib/admin-guard';
 import { runDiscovery, promoteToGuardian, getDiscoveredSources, getDiscoveryStats, getDiscoveryStatus } from '@/lib/guardian/discovery';
 import { runFullScan, getGuardianStats, getVerifiedChannels } from '@/lib/guardian/scanner';
 import { getSchedulerStatus } from '@/lib/guardian/scheduler';
@@ -34,13 +34,16 @@ const EMPTY_DASHBOARD = {
  */
 export async function GET(request: NextRequest) {
   try {
-    const admin = requireAdmin(request);
+    const { isAdmin, username } = await isAdminFromSession(request);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, error: 'Acceso denegado' }, { status: 403 });
+    }
     const database = db;
 
     if (!database) {
       return NextResponse.json({
         success: true,
-        admin: admin.username,
+        admin: username,
         dashboard: EMPTY_DASHBOARD,
         warning: 'DATABASE_URL no configurada. El Guardian requiere una base de datos persistente.',
       });
@@ -58,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      admin: admin.username,
+      admin: username,
       dashboard: {
         guardian: stats,
         scheduler,
@@ -71,9 +74,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error desconocido';
-    if (msg.includes('denegado') || msg.includes('token')) {
-      return NextResponse.json({ success: false, error: msg }, { status: 403 });
-    }
     console.error('[Admin API] GET error:', msg);
     return NextResponse.json({
       success: true,
@@ -89,7 +89,10 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const admin = requireAdmin(request);
+    const { isAdmin, username } = await isAdminFromSession(request);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, error: 'Acceso denegado' }, { status: 403 });
+    }
     const database = db;
 
     if (!database) {
@@ -102,7 +105,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const { action } = body;
 
-    console.log(`[Admin API] Acción "${action}" ejecutada por ${admin.username}`);
+    console.log(`[Admin API] Acción "${action}" ejecutada por ${username}`);
 
     switch (action) {
       case 'runDiscovery': {
@@ -116,6 +119,15 @@ export async function POST(request: NextRequest) {
       case 'promoteSource': {
         if (!body.url) {
           return NextResponse.json({ success: false, error: 'URL requerida' });
+        }
+        // Validate URL protocol
+        try {
+          const url = new URL(body.url);
+          if (!['http:', 'https:'].includes(url.protocol)) {
+            return NextResponse.json({ success: false, error: 'Solo se permiten URLs HTTP(S)' }, { status: 400 });
+          }
+        } catch {
+          return NextResponse.json({ success: false, error: 'URL inválida' }, { status: 400 });
         }
         const result = await promoteToGuardian(body.url);
         return NextResponse.json(result);
@@ -167,9 +179,6 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error desconocido';
-    if (msg.includes('denegado') || msg.includes('token')) {
-      return NextResponse.json({ success: false, error: msg }, { status: 403 });
-    }
     console.error('[Admin API] POST error:', msg);
     return NextResponse.json({ success: false, error: msg });
   }

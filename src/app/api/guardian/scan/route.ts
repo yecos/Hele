@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runFullScan } from '@/lib/guardian/scanner';
-import { requireAdmin } from '@/lib/admin-guard';
+import { isAdminFromSession } from '@/lib/admin-guard';
 
 // Scanning can take several minutes
 export const maxDuration = 300;
@@ -11,7 +11,10 @@ export const maxDuration = 300;
  */
 export async function POST(request: NextRequest) {
   try {
-    requireAdmin(request);
+    const { isAdmin } = await isAdminFromSession(request);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, error: 'Acceso denegado - Se requieren permisos de administrador' }, { status: 403 });
+    }
 
     const body = await request.json().catch(() => ({}));
     const trigger = body.trigger === 'manual' ? 'manual' : 'manual';
@@ -32,9 +35,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error desconocido';
-    if (msg.includes('denegado') || msg.includes('token')) {
-      return NextResponse.json({ success: false, error: msg }, { status: 403 });
-    }
     console.error('[Guardian API] Error en scan:', error);
     return NextResponse.json({
       success: false,
