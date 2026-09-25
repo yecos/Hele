@@ -133,7 +133,7 @@ export function IPTVView() {
   const [selectedPlaylist, setSelectedPlaylist] = useState('all-spa');
   const [searchQuery, setSearchQuery] = useState('');
   const [showChannelList, setShowChannelList] = useState(false);
-  const [infoTimeout, setInfoTimeout] = useState<NodeJS.Timeout | null>(null);
+  const infoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showInfo, setShowInfo] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -424,7 +424,7 @@ export function IPTVView() {
     }, 0);
 
     // Clear previous info timeout and destroy previous HLS instance
-    if (infoTimeout) clearTimeout(infoTimeout);
+    if (infoTimeoutRef.current) clearTimeout(infoTimeoutRef.current);
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
@@ -483,10 +483,11 @@ export function IPTVView() {
 
     // Auto-hide info after 5 seconds
     const timeout = setTimeout(() => setShowInfo(false), 5000);
-    setInfoTimeout(timeout);
+    infoTimeoutRef.current = timeout;
 
     return () => {
-      if (timeout) clearTimeout(timeout);
+      clearTimeout(timeout);
+      if (infoTimeoutRef.current === timeout) infoTimeoutRef.current = null;
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
