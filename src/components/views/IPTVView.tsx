@@ -177,62 +177,6 @@ export function IPTVView() {
   const [autoSkipCountdown, setAutoSkipCountdown] = useState<number | null>(null);
   const autoSkipTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch channels from API
-  useEffect(() => {
-    const fetchChannels = async () => {
-      setLoadingPlaylist(true);
-      setChannels([]);
-      setFilteredChannels([]);
-      setOnlineChannels([]);
-      setVerifiedUrls(new Set());
-      setIsVerifying(false);
-
-      // Abort previous verification
-      if (verifyAbortRef.current) {
-        verifyAbortRef.current.abort();
-      }
-      const abortController = new AbortController();
-      verifyAbortRef.current = abortController;
-
-      try {
-        const res = await fetch(`/api/iptv?playlist=${selectedPlaylist}`);
-        if (res.ok) {
-          const data = await res.json();
-          const chs: IPTVChannel[] = data.channels || [];
-          setChannels(chs);
-
-          // Show channels IMMEDIATELY - don't wait for verification
-          const online = chs.filter(c => c.status !== 'offline');
-          setOnlineChannels(online);
-          setFilteredChannels(online);
-          setLoadingPlaylist(false);
-
-          if (online.length > 0) {
-            setCurrentIndex(0);
-            setActiveChannel(online[0]);
-            setIsChannelLoading(true);
-            setChannelError(false);
-            setRetryCount(0);
-          }
-
-          // Start verification IN BACKGROUND (non-blocking)
-          // This will silently update the channel list when done
-          verifyChannelsInBackground(chs, abortController.signal);
-        }
-      } catch (err) {
-        console.error('Error fetching IPTV:', err);
-        setLoadingPlaylist(false);
-      }
-    };
-    fetchChannels();
-
-    return () => {
-      if (verifyAbortRef.current) {
-        verifyAbortRef.current.abort();
-      }
-    };
-  }, [selectedPlaylist]);
-
   // Background verification - runs silently without blocking UI
   const verifyChannelsInBackground = useCallback(async (chs: IPTVChannel[], signal?: AbortSignal) => {
     if (chs.length === 0) return;
@@ -299,6 +243,63 @@ export function IPTVView() {
       });
     }
   }, []);
+
+
+  // Fetch channels from API
+  useEffect(() => {
+    const fetchChannels = async () => {
+      setLoadingPlaylist(true);
+      setChannels([]);
+      setFilteredChannels([]);
+      setOnlineChannels([]);
+      setVerifiedUrls(new Set());
+      setIsVerifying(false);
+
+      // Abort previous verification
+      if (verifyAbortRef.current) {
+        verifyAbortRef.current.abort();
+      }
+      const abortController = new AbortController();
+      verifyAbortRef.current = abortController;
+
+      try {
+        const res = await fetch(`/api/iptv?playlist=${selectedPlaylist}`);
+        if (res.ok) {
+          const data = await res.json();
+          const chs: IPTVChannel[] = data.channels || [];
+          setChannels(chs);
+
+          // Show channels IMMEDIATELY - don't wait for verification
+          const online = chs.filter(c => c.status !== 'offline');
+          setOnlineChannels(online);
+          setFilteredChannels(online);
+          setLoadingPlaylist(false);
+
+          if (online.length > 0) {
+            setCurrentIndex(0);
+            setActiveChannel(online[0]);
+            setIsChannelLoading(true);
+            setChannelError(false);
+            setRetryCount(0);
+          }
+
+          // Start verification IN BACKGROUND (non-blocking)
+          // This will silently update the channel list when done
+          verifyChannelsInBackground(chs, abortController.signal);
+        }
+      } catch (err) {
+        console.error('Error fetching IPTV:', err);
+        setLoadingPlaylist(false);
+      }
+    };
+    fetchChannels();
+
+    return () => {
+      if (verifyAbortRef.current) {
+        verifyAbortRef.current.abort();
+      }
+    };
+  }, [selectedPlaylist]);
 
   // Re-verify channels on demand
   const reVerifyChannels = useCallback(() => {
@@ -527,6 +528,44 @@ export function IPTVView() {
     triggerTransition();
   }, [previousChannel, activeChannel, onlineChannels, triggerTransition]);
 
+  const toggleMute = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const nextMuted = !video.muted;
+    video.muted = nextMuted;
+    setIsMuted(nextMuted);
+  }, []);
+
+  const togglePause = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      void video.play();
+      setIsPaused(false);
+    } else {
+      video.pause();
+      setIsPaused(true);
+    }
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    if (!containerRef.current) return;
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      } else {
+        await containerRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      }
+    } catch (error) {
+      console.warn('[IPTV] Fullscreen toggle failed:', error);
+    }
+  }, []);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -571,7 +610,7 @@ export function IPTVView() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showChannelList, searchQuery, isFullscreen, currentIndex, onlineChannels.length, goNext, goPrev, goLastChannel]);
+  }, [showChannelList, searchQuery, isFullscreen, currentIndex, onlineChannels.length, goNext, goPrev, goLastChannel, togglePause, toggleMute, toggleFullscreen]);
 
   const selectChannel = (channel: IPTVChannel, index: number) => {
     if (activeChannel && activeChannel.id !== channel.id) {
@@ -590,37 +629,6 @@ export function IPTVView() {
     setRetryCount(0);
     setShowChannelList(false);
     triggerTransition();
-  };
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
-
-  const togglePause = () => {
-    if (videoRef.current) {
-      if (isPaused) {
-        videoRef.current.play();
-      } else {
-        videoRef.current.pause();
-      }
-      setIsPaused(!isPaused);
-    }
-  };
-
-  const toggleFullscreen = async () => {
-    if (!containerRef.current) return;
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
-      } else {
-        await containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      }
-    } catch {}
   };
 
   const skipToWorkingChannel = useCallback(() => {
