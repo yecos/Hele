@@ -50,3 +50,14 @@ jobs:
       - name: TypeScript
         if: always()
         run: npm run typecheck
+
+      - name: Production build
+        run: npm run build
+        env:
+          NEXTAUTH_SECRET: hele-ci-only-secret-not-for-production
+          DATABASE_URL: file:/tmp/hele-ci.db
+          NEXTAUTH_URL: http://localhost:3000
+          GOOGLE_CLIENT_ID: ci-placeholder
+          GOOGLE_CLIENT_SECRET: ci-placeholder
+          TMDB_API_KEY: ci-placeholder
+          ADMIN_EMAILS: admin@example.com
