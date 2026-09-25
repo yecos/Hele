@@ -9,13 +9,13 @@
  * - 03:00 AM → Búsqueda web de nuevas fuentes (horario de baja actividad)
  */
 
-import cron from 'node-cron';
+import cron, { type ScheduledTask } from 'node-cron';
 import { runFullScan } from './scanner';
 import { runDiscovery } from './discovery';
 import { runXuperMonitor, setLastMonitorResult } from './xuper-monitor';
 import { getXuperClient } from './xuper-client';
 
-let scheduledTasks: cron.ScheduledTask[] = [];
+let scheduledTasks: ScheduledTask[] = [];
 let initialized = false;
 
 export function startGuardianScheduler() {
