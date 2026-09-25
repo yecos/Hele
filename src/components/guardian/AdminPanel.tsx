@@ -70,9 +70,7 @@ interface DashboardData {
 // ===== Admin Auth Hook =====
 function useAdminAuth() {
   const { data: session, status } = useSession();
-  const user = session?.user as (typeof session.user & {
-    role?: string;
-  }) | undefined;
+  const user = session?.user as { role?: string } | undefined;
 
   const isAdmin = status === 'authenticated' && user?.role === 'admin';
 
