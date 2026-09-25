@@ -5,12 +5,10 @@ import { WifiOff, RefreshCw, Home } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 export function OfflinePage() {
-  const [isOffline, setIsOffline] = useState(false);
+  const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' ? !navigator.onLine : false);
   const { t } = useT();
 
   useEffect(() => {
-    setIsOffline(!navigator.onLine);
-
     const goOnline = () => setIsOffline(false);
     const goOffline = () => setIsOffline(true);
 
@@ -35,7 +33,7 @@ export function OfflinePage() {
       <div className="relative text-center max-w-sm">
         {/* Logo */}
         <div className="inline-flex items-center justify-center mb-4">
-          <img src="/logo.svg" alt="XuperStream" className="w-20 h-20 drop-shadow-lg" />
+          <img src="/logo.svg" alt="HELE" className="w-20 h-20 drop-shadow-lg" />
         </div>
 
         {/* Icon */}
@@ -45,7 +43,7 @@ export function OfflinePage() {
 
         {/* Brand */}
         <div className="mb-2">
-          <span className="text-2xl font-bold text-white">Xuper<span className="text-red-500">Stream</span></span>
+          <span className="text-2xl font-bold text-white tracking-[0.2em]">HELE</span>
         </div>
 
         {/* Message */}

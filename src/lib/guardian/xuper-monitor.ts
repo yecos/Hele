@@ -70,8 +70,8 @@ async function resolveDNS(domain: string): Promise<{ ip: string; ok: boolean; er
         ? `https://cloudflare-dns.com/dns-query?name=${domain}&type=A`
         : `https://dns.google/resolve?name=${domain}&type=A`;
       
-      const headers = resolver === 'cloudflare'
-        ? { 'Accept': 'application/dns-json' }
+      const headers: HeadersInit = resolver === 'cloudflare'
+        ? { Accept: 'application/dns-json' }
         : {};
 
       const response = await fetch(url, {

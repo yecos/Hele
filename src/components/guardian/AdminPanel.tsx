@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   X, RefreshCw, Search, Shield, Radio, Activity, Trash2,
   ChevronDown, ChevronUp, ExternalLink, CheckCircle, XCircle,
@@ -68,35 +69,26 @@ interface DashboardData {
 
 // ===== Admin Auth Hook =====
 function useAdminAuth() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [authData, setAuthData] = useState<string | null>(null);
+  const { data: session, status } = useSession();
+  const user = session?.user as { role?: string } | undefined;
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('xs-auth');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.username?.toLowerCase() === 'admin' && parsed.token) {
-          setIsAdmin(true);
-          setAuthData(stored);
-        }
-      }
-    } catch {}
-  }, []);
+  const isAdmin = status === 'authenticated' && user?.role === 'admin';
 
   const adminFetch = useCallback(async (url: string, options?: RequestInit) => {
-    if (!authData) throw new Error('No auth token');
+    if (status !== 'authenticated') {
+      throw new Error('No authenticated admin session');
+    }
+
     return fetch(url, {
       ...options,
       headers: {
         ...options?.headers,
-        'X-Admin-Auth': authData,
         'Content-Type': 'application/json',
       },
     });
-  }, [authData]);
+  }, [status]);
 
-  return { isAdmin, authData, adminFetch };
+  return { isAdmin, adminFetch };
 }
 
 // ===== Engine Icon =====
@@ -149,7 +141,13 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
   }, [fetchDashboard]);
 
   useEffect(() => {
-    if (isAdmin) refreshData();
+    if (!isAdmin) return;
+
+    const timeout = window.setTimeout(() => {
+      void refreshData();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, [isAdmin, refreshData]);
 
   const executeAction = async (action: string, params?: Record<string, any>) => {
@@ -802,8 +800,12 @@ function XuperPanel() {
   };
 
   useEffect(() => {
-    fetchStatus();
-    fetchMonitor();
+    const timeout = window.setTimeout(() => {
+      void fetchStatus();
+      void fetchMonitor();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, []);
 
   return (

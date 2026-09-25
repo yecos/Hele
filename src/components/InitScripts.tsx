@@ -11,7 +11,7 @@ export function InitScripts() {
   return (
     <>
       {/* Locale sync script */}
-      <Script id="locale-sync" strategy="beforeInteractive">
+      <Script id="locale-sync" strategy="afterInteractive">
         {`
           (function() {
             try {
@@ -31,7 +31,7 @@ export function InitScripts() {
       </Script>
 
       {/* Ad blocker / popup blocker script */}
-      <Script id="ad-blocker" strategy="beforeInteractive">
+      <Script id="ad-blocker" strategy="afterInteractive">
         {`
           // Block popups and ad windows from embed servers
           (function() {

@@ -6,6 +6,14 @@ import { Heart, Trash2, Wifi, WifiOff, ExternalLink, Check, X as XIcon, Download
 import { useI18nStore, useT, LOCALE_FLAGS, LOCALE_LABELS, type AppLocale } from '@/lib/i18n';
 import { TMDB_SERVERS, LATINO_SERVERS, SUBTITLED_SERVERS, LANG_LABELS } from '@/lib/sources';
 
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB'];
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
 export function SettingsView() {
   const { t } = useT();
   const { locale, setLocale } = useI18nStore();
@@ -89,14 +97,6 @@ export function SettingsView() {
 
     calculateStorage();
   }, []);
-
-  const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
 
   const clearFavorites = () => {
     if (confirm(t('settings.clearFavoritesConfirm'))) {

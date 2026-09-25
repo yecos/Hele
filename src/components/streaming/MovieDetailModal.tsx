@@ -21,7 +21,6 @@ export function MovieDetailModal() {
   const [seasonDetail, setSeasonDetail] = useState<TMDBSeasonDetail | null>(null);
   const [activeSeason, setActiveSeason] = useState(1);
   const [showFullOverview, setShowFullOverview] = useState(false);
-  const [similarMovies, setSimilarMovies] = useState<MovieItem[]>([]);
 
   // Derived season: sync with player state for TV shows
   const displaySeason = isPlaying && currentMovie?.mediaType === 'tv' ? currentSeason : activeSeason;
@@ -46,15 +45,12 @@ export function MovieDetailModal() {
     fetchDetail();
   }, [currentMovie?.id, isPlaying]);
 
-  // Fetch similar movies
-  useEffect(() => {
-    if (!currentMovie || !isPlaying || !currentDetail?.similar?.results) return;
-    const items = currentDetail.similar.results
-      .filter((i: any) => i.media_type === 'movie' || i.media_type === 'tv' || !i.media_type)
-      .slice(0, 15)
-      .map(mapTmdbToMovieItem);
-    setSimilarMovies(items);
-  }, [currentDetail?.similar, currentMovie?.id]);
+  const similarMovies: MovieItem[] = currentDetail?.similar?.results
+    ? currentDetail.similar.results
+        .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv' || !item.media_type)
+        .slice(0, 15)
+        .map(mapTmdbToMovieItem)
+    : [];
 
   // Fetch season detail
   useEffect(() => {
@@ -230,9 +226,12 @@ export function MovieDetailModal() {
           {productionCompanies.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap pt-1">
               <Building2 size={12} className="text-gray-500" />
-              {productionCompanies.map(c => (
-                <span key={c.name} className="text-gray-500 text-xs">{c.name}</span>
-              )).reduce((prev: any, curr: any) => [prev, <span key="sep" className="text-gray-700 text-xs">·</span>, curr])}
+              {productionCompanies.map((company, index) => (
+                <span key={company.name} className="text-gray-500 text-xs">
+                  {index > 0 && <span className="text-gray-700 mr-2">·</span>}
+                  {company.name}
+                </span>
+              ))}
             </div>
           )}
 

@@ -1,32 +1,35 @@
 /**
- * Admin Guard - Verificación de permisos de administrador
+ * Admin authorization helpers.
  *
- * Server-side: Lee el header X-Admin-Auth que contiene el xs-auth JSON
- * Formato esperado: { username: string, token: string, email?: string, role?: string }
+ * Privileged API routes MUST use isAdminFromSession().
+ * Legacy header parsing remains only for non-privileged compatibility and must
+ * never be used as a fallback for authorization decisions.
  */
 
+import { getServerSession } from 'next-auth';
 import { ADMIN_USERS, ADMIN_EMAILS } from '@/lib/admin-config';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
-// Re-export for convenience
 export { ADMIN_USERS, ADMIN_EMAILS };
 
 /**
- * Verifica si un xs-auth JSON pertenece a un usuario admin
- * Espera formato: JSON.stringify({ username, token, email?, role? })
+ * Legacy parser kept temporarily for compatibility with old clients.
+ * Do not use this function to authorize privileged API routes.
  */
 export function isAdminFromAuthData(authData: string): boolean {
   try {
     const parsed = JSON.parse(authData);
+
     if (!parsed.username) return false;
-
-    // Check by explicit role
     if (parsed.role === 'admin') return true;
+    if (ADMIN_USERS.includes(String(parsed.username).toLowerCase())) return true;
 
-    // Check by username
-    if (ADMIN_USERS.includes(parsed.username.toLowerCase())) return true;
-
-    // Check by email (for Google OAuth users)
-    if (parsed.email && ADMIN_EMAILS.includes(parsed.email.toLowerCase())) return true;
+    if (
+      parsed.email &&
+      ADMIN_EMAILS.includes(String(parsed.email).toLowerCase())
+    ) {
+      return true;
+    }
 
     return false;
   } catch {
@@ -35,87 +38,74 @@ export function isAdminFromAuthData(authData: string): boolean {
 }
 
 /**
- * Extrae los datos de admin de una request Next.js
- * Busca en: X-Admin-Auth header (xs-auth JSON directo)
+ * Reads legacy auth material from request headers.
+ * Kept only while older non-admin flows are migrated.
  */
 export function getAdminAuthData(request: Request): string | null {
-  // Header personalizado con el xs-auth JSON completo
   const xsAuth = request.headers.get('x-admin-auth');
   if (xsAuth) return xsAuth;
 
-  // Fallback: Authorization header
   const authHeader = request.headers.get('authorization');
-  if (authHeader) {
-    const token = authHeader.replace('Bearer ', '');
-    // Intentar parsear como JSON (nuevo formato)
-    try {
-      const parsed = JSON.parse(token);
-      if (parsed.username && parsed.token) return token;
-    } catch {
-      // No es JSON, podría ser un token legacy — rechazar por seguridad
-    }
-  }
+  if (!authHeader) return null;
 
-  return null;
-}
+  const token = authHeader.replace(/^Bearer\s+/i, '');
 
-/**
- * Middleware de verificación admin para API routes
- * Returns { isAdmin: true, username } o lanza error
- */
-export function requireAdmin(request: Request): { isAdmin: true; username: string } {
-  const authData = getAdminAuthData(request);
-  if (!authData) {
-    throw new Error('No se proporcionó token de autenticación');
-  }
-  if (!isAdminFromAuthData(authData)) {
-    throw new Error('Acceso denegado - Se requieren permisos de administrador');
-  }
-  const parsed = JSON.parse(authData);
-  return { isAdmin: true, username: parsed.username.toLowerCase() };
-}
-
-/**
- * Verifies admin access using NextAuth server session.
- * This is the SECURE method — validates the JWT cryptographically.
- */
-export async function isAdminFromSession(request: Request): Promise<{ isAdmin: boolean; username: string; email?: string }> {
   try {
-    // Dynamically import to avoid circular deps
-    const { getServerSession } = await import('next-auth');
-    const { default: authOptions } = await import('@/app/api/auth/[...nextauth]/route');
-    const session = await getServerSession(authOptions as any);
+    const parsed = JSON.parse(token);
+    return parsed.username && parsed.token ? token : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @deprecated Privileged routes must use isAdminFromSession().
+ */
+export function requireAdmin(_request: Request): never {
+  throw new Error(
+    'Legacy header-based admin authorization is disabled. Use isAdminFromSession().'
+  );
+}
+
+/**
+ * Verifies admin access using the cryptographically validated NextAuth session.
+ * There is deliberately no header-based fallback: authorization fails closed.
+ */
+export async function isAdminFromSession(
+  _request?: Request
+): Promise<{ isAdmin: boolean; username: string; email?: string }> {
+  try {
+    const session = await getServerSession(authOptions);
 
     if (!session?.user) {
       return { isAdmin: false, username: '' };
     }
 
-    const email = (session.user as any).email || '';
-    const username = (session.user as any).username || session.user.id || email.split('@')[0];
+    const user = session.user as typeof session.user & {
+      id?: string;
+      username?: string;
+      role?: string;
+    };
 
-    // Check if this email is in the admin list
-    if (ADMIN_EMAILS.includes(email.toLowerCase())) {
-      return { isAdmin: true, username, email };
-    }
+    const email = user.email?.toLowerCase() || '';
+    const username =
+      user.username?.toLowerCase() ||
+      user.id?.toLowerCase() ||
+      email.split('@')[0] ||
+      '';
 
-    // Check by username
-    if (ADMIN_USERS.includes(username.toLowerCase())) {
-      return { isAdmin: true, username, email };
-    }
+    const isAdmin =
+      user.role === 'admin' ||
+      (email !== '' && ADMIN_EMAILS.includes(email)) ||
+      (username !== '' && ADMIN_USERS.includes(username));
 
-    // Check by role from token
-    if ((session.user as any).role === 'admin') {
-      return { isAdmin: true, username, email };
-    }
-
-    return { isAdmin: false, username, email };
-  } catch {
-    // If NextAuth session check fails, fall back to header-based check
-    const authData = getAdminAuthData(request);
-    if (authData && isAdminFromAuthData(authData)) {
-      const parsed = JSON.parse(authData);
-      return { isAdmin: true, username: parsed.username?.toLowerCase() || '' };
-    }
+    return {
+      isAdmin,
+      username,
+      ...(email ? { email } : {}),
+    };
+  } catch (error) {
+    console.error('[AdminGuard] Session validation failed:', error);
     return { isAdmin: false, username: '' };
   }
 }

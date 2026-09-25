@@ -265,6 +265,7 @@ export function VideoPlayer() {
     if (currentMovie && currentServerUrl) {
       const history = useHistoryStore.getState();
       history.addToHistory({
+        id: currentMovie.id,
         movieId: currentMovie.id,
         title: currentMovie.title,
         posterUrl: currentMovie.posterUrl,
@@ -370,7 +371,7 @@ export function VideoPlayer() {
                 ? 'bg-yellow-500/20 text-yellow-400 animate-pulse'
                 : 'bg-white/10 hover:bg-white/20 text-white'
             }`}
-            title={cast.statusMessage || (cast.isConnected ? t('player.disconnectFrom', { device: cast.device?.friendlyName }) : t('player.sendToChromecast'))}
+            title={cast.statusMessage || (cast.isConnected ? t('player.disconnectFrom', { device: cast.device?.friendlyName || 'Chromecast' }) : t('player.sendToChromecast'))}
           >
             <Cast size={20} />
           </button>

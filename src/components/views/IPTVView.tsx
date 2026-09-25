@@ -133,7 +133,7 @@ export function IPTVView() {
   const [selectedPlaylist, setSelectedPlaylist] = useState('all-spa');
   const [searchQuery, setSearchQuery] = useState('');
   const [showChannelList, setShowChannelList] = useState(false);
-  const [infoTimeout, setInfoTimeout] = useState<NodeJS.Timeout | null>(null);
+  const infoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showInfo, setShowInfo] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -176,62 +176,6 @@ export function IPTVView() {
   // Auto-skip countdown
   const [autoSkipCountdown, setAutoSkipCountdown] = useState<number | null>(null);
   const autoSkipTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Fetch channels from API
-  useEffect(() => {
-    const fetchChannels = async () => {
-      setLoadingPlaylist(true);
-      setChannels([]);
-      setFilteredChannels([]);
-      setOnlineChannels([]);
-      setVerifiedUrls(new Set());
-      setIsVerifying(false);
-
-      // Abort previous verification
-      if (verifyAbortRef.current) {
-        verifyAbortRef.current.abort();
-      }
-      const abortController = new AbortController();
-      verifyAbortRef.current = abortController;
-
-      try {
-        const res = await fetch(`/api/iptv?playlist=${selectedPlaylist}`);
-        if (res.ok) {
-          const data = await res.json();
-          const chs: IPTVChannel[] = data.channels || [];
-          setChannels(chs);
-
-          // Show channels IMMEDIATELY - don't wait for verification
-          const online = chs.filter(c => c.status !== 'offline');
-          setOnlineChannels(online);
-          setFilteredChannels(online);
-          setLoadingPlaylist(false);
-
-          if (online.length > 0) {
-            setCurrentIndex(0);
-            setActiveChannel(online[0]);
-            setIsChannelLoading(true);
-            setChannelError(false);
-            setRetryCount(0);
-          }
-
-          // Start verification IN BACKGROUND (non-blocking)
-          // This will silently update the channel list when done
-          verifyChannelsInBackground(chs, abortController.signal);
-        }
-      } catch (err) {
-        console.error('Error fetching IPTV:', err);
-        setLoadingPlaylist(false);
-      }
-    };
-    fetchChannels();
-
-    return () => {
-      if (verifyAbortRef.current) {
-        verifyAbortRef.current.abort();
-      }
-    };
-  }, [selectedPlaylist]);
 
   // Background verification - runs silently without blocking UI
   const verifyChannelsInBackground = useCallback(async (chs: IPTVChannel[], signal?: AbortSignal) => {
@@ -300,6 +244,63 @@ export function IPTVView() {
     }
   }, []);
 
+
+  // Fetch channels from API
+  useEffect(() => {
+    const fetchChannels = async () => {
+      setLoadingPlaylist(true);
+      setChannels([]);
+      setFilteredChannels([]);
+      setOnlineChannels([]);
+      setVerifiedUrls(new Set());
+      setIsVerifying(false);
+
+      // Abort previous verification
+      if (verifyAbortRef.current) {
+        verifyAbortRef.current.abort();
+      }
+      const abortController = new AbortController();
+      verifyAbortRef.current = abortController;
+
+      try {
+        const res = await fetch(`/api/iptv?playlist=${selectedPlaylist}`);
+        if (res.ok) {
+          const data = await res.json();
+          const chs: IPTVChannel[] = data.channels || [];
+          setChannels(chs);
+
+          // Show channels IMMEDIATELY - don't wait for verification
+          const online = chs.filter(c => c.status !== 'offline');
+          setOnlineChannels(online);
+          setFilteredChannels(online);
+          setLoadingPlaylist(false);
+
+          if (online.length > 0) {
+            setCurrentIndex(0);
+            setActiveChannel(online[0]);
+            setIsChannelLoading(true);
+            setChannelError(false);
+            setRetryCount(0);
+          }
+
+          // Start verification IN BACKGROUND (non-blocking)
+          // This will silently update the channel list when done
+          verifyChannelsInBackground(chs, abortController.signal);
+        }
+      } catch (err) {
+        console.error('Error fetching IPTV:', err);
+        setLoadingPlaylist(false);
+      }
+    };
+    fetchChannels();
+
+    return () => {
+      if (verifyAbortRef.current) {
+        verifyAbortRef.current.abort();
+      }
+    };
+  }, [selectedPlaylist]);
+
   // Re-verify channels on demand
   const reVerifyChannels = useCallback(() => {
     if (channels.length === 0 || isVerifying) return;
@@ -325,21 +326,26 @@ export function IPTVView() {
     return () => clearInterval(interval);
   }, []);
 
-  // Filter channels by search
+  // Filter channels by search without triggering synchronous state updates inside the effect.
   useEffect(() => {
-    let sourceChannels = showOnlyWorking ? onlineChannels : channels;
+    const timeout = window.setTimeout(() => {
+      const sourceChannels = showOnlyWorking ? onlineChannels : channels;
 
-    if (!searchQuery.trim()) {
-      setFilteredChannels(sourceChannels);
-      return;
-    }
-    const q = searchQuery.toLowerCase();
-    setFilteredChannels(
-      sourceChannels.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        c.group.toLowerCase().includes(q)
-      )
-    );
+      if (!searchQuery.trim()) {
+        setFilteredChannels(sourceChannels);
+        return;
+      }
+
+      const q = searchQuery.toLowerCase();
+      setFilteredChannels(
+        sourceChannels.filter(c =>
+          c.name.toLowerCase().includes(q) ||
+          c.group.toLowerCase().includes(q)
+        )
+      );
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, [searchQuery, channels, onlineChannels, showOnlyWorking]);
 
   // HLS.js instance ref
@@ -363,8 +369,10 @@ export function IPTVView() {
       autoSkipTimerRef.current = null;
     }
 
+    let startCountdown: number | undefined;
+
     if (channelError && activeChannel) {
-      setAutoSkipCountdown(3);
+      startCountdown = window.setTimeout(() => setAutoSkipCountdown(3), 0);
 
       autoSkipTimerRef.current = setInterval(() => {
         setAutoSkipCountdown(prev => {
@@ -381,10 +389,12 @@ export function IPTVView() {
         });
       }, 1000);
     } else {
-      setAutoSkipCountdown(null);
+      const clearCountdown = window.setTimeout(() => setAutoSkipCountdown(null), 0);
+      return () => window.clearTimeout(clearCountdown);
     }
 
     return () => {
+      if (typeof startCountdown !== 'undefined') window.clearTimeout(startCountdown);
       if (autoSkipTimerRef.current) {
         clearInterval(autoSkipTimerRef.current);
         autoSkipTimerRef.current = null;
@@ -407,12 +417,14 @@ export function IPTVView() {
     const video = videoRef.current;
     const url = activeChannel.url;
 
-    setIsChannelLoading(true);
-    setChannelError(false);
-    setShowInfo(true);
+    const stateSyncTimeout = window.setTimeout(() => {
+      setIsChannelLoading(true);
+      setChannelError(false);
+      setShowInfo(true);
+    }, 0);
 
     // Clear previous info timeout and destroy previous HLS instance
-    if (infoTimeout) clearTimeout(infoTimeout);
+    if (infoTimeoutRef.current) clearTimeout(infoTimeoutRef.current);
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
@@ -471,10 +483,11 @@ export function IPTVView() {
 
     // Auto-hide info after 5 seconds
     const timeout = setTimeout(() => setShowInfo(false), 5000);
-    setInfoTimeout(timeout);
+    infoTimeoutRef.current = timeout;
 
     return () => {
-      if (timeout) clearTimeout(timeout);
+      clearTimeout(timeout);
+      if (infoTimeoutRef.current === timeout) infoTimeoutRef.current = null;
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
@@ -527,6 +540,44 @@ export function IPTVView() {
     triggerTransition();
   }, [previousChannel, activeChannel, onlineChannels, triggerTransition]);
 
+  const toggleMute = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const nextMuted = !video.muted;
+    video.muted = nextMuted;
+    setIsMuted(nextMuted);
+  }, []);
+
+  const togglePause = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      void video.play();
+      setIsPaused(false);
+    } else {
+      video.pause();
+      setIsPaused(true);
+    }
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    if (!containerRef.current) return;
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      } else {
+        await containerRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      }
+    } catch (error) {
+      console.warn('[IPTV] Fullscreen toggle failed:', error);
+    }
+  }, []);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -571,7 +622,7 @@ export function IPTVView() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showChannelList, searchQuery, isFullscreen, currentIndex, onlineChannels.length, goNext, goPrev, goLastChannel]);
+  }, [showChannelList, searchQuery, isFullscreen, currentIndex, onlineChannels.length, goNext, goPrev, goLastChannel, togglePause, toggleMute, toggleFullscreen]);
 
   const selectChannel = (channel: IPTVChannel, index: number) => {
     if (activeChannel && activeChannel.id !== channel.id) {
@@ -590,37 +641,6 @@ export function IPTVView() {
     setRetryCount(0);
     setShowChannelList(false);
     triggerTransition();
-  };
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
-
-  const togglePause = () => {
-    if (videoRef.current) {
-      if (isPaused) {
-        videoRef.current.play();
-      } else {
-        videoRef.current.pause();
-      }
-      setIsPaused(!isPaused);
-    }
-  };
-
-  const toggleFullscreen = async () => {
-    if (!containerRef.current) return;
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
-      } else {
-        await containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      }
-    } catch {}
   };
 
   const skipToWorkingChannel = useCallback(() => {
@@ -682,26 +702,33 @@ export function IPTVView() {
   const handleMouseMove = () => {
     setShowInfo(true);
     resetAutoSkipTimer();
-    if (infoTimeout) clearTimeout(infoTimeout);
+
+    if (infoTimeoutRef.current) {
+      clearTimeout(infoTimeoutRef.current);
+    }
+
     const timeout = setTimeout(() => setShowInfo(false), 4000);
-    setInfoTimeout(timeout);
+    infoTimeoutRef.current = timeout;
   };
 
   // Touch toggle for controls overlay (tap to show/hide)
   const handleTouchToggle = useCallback(() => {
     resetAutoSkipTimer();
-    setShowInfo(prev => {
-      if (infoTimeout) clearTimeout(infoTimeout);
-      if (prev) {
-        // Already showing, hide immediately
-        return false;
-      }
-      // Show and auto-hide after 4s
-      const timeout = setTimeout(() => setShowInfo(false), 4000);
-      setInfoTimeout(timeout);
-      return true;
-    });
-  }, [infoTimeout, resetAutoSkipTimer]);
+
+    if (infoTimeoutRef.current) {
+      clearTimeout(infoTimeoutRef.current);
+      infoTimeoutRef.current = null;
+    }
+
+    if (showInfo) {
+      setShowInfo(false);
+      return;
+    }
+
+    setShowInfo(true);
+    const timeout = setTimeout(() => setShowInfo(false), 4000);
+    infoTimeoutRef.current = timeout;
+  }, [showInfo, resetAutoSkipTimer]);
 
   // Group channels for list display
   const groupedChannels: Record<string, IPTVChannel[]> = {};
