@@ -369,8 +369,10 @@ export function IPTVView() {
       autoSkipTimerRef.current = null;
     }
 
+    let startCountdown: number | undefined;
+
     if (channelError && activeChannel) {
-      const startCountdown = window.setTimeout(() => setAutoSkipCountdown(3), 0);
+      startCountdown = window.setTimeout(() => setAutoSkipCountdown(3), 0);
 
       autoSkipTimerRef.current = setInterval(() => {
         setAutoSkipCountdown(prev => {
