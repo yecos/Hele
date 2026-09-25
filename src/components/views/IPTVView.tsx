@@ -702,26 +702,33 @@ export function IPTVView() {
   const handleMouseMove = () => {
     setShowInfo(true);
     resetAutoSkipTimer();
-    if (infoTimeout) clearTimeout(infoTimeout);
+
+    if (infoTimeoutRef.current) {
+      clearTimeout(infoTimeoutRef.current);
+    }
+
     const timeout = setTimeout(() => setShowInfo(false), 4000);
-    setInfoTimeout(timeout);
+    infoTimeoutRef.current = timeout;
   };
 
   // Touch toggle for controls overlay (tap to show/hide)
   const handleTouchToggle = useCallback(() => {
     resetAutoSkipTimer();
-    setShowInfo(prev => {
-      if (infoTimeout) clearTimeout(infoTimeout);
-      if (prev) {
-        // Already showing, hide immediately
-        return false;
-      }
-      // Show and auto-hide after 4s
-      const timeout = setTimeout(() => setShowInfo(false), 4000);
-      setInfoTimeout(timeout);
-      return true;
-    });
-  }, [infoTimeout, resetAutoSkipTimer]);
+
+    if (infoTimeoutRef.current) {
+      clearTimeout(infoTimeoutRef.current);
+      infoTimeoutRef.current = null;
+    }
+
+    if (showInfo) {
+      setShowInfo(false);
+      return;
+    }
+
+    setShowInfo(true);
+    const timeout = setTimeout(() => setShowInfo(false), 4000);
+    infoTimeoutRef.current = timeout;
+  }, [showInfo, resetAutoSkipTimer]);
 
   // Group channels for list display
   const groupedChannels: Record<string, IPTVChannel[]> = {};
