@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePlayerStore, useFavoritesStore } from '@/lib/store';
 import type { TMDBMovieDetail, TMDBSeasonDetail, MovieItem } from '@/lib/tmdb';
 import { getPosterUrl, getBackdropUrl } from '@/lib/tmdb';
@@ -21,7 +21,6 @@ export function MovieDetailModal() {
   const [seasonDetail, setSeasonDetail] = useState<TMDBSeasonDetail | null>(null);
   const [activeSeason, setActiveSeason] = useState(1);
   const [showFullOverview, setShowFullOverview] = useState(false);
-  const [similarMovies, setSimilarMovies] = useState<MovieItem[]>([]);
 
   // Derived season: sync with player state for TV shows
   const displaySeason = isPlaying && currentMovie?.mediaType === 'tv' ? currentSeason : activeSeason;
@@ -46,15 +45,15 @@ export function MovieDetailModal() {
     fetchDetail();
   }, [currentMovie?.id, isPlaying]);
 
-  // Fetch similar movies
-  useEffect(() => {
-    if (!currentMovie || !isPlaying || !currentDetail?.similar?.results) return;
-    const items = currentDetail.similar.results
-      .filter((i: any) => i.media_type === 'movie' || i.media_type === 'tv' || !i.media_type)
+  const similarMovies = useMemo<MovieItem[]>(() => {
+    if (!currentMovie || !isPlaying || !currentDetail?.similar?.results) return [];
+
+    return currentDetail.similar.results
+      .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv' || !item.media_type)
       .slice(0, 15)
       .map(mapTmdbToMovieItem);
-    setSimilarMovies(items);
-  }, [currentDetail?.similar, currentMovie?.id]);
+  }, [currentDetail?.similar?.results, currentMovie, isPlaying]);
+
 
   // Fetch season detail
   useEffect(() => {
