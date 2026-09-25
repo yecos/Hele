@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - main
-      - hele-1.0-foundation
 
 permissions:
   contents: read
