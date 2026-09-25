@@ -1,14 +1,17 @@
 {
-  "name": "XuperStream",
-  "short_name": "XuperStream",
-  "description": "Tu plataforma personal de streaming. Películas, series y TV en vivo.",
+  "name": "HELE",
+  "short_name": "HELE",
+  "description": "Your media. One place. Películas, series y TV en vivo en una experiencia personal.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#dc2626",
   "orientation": "any",
   "scope": "/",
-  "categories": ["entertainment", "multimedia"],
+  "categories": [
+    "entertainment",
+    "multimedia"
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
