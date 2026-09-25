@@ -26,8 +26,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "XuperStream - Ver Películas y Series Online",
-  description: "Tu plataforma personal de streaming. Películas, series y TV en vivo en español latino, HD.",
+  title: "HELE — Your media. One place.",
+  description: "HELE unifica tu biblioteca, películas, series y TV en vivo en una experiencia personal de medios.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "XuperStream",
+    title: "HELE",
   },
   other: {
     "mobile-web-app-capable": "yes",
@@ -56,9 +56,9 @@ export default function RootLayout({
         <meta name="theme-color" content="#dc2626" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="XuperStream" />
+        <meta name="apple-mobile-web-app-title" content="HELE" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="application-name" content="XuperStream" />
+        <meta name="application-name" content="HELE" />
         <meta name="msapplication-TileColor" content="#dc2626" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
