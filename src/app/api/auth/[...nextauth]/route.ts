@@ -1,10 +1,26 @@
-import NextAuth from 'next-auth';
+import NextAuth, { type NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { USERS_DB } from '@/lib/users';
-import { getGoogleUserRole, ADMIN_EMAILS } from '@/lib/admin-config';
+import { getGoogleUserRole } from '@/lib/admin-config';
 
-const handler = NextAuth({
+function getNextAuthSecret(): string {
+  const secret = process.env.NEXTAUTH_SECRET;
+
+  if (secret) {
+    return secret;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'NEXTAUTH_SECRET is required in production. Configure it in the deployment environment before starting HELE.'
+    );
+  }
+
+  return 'hele-local-development-only-secret';
+}
+
+export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
@@ -19,85 +35,78 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null;
-        const user = USERS_DB[credentials.username.toLowerCase()];
-        if (user && user.password === credentials.password) {
-          return {
-            id: credentials.username.toLowerCase(),
-            name: user.name,
-            email: `${credentials.username.toLowerCase()}@xuperstream.app`,
-          };
+
+        const username = credentials.username.toLowerCase();
+        const user = USERS_DB[username];
+
+        if (!user || user.password !== credentials.password) {
+          return null;
         }
-        return null;
+
+        return {
+          id: username,
+          name: user.name,
+          email: `${username}@xuperstream.app`,
+        };
       },
     }),
   ],
-  pages: {
-    signIn: undefined,
-  },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60,
   },
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider === 'google') {
-        console.log(`[NextAuth] Google sign-in: ${user.email}`);
-        return true;
-      }
+    async signIn() {
       return true;
     },
     async jwt({ token, user, account }) {
-      // On first sign-in, `user` and `account` are populated
       if (user) {
         token.id = user.id || user.email || '';
         token.name = user.name || '';
         token.picture = user.image || '';
       }
-      // Mark if this was a Google OAuth sign-in
+
       if (account?.provider === 'google' && user.email) {
         token.provider = 'google';
         token.email = user.email;
-        // Assign role based on email
+
         const { username, role } = getGoogleUserRole(user.email);
         token.username = username;
         token.role = role;
       }
-      // For credentials, check role from DB
+
       if (account?.provider === 'credentials') {
         const dbUser = USERS_DB[token.id as string];
         if (dbUser) {
+          token.username = token.id;
           token.role = dbUser.role;
+          token.provider = 'credentials';
         }
       }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.name = token.name as string;
+
         if (token.picture) {
           session.user.image = token.picture as string;
         }
-        // Custom fields for client-side
+
         (session.user as Record<string, unknown>).provider = token.provider;
         (session.user as Record<string, unknown>).username = token.username;
         (session.user as Record<string, unknown>).role = token.role;
       }
+
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || (
-    process.env.NODE_ENV === 'production'
-      ? (() => {
-          // Only warn at runtime, not during build (next build sets NODE_ENV=production)
-          if (typeof window === 'undefined' && process.env.NEXT_PHASE !== 'phase-production-build') {
-            console.error('[NextAuth] WARNING: NEXTAUTH_SECRET is not set. This is insecure in production.');
-          }
-          return 'insecure-no-secret-set';
-        })()
-      : 'dev-only-secret-not-for-production'
-  ),
+  secret: getNextAuthSecret(),
   debug: process.env.NODE_ENV === 'development',
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
