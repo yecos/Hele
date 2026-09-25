@@ -226,9 +226,12 @@ export function MovieDetailModal() {
           {productionCompanies.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap pt-1">
               <Building2 size={12} className="text-gray-500" />
-              {productionCompanies.map(c => (
-                <span key={c.name} className="text-gray-500 text-xs">{c.name}</span>
-              )).reduce((prev: any, curr: any) => [prev, <span key="sep" className="text-gray-700 text-xs">·</span>, curr])}
+              {productionCompanies.map((company, index) => (
+                <span key={company.name} className="text-gray-500 text-xs">
+                  {index > 0 && <span className="text-gray-700 mr-2">·</span>}
+                  {company.name}
+                </span>
+              ))}
             </div>
           )}
 
