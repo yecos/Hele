@@ -326,21 +326,26 @@ export function IPTVView() {
     return () => clearInterval(interval);
   }, []);
 
-  // Filter channels by search
+  // Filter channels by search without triggering synchronous state updates inside the effect.
   useEffect(() => {
-    let sourceChannels = showOnlyWorking ? onlineChannels : channels;
+    const timeout = window.setTimeout(() => {
+      const sourceChannels = showOnlyWorking ? onlineChannels : channels;
 
-    if (!searchQuery.trim()) {
-      setFilteredChannels(sourceChannels);
-      return;
-    }
-    const q = searchQuery.toLowerCase();
-    setFilteredChannels(
-      sourceChannels.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        c.group.toLowerCase().includes(q)
-      )
-    );
+      if (!searchQuery.trim()) {
+        setFilteredChannels(sourceChannels);
+        return;
+      }
+
+      const q = searchQuery.toLowerCase();
+      setFilteredChannels(
+        sourceChannels.filter(c =>
+          c.name.toLowerCase().includes(q) ||
+          c.group.toLowerCase().includes(q)
+        )
+      );
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, [searchQuery, channels, onlineChannels, showOnlyWorking]);
 
   // HLS.js instance ref
@@ -365,7 +370,7 @@ export function IPTVView() {
     }
 
     if (channelError && activeChannel) {
-      setAutoSkipCountdown(3);
+      const startCountdown = window.setTimeout(() => setAutoSkipCountdown(3), 0);
 
       autoSkipTimerRef.current = setInterval(() => {
         setAutoSkipCountdown(prev => {
@@ -382,10 +387,12 @@ export function IPTVView() {
         });
       }, 1000);
     } else {
-      setAutoSkipCountdown(null);
+      const clearCountdown = window.setTimeout(() => setAutoSkipCountdown(null), 0);
+      return () => window.clearTimeout(clearCountdown);
     }
 
     return () => {
+      if (typeof startCountdown !== 'undefined') window.clearTimeout(startCountdown);
       if (autoSkipTimerRef.current) {
         clearInterval(autoSkipTimerRef.current);
         autoSkipTimerRef.current = null;
@@ -408,9 +415,11 @@ export function IPTVView() {
     const video = videoRef.current;
     const url = activeChannel.url;
 
-    setIsChannelLoading(true);
-    setChannelError(false);
-    setShowInfo(true);
+    const stateSyncTimeout = window.setTimeout(() => {
+      setIsChannelLoading(true);
+      setChannelError(false);
+      setShowInfo(true);
+    }, 0);
 
     // Clear previous info timeout and destroy previous HLS instance
     if (infoTimeout) clearTimeout(infoTimeout);
