@@ -61,7 +61,7 @@ export function getAdminAuthData(request: Request): string | null {
 /**
  * @deprecated Privileged routes must use isAdminFromSession().
  */
-export function requireAdmin(): never {
+export function requireAdmin(_request: Request): never {
   throw new Error(
     'Legacy header-based admin authorization is disabled. Use isAdminFromSession().'
   );
