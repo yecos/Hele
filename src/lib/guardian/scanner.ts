@@ -261,8 +261,7 @@ export async function runFullScan(trigger: 'scheduled' | 'manual' = 'scheduled')
           type: 'm3u',
           category: s.category,
           priority: s.priority,
-        })),
-        skipDuplicates: true,
+        }))
       });
     }
 
