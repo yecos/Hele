@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePlayerStore, useFavoritesStore } from '@/lib/store';
 import type { TMDBMovieDetail, TMDBSeasonDetail, MovieItem } from '@/lib/tmdb';
 import { getPosterUrl, getBackdropUrl } from '@/lib/tmdb';
@@ -45,15 +45,12 @@ export function MovieDetailModal() {
     fetchDetail();
   }, [currentMovie?.id, isPlaying]);
 
-  const similarMovies = useMemo<MovieItem[]>(() => {
-    if (!currentMovie || !isPlaying || !currentDetail?.similar?.results) return [];
-
-    return currentDetail.similar.results
-      .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv' || !item.media_type)
-      .slice(0, 15)
-      .map(mapTmdbToMovieItem);
-  }, [currentDetail?.similar?.results, currentMovie, isPlaying]);
-
+  const similarMovies: MovieItem[] = currentDetail?.similar?.results
+    ? currentDetail.similar.results
+        .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv' || !item.media_type)
+        .slice(0, 15)
+        .map(mapTmdbToMovieItem)
+    : [];
 
   // Fetch season detail
   useEffect(() => {
