@@ -1,152 +1,44 @@
 /**
- * IPTV Guardian - Programador de tareas automáticas
- * Se inicia automáticamente con Next.js (instrumentation.ts)
- * 
- * Tareas programadas:
- * - 06:00 AM → Escaneo de validación de canales
- * - 12:00 PM → Escaneo de validación + Búsqueda web de nuevas fuentes
- * - 06:00 PM → Escaneo de validación de canales
- * - 03:00 AM → Búsqueda web de nuevas fuentes (horario de baja actividad)
+ * Guardian scheduling metadata for serverless deployments.
+ *
+ * HELE used to start node-cron timers from instrumentation.ts. That model is
+ * not reliable on Vercel because function instances are ephemeral. Scheduling
+ * is now owned by Vercel Cron and the API route under /api/cron/guardian.
  */
 
-import cron, { type ScheduledTask } from 'node-cron';
-import { runFullScan } from './scanner';
-import { runDiscovery } from './discovery';
-import { runXuperMonitor, setLastMonitorResult } from './xuper-monitor';
-import { getXuperClient } from './xuper-client';
-
-let scheduledTasks: ScheduledTask[] = [];
-let initialized = false;
+export const GUARDIAN_CRON = {
+  mode: 'vercel-cron' as const,
+  timezone: 'UTC',
+  schedule: '0 11 * * *',
+  localLabel: 'Daily around 6:00 AM America/Bogota',
+  path: '/api/cron/guardian',
+};
 
 export function startGuardianScheduler() {
-  if (initialized) {
-    console.log('[Guardian] Scheduler ya está inicializado');
-    return;
-  }
-
-  initialized = true;
-  console.log('[Guardian] Iniciando scheduler automático...');
-  console.log('[Guardian] Tareas:');
-  console.log('  - 06:00 AM: Escaneo de validación');
-  console.log('  - 12:00 PM: Escaneo + Descubrimiento web');
-  console.log('  - 06:00 PM: Escaneo de validación');
-  console.log('  - 03:00 AM: Descubrimiento web (busca nuevas fuentes)');
-  console.log('[Guardian] Zona horaria: America/Bogota');
-
-  // Escaneo de las 6:00 AM - actualización matutina
-  const morningTask = cron.schedule('0 6 * * *', async () => {
-    console.log('[Guardian] Escaneo programado de las 6:00 AM...');
-    await runFullScan('scheduled');
-  }, { timezone: 'America/Bogota' });
-
-  // Mediodía: escaneo + descubrimiento
-  const noonTask = cron.schedule('0 12 * * *', async () => {
-    console.log('[Guardian] Escaneo programado del mediodía...');
-    await runFullScan('scheduled');
-    console.log('[Discovery] Descubrimiento web programado del mediodía...');
-    await runDiscovery('scheduled');
-  }, { timezone: 'America/Bogota' });
-
-  // Escaneo de las 6:00 PM - actualización vespertina
-  const eveningTask = cron.schedule('0 18 * * *', async () => {
-    console.log('[Guardian] Escaneo programado de las 6:00 PM...');
-    await runFullScan('scheduled');
-  }, { timezone: 'America/Bogota' });
-
-  // Descubrimiento web a las 3 AM (baja actividad)
-  const discoveryTask = cron.schedule('0 3 * * *', async () => {
-    console.log('[Discovery] Descubrimiento web programado de las 3:00 AM...');
-    await runDiscovery('scheduled');
-    // Después de descubrir, escanear las nuevas fuentes
-    console.log('[Guardian] Escaneo post-descubrimiento...');
-    await runFullScan('scheduled');
-  }, { timezone: 'America/Bogota' });
-
-  // Monitoreo Xuper cada 30 minutos
-  const xuperMonitorTask = cron.schedule('*/30 * * * *', async () => {
-    console.log('[XuperMonitor] Monitoreo programado...');
-    try {
-      const result = await runXuperMonitor();
-      setLastMonitorResult(result);
-      console.log(`[XuperMonitor] DCS: ${result.dcsAvailable ? 'OK' : 'DOWN'} | Dominios OK: ${result.domainsOk}/${result.domainsChecked}`);
-    } catch (err) {
-      console.error('[XuperMonitor] Error en monitoreo:', err);
-    }
-  }, { timezone: 'America/Bogota' });
-
-  // Heartbeat Xuper cada 5 minutos (si hay sesión activa)
-  const xuperHeartbeatTask = cron.schedule('*/5 * * * *', async () => {
-    const client = getXuperClient();
-    if (client.getStatus().isLoggedIn) {
-      try {
-        const ok = await client.heartbeat();
-        if (!ok) {
-          console.warn('[XuperMonitor] Heartbeat falló - sesión puede haber expirado');
-        }
-      } catch {
-        // Silencioso
-      }
-    }
-  }, { timezone: 'America/Bogota' });
-
-  scheduledTasks = [morningTask, noonTask, eveningTask, discoveryTask, xuperMonitorTask, xuperHeartbeatTask];
-
-  console.log('[Guardian] 6 tareas programadas activas (4 Guardian + 2 Xuper)');
-  console.log('[Guardian] El sistema validará y descubrirá canales automáticamente');
-
-  // Escaneo inicial: 60 segundos después de iniciar
-  setTimeout(async () => {
-    console.log('[Guardian] Ejecutando escaneo inicial...');
-    try {
-      await runFullScan('scheduled');
-    } catch (err) {
-      console.error('[Guardian] Error en escaneo inicial:', err);
-    }
-
-    // Primer descubrimiento web 3 minutos después
-    setTimeout(async () => {
-      console.log('[Discovery] Primer descubrimiento web...');
-      try {
-        await runDiscovery('scheduled');
-      } catch (err) {
-        console.error('[Discovery] Error en primer descubrimiento:', err);
-      }
-    }, 180_000); // 3 min después
-
-    // Primer monitoreo Xuper 2 minutos después
-    setTimeout(async () => {
-      console.log('[XuperMonitor] Primer monitoreo...');
-      try {
-        const result = await runXuperMonitor();
-        setLastMonitorResult(result);
-        console.log(`[XuperMonitor] DCS: ${result.dcsAvailable ? 'OK' : 'DOWN'} | Dominios: ${result.domainsOk}/${result.domainsChecked}`);
-      } catch (err) {
-        console.error('[XuperMonitor] Error en primer monitoreo:', err);
-      }
-    }, 120_000); // 2 min después
-  }, 60_000); // 1 min después del arranque
+  console.info(
+    '[Guardian] In-memory scheduler disabled. Vercel Cron manages Guardian maintenance.'
+  );
 }
 
 export function stopGuardianScheduler() {
-  for (const task of scheduledTasks) {
-    task.stop();
-  }
-  scheduledTasks = [];
-  initialized = false;
-  console.log('[Guardian] Scheduler detenido');
+  console.info('[Guardian] No in-memory scheduler to stop.');
 }
 
 export function getSchedulerStatus() {
   return {
-    initialized,
-    activeTasks: scheduledTasks.length,
+    initialized: true,
+    activeTasks: 1,
+    mode: GUARDIAN_CRON.mode,
+    managedExternally: true,
+    timezone: GUARDIAN_CRON.timezone,
     tasks: [
-      { name: 'Mañana (6:00 AM)', cron: '0 6 * * *', type: 'scan' },
-      { name: 'Mediodía (12:00 PM)', cron: '0 12 * * *', type: 'scan+discovery' },
-      { name: 'Tarde (6:00 PM)', cron: '0 18 * * *', type: 'scan' },
-      { name: 'Madrugada (3:00 AM)', cron: '0 3 * * *', type: 'discovery+scan' },
-      { name: 'Xuper Monitor (cada 30 min)', cron: '*/30 * * * *', type: 'xuper-monitor' },
-      { name: 'Xuper Heartbeat (cada 5 min)', cron: '*/5 * * * *', type: 'xuper-heartbeat' },
+      {
+        name: 'Guardian Daily Maintenance',
+        cron: GUARDIAN_CRON.schedule,
+        type: 'scan+xuper-monitor',
+        path: GUARDIAN_CRON.path,
+        localTime: GUARDIAN_CRON.localLabel,
+      },
     ],
   };
 }
