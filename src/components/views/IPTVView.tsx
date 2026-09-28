@@ -1,17 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useViewStore, useAuthStore, useIptvFavoritesStore, useIptvRecentStore } from '@/lib/store';
+import { useRouter } from 'next/navigation';
+import { useAuthStore, useIptvFavoritesStore, useIptvRecentStore } from '@/lib/store';
 import { Radio, Play, Pause, Volume2, VolumeX, Maximize, Minimize, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Loader2, Tv, ArrowLeft, RefreshCw, Signal, WifiOff, Cast, ShieldCheck, Activity, Shield, MoreHorizontal, List, CheckCircle2, XCircle, Zap, Heart, History, RotateCcw } from 'lucide-react';
 import { IPTVChannel as IPTVChannelType } from '@/lib/iptv-channels';
 import Hls from 'hls.js';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
-import dynamic from 'next/dynamic';
 import { ChannelTransition } from '@/components/iptv/ChannelTransition';
 import { AnimatedCategoryCard } from '@/components/iptv/AnimatedCategoryCard';
 import { CountryCarousel } from '@/components/iptv/CountryCarousel';
-const AdminPanel = dynamic(() => import('@/components/guardian/AdminPanel'), { ssr: false });
 
 // Mobile detection hook
 function useIsMobile() {
@@ -118,7 +117,7 @@ const PLAYLIST_SECTIONS: PlaylistSection[] = [
 ];
 
 export function IPTVView() {
-  const { setView } = useViewStore();
+  const router = useRouter();
   const [channels, setChannels] = useState<IPTVChannel[]>([]);
   const [filteredChannels, setFilteredChannels] = useState<IPTVChannel[]>([]);
   const [onlineChannels, setOnlineChannels] = useState<IPTVChannel[]>([]);
@@ -147,7 +146,6 @@ export function IPTVView() {
   // Admin state
   const { username } = useAuthStore();
   const isAdmin = username?.toLowerCase() === 'admin';
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // Guardian state
   const [guardianStatus, setGuardianStatus] = useState<{
@@ -915,7 +913,7 @@ export function IPTVView() {
               {/* Left: Back button + logo */}
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <button
-                  onClick={() => setView('home')}
+                  onClick={() => router.push('/')}
                   className="pointer-events-auto p-2 sm:p-2 rounded-full bg-white/10 active:bg-white/30 hover:bg-white/20 text-white transition-all"
                   style={{ touchAction: 'manipulation' }}
                 >
@@ -927,7 +925,7 @@ export function IPTVView() {
                   {/* Verification status badge — visible on ALL screen sizes */}
                   {isAdmin ? (
                     <button
-                      onClick={() => setShowAdminPanel(true)}
+                      onClick={() => router.push('/admin/guardian')}
                       className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 ml-1 hover:bg-emerald-500/30 cursor-pointer transition-colors"
                       title="Abrir Panel Admin"
                     >
@@ -1145,7 +1143,7 @@ export function IPTVView() {
                         </button>
                         {isAdmin && (
                           <button
-                            onClick={() => { setShowAdminPanel(true); setShowMoreMenu(false); }}
+                            onClick={() => { router.push('/admin/guardian'); setShowMoreMenu(false); }}
                             className="w-full flex items-center gap-3 px-4 py-3 text-sm text-emerald-400 hover:bg-white/10 active:bg-white/15 transition-all border-t border-white/5"
                             style={{ touchAction: 'manipulation' }}
                           >
@@ -1519,11 +1517,6 @@ export function IPTVView() {
       )}
       {/* Channel Transition Overlay */}
       <ChannelTransition channel={activeChannel} isVisible={showTransition} />
-
-      {/* Admin Panel Modal */}
-      {showAdminPanel && isAdmin && (
-        <AdminPanel onClose={() => setShowAdminPanel(false)} />
-      )}
     </div>
   );
 }

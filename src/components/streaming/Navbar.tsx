@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useViewStore, useAuthStore, useCastStore } from '@/lib/store';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
-import { Search, Heart, Home, Settings, Menu, X, Film, Tv, Radio, LogOut, User, Cast, Clock } from 'lucide-react';
+import { Search, Heart, Home, Settings, Menu, X, Film, Tv, Radio, LogOut, User, Cast } from 'lucide-react';
 
 export function Navbar() {
-  const { currentView, setView, setSearchQuery } = useViewStore();
+  const { setSearchQuery } = useViewStore();
+  const router = useRouter();
+  const pathname = usePathname();
   const { isLoggedIn, username, logout } = useAuthStore();
   const { setCastState } = useCastStore();
   const cast = useChromecast();
@@ -48,21 +51,21 @@ export function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchInput.trim()) {
-      setSearchQuery(searchInput.trim());
-      setView('search');
+      const query = searchInput.trim();
+      setSearchQuery(query);
+      router.push(`/search?q=${encodeURIComponent(query)}`);
       setMobileMenuOpen(false);
     }
   };
 
   const navItems = [
-    { id: 'home' as const, label: t('nav.home'), icon: Home },
-    { id: 'movies' as const, label: t('nav.movies'), icon: Film },
-    { id: 'series' as const, label: t('nav.series'), icon: Tv },
-    { id: 'iptv' as const, label: t('nav.iptv'), icon: Radio },
-    { id: 'search' as const, label: t('nav.search'), icon: Search },
-    { id: 'history' as const, label: t('nav.history'), icon: Clock },
-    { id: 'favorites' as const, label: t('nav.favorites'), icon: Heart },
-    { id: 'settings' as const, label: t('nav.settings'), icon: Settings },
+    { id: 'home' as const, href: '/', label: t('nav.home'), icon: Home },
+    { id: 'movies' as const, href: '/movies', label: t('nav.movies'), icon: Film },
+    { id: 'series' as const, href: '/series', label: t('nav.series'), icon: Tv },
+    { id: 'iptv' as const, href: '/live', label: t('nav.iptv'), icon: Radio },
+    { id: 'search' as const, href: '/search', label: t('nav.search'), icon: Search },
+    { id: 'library' as const, href: '/library', label: t('nav.library'), icon: Heart },
+    { id: 'settings' as const, href: '/settings', label: t('nav.settings'), icon: Settings },
   ];
 
   return (
@@ -70,10 +73,10 @@ export function Navbar() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/5">
         <div className="max-w-[1400px] mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
-          <button onClick={() => { setView('home'); setMobileMenuOpen(false); }} className="flex items-center gap-2 group">
-            <img src="/logo.svg" alt="X" className="w-9 h-9 group-hover:scale-105 transition-transform" />
-            <span className="text-xl font-bold text-white hidden sm:block">
-              Xuper<span className="text-red-500">Stream</span>
+          <button onClick={() => { router.push('/'); setMobileMenuOpen(false); }} className="flex items-center gap-2 group">
+            <img src="/logo.svg" alt="HELE" className="w-9 h-9 group-hover:scale-105 transition-transform" />
+            <span className="text-xl font-bold text-white hidden sm:block tracking-[0.14em]">
+              HELE
             </span>
           </button>
 
@@ -81,11 +84,11 @@ export function Navbar() {
           <div className="hidden lg:flex items-center gap-1">
             {navItems.map(item => {
               const Icon = item.icon;
-              const active = currentView === item.id;
+              const active = pathname === item.href;
               return (
                 <button
                   key={item.id}
-                  onClick={() => setView(item.id)}
+                  onClick={() => router.push(item.href)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
                     active
                       ? 'bg-white/10 text-white'
@@ -157,7 +160,7 @@ export function Navbar() {
                     <p className="text-gray-500 text-xs">{t('nav.personalAccount')}</p>
                   </div>
                   <button
-                    onClick={() => { setView('settings'); setShowUserMenu(false); }}
+                    onClick={() => { router.push('/settings'); setShowUserMenu(false); }}
                     className="w-full px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2 transition-all"
                   >
                     <Settings size={14} />
@@ -202,11 +205,11 @@ export function Navbar() {
           <div className="absolute top-16 left-0 right-0 bg-black/95 backdrop-blur-lg border-b border-white/5 p-4 space-y-1 max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {navItems.map(item => {
               const Icon = item.icon;
-              const active = currentView === item.id;
+              const active = pathname === item.href;
               return (
                 <button
                   key={item.id}
-                  onClick={() => { setView(item.id); setMobileMenuOpen(false); }}
+                  onClick={() => { router.push(item.href); setMobileMenuOpen(false); }}
                   className={`w-full px-4 py-3 rounded-lg text-left text-sm font-medium transition-all flex items-center gap-3 ${
                     active ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}

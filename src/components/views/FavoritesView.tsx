@@ -8,7 +8,7 @@ import { Heart, Play, Star, Film, Tv, Trash2, ArrowUpDown } from 'lucide-react';
 type SortMode = 'recent' | 'rating' | 'year' | 'title';
 type FilterMode = 'all' | 'movie' | 'tv';
 
-export function FavoritesView() {
+export function FavoritesView({ embedded = false }: { embedded?: boolean }) {
   const { favorites, toggleFavorite } = useFavoritesStore();
   const playMovie = usePlayerStore(s => s.playMovie);
   const { t } = useT();
@@ -44,7 +44,7 @@ export function FavoritesView() {
   };
 
   return (
-    <div className="pt-20 px-4 max-w-[1400px] mx-auto">
+    <div className={embedded ? "px-0" : "pt-20 px-4 max-w-[1400px] mx-auto"}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Heart size={28} className="text-red-500" />
