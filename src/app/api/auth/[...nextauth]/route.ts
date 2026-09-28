@@ -1,8 +1,6 @@
 import NextAuth, { type NextAuthOptions } from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { USERS_DB } from '@/lib/users';
-import { getGoogleUserRole } from '@/lib/admin-config';
 
 function getNextAuthSecret(): string {
   const secret = process.env.NEXTAUTH_SECRET;
@@ -22,11 +20,6 @@ function getNextAuthSecret(): string {
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      allowDangerousEmailAccountLinking: true,
-    }),
     CredentialsProvider({
       name: 'credentials',
       credentials: {
@@ -64,15 +57,6 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id || user.email || '';
         token.name = user.name || '';
         token.picture = user.image || '';
-      }
-
-      if (account?.provider === 'google' && user.email) {
-        token.provider = 'google';
-        token.email = user.email;
-
-        const { username, role } = getGoogleUserRole(user.email);
-        token.username = username;
-        token.role = role;
       }
 
       if (account?.provider === 'credentials') {
