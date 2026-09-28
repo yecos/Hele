@@ -103,7 +103,7 @@ function EngineIcon({ engine }: { engine: string }) {
 }
 
 // ===== Main Component =====
-export default function AdminPanel({ onClose }: { onClose: () => void }) {
+export default function AdminPanel({ onClose, mode = 'modal' }: { onClose: () => void; mode?: 'modal' | 'page' }) {
   const { isAdmin, adminFetch } = useAdminAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'discovery' | 'sources' | 'scans' | 'xuper'>('overview');
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -172,7 +172,10 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
 
   if (!isAdmin) {
     return (
-      <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
+      <div className={mode === 'page'
+        ? "min-h-screen bg-[#070707] flex items-center justify-center p-4"
+        : "fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"
+      }>
         <div className="bg-gray-900 border border-red-500/30 rounded-2xl p-8 max-w-md w-full text-center">
           <AlertTriangle size={48} className="text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Acceso Restringido</h2>
@@ -198,7 +201,10 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
   const isScanning = d?.guardian?.isScanning ?? false;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div className={mode === 'page'
+      ? "min-h-screen bg-[#070707] px-4 py-8 overflow-y-auto"
+      : "fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+    }>
       {/* Toast */}
       {toast && (
         <div className={`fixed top-4 right-4 z-[200] px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-in slide-in-from-right
@@ -207,7 +213,7 @@ export default function AdminPanel({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
-      <div className="bg-gray-950 border border-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl">
+      <div className={`bg-gray-950 border border-gray-800 rounded-2xl w-full max-w-5xl flex flex-col shadow-2xl ${mode === 'page' ? 'mx-auto min-h-[calc(100vh-4rem)]' : 'max-h-[90vh]'}`}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-800 shrink-0">
           <div className="flex items-center gap-3">
