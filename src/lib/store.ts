@@ -7,7 +7,6 @@ interface AuthState {
   isLoggedIn: boolean;
   username: string;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<boolean>;
   logout: () => void;
   checkAuth: () => void;
@@ -18,115 +17,31 @@ export const useAuthStore = create<AuthState>((set) => ({
   username: '',
   isLoading: false,
 
-  login: async (username, password) => {
-    set({ isLoading: true });
-    try {
-      const res = await fetch('/api/auth/callback/credentials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-        redirect: 'false',
-        username,
-        password,
-        csrfToken: '',
-        callbackUrl: '/',
-      }).toString(),
-      });
-
-      if (res.ok) {
-        // Try NextAuth sign in
-        try {
-          const signInRes = await fetch('/api/auth/signin/credentials', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, redirect: false }),
-          });
-          if (signInRes.ok) {
-            const data = await signInRes.json();
-            if (data.url) {
-              set({ isLoggedIn: true, username: username.toLowerCase(), isLoading: false });
-              return true;
-            }
-          }
-        } catch (e) {
-          // Fallback: use legacy login endpoint
-          console.warn('[Auth] NextAuth signin failed, falling back:', e);
-        }
-
-        // Fallback to legacy auth
-        const legacyRes = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
-        });
-        const data = await legacyRes.json();
-        if (data.success) {
-          localStorage.setItem('xs-auth', JSON.stringify({ username: data.username.toLowerCase(), token: data.token }));
-          set({ isLoggedIn: true, username: data.username.toLowerCase(), isLoading: false });
-          return true;
-        }
-      }
-
-      set({ isLoading: false });
-      return false;
-    } catch {
-      // Fallback to legacy
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          localStorage.setItem('xs-auth', JSON.stringify({ username: data.username.toLowerCase(), token: data.token }));
-          set({ isLoggedIn: true, username: data.username.toLowerCase(), isLoading: false });
-          return true;
-        }
-      } catch (e) { console.warn('[Auth] Legacy login error:', e); }
-      set({ isLoading: false });
-      return false;
-    }
-  },
-
   loginWithGoogle: async () => {
     set({ isLoading: true });
+
     try {
       const { signIn } = await import('next-auth/react');
-      // Use redirect: false so we can check the result before navigating
       const result = await signIn('google', {
         callbackUrl: '/',
         redirect: false,
       });
 
       if (result?.error) {
-        // Actual error from NextAuth
-        console.warn('[Google Login] NextAuth error:', result.error);
+        console.warn('[Auth] Google sign-in failed:', result.error);
         set({ isLoading: false });
         return false;
       }
 
       if (result?.url) {
-        // Validate URL is from our domain before redirecting
-        try {
-          const url = new URL(result.url);
-          if (url.origin === window.location.origin || url.pathname === '/') {
-            window.location.href = result.url;
-          } else {
-            window.location.href = '/';
-          }
-        } catch (e) {
-          console.warn('[Auth] Invalid redirect URL:', e);
-          window.location.href = '/';
-        }
+        window.location.assign(result.url);
         return true;
       }
 
-      // No error and no URL — unexpected, but treat as success
-      // (the session might already be active)
+      set({ isLoading: false });
       return true;
     } catch (error) {
-      console.error('Google login error:', error);
+      console.error('[Auth] Google sign-in failed:', error);
       set({ isLoading: false });
       return false;
     }
@@ -135,28 +50,31 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('xs-auth');
     set({ isLoggedIn: false, username: '' });
-    // Also sign out from NextAuth so Google session is cleared
-    try {
-      import('next-auth/react').then(({ signOut }) => {
-        signOut({ redirect: false });
-      });
-    } catch (e) {
-      // NextAuth not available, that's fine
-      console.warn('[Auth] NextAuth signOut error:', e);
-    }
+
+    void import('next-auth/react')
+      .then(({ signOut }) => signOut({ callbackUrl: '/' }))
+      .catch((error) => console.warn('[Auth] NextAuth signOut error:', error));
   },
 
   checkAuth: () => {
     try {
       const stored = localStorage.getItem('xs-auth');
+
       if (stored) {
         const parsed = JSON.parse(stored);
+
         if (parsed.username && typeof parsed.username === 'string') {
-          set({ isLoggedIn: true, username: parsed.username.toLowerCase() });
+          set({
+            isLoggedIn: true,
+            username: parsed.username.toLowerCase(),
+          });
           return;
         }
       }
-    } catch (e) { console.warn('[Auth] checkAuth error:', e); }
+    } catch (error) {
+      console.warn('[Auth] checkAuth error:', error);
+    }
+
     set({ isLoggedIn: false, username: '' });
   },
 }));

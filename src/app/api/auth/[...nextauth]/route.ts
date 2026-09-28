@@ -1,7 +1,5 @@
 import NextAuth, { type NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { USERS_DB } from '@/lib/users';
 import { getGoogleUserRole } from '@/lib/admin-config';
 
 function getNextAuthSecret(): string {
@@ -27,38 +25,12 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
       allowDangerousEmailAccountLinking: true,
     }),
-    CredentialsProvider({
-      name: 'credentials',
-      credentials: {
-        username: { label: 'Usuario', type: 'text' },
-        password: { label: 'Contraseña', type: 'password' },
-      },
-      async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) return null;
-
-        const username = credentials.username.toLowerCase();
-        const user = USERS_DB[username];
-
-        if (!user || user.password !== credentials.password) {
-          return null;
-        }
-
-        return {
-          id: username,
-          name: user.name,
-          email: `${username}@xuperstream.app`,
-        };
-      },
-    }),
   ],
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60,
   },
   callbacks: {
-    async signIn() {
-      return true;
-    },
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id || user.email || '';
@@ -73,15 +45,6 @@ export const authOptions: NextAuthOptions = {
         const { username, role } = getGoogleUserRole(user.email);
         token.username = username;
         token.role = role;
-      }
-
-      if (account?.provider === 'credentials') {
-        const dbUser = USERS_DB[token.id as string];
-        if (dbUser) {
-          token.username = token.id;
-          token.role = dbUser.role;
-          token.provider = 'credentials';
-        }
       }
 
       return token;

@@ -1,21 +1,13 @@
 /**
- * Next.js Instrumentation - Se ejecuta automáticamente al iniciar el servidor
- * Aquí arrancamos el IPTV Guardian en segundo plano
+ * Next.js instrumentation hook.
  *
- * Este archivo es el punto de entrada para procesos que corren en "las sombras"
- * El Guardian se inicia sin interacción del usuario y mantiene los canales actualizados
+ * HELE intentionally does not start long-lived timers here. Vercel Functions
+ * are ephemeral, so Guardian background work is triggered through Vercel Cron.
  */
-
 export async function register() {
-  // Solo ejecutar en el servidor (Node.js runtime)
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    try {
-      // Importar dinámicamente para no bloquear el arranque de Next.js
-      const { startGuardianScheduler } = await import('@/lib/guardian/scheduler');
-      startGuardianScheduler();
-      console.log('[Instrumentation] Guardian scheduler started successfully');
-    } catch (err) {
-      console.error('[Instrumentation] Failed to start Guardian scheduler:', err);
-    }
+    console.info(
+      '[Instrumentation] HELE server initialized. Guardian scheduling is managed by Vercel Cron.'
+    );
   }
 }
