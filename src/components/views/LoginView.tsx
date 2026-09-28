@@ -14,7 +14,9 @@ export function LoginView() {
     const params = new URLSearchParams(window.location.search);
 
     if (params.has('error')) {
-      setError(t('login.googleFailed'));
+      const errorTimeout = window.setTimeout(() => {
+        setError(t('login.googleFailed'));
+      }, 0);
 
       params.delete('error');
       const newUrl = params.toString()
@@ -22,6 +24,7 @@ export function LoginView() {
         : window.location.pathname;
 
       window.history.replaceState({}, '', newUrl);
+      return () => window.clearTimeout(errorTimeout);
     }
   }, [t]);
 
