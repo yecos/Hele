@@ -24,11 +24,30 @@ export const useViewStore = create<ViewState>((set) => ({
   searchQuery: '',
   selectedGenre: null,
 
-  setView: (view) =>
+  setView: (view) => {
     set((state) => ({
       currentView: view,
       searchQuery: view === 'search' ? state.searchQuery : '',
-    })),
+    }));
+
+    if (typeof window !== 'undefined') {
+      const routes: Record<ViewType, string> = {
+        home: '/',
+        movies: '/movies',
+        series: '/series',
+        iptv: '/live',
+        search: '/search',
+        history: '/history',
+        favorites: '/favorites',
+        settings: '/settings',
+      };
+      const target = routes[view];
+
+      if (window.location.pathname !== target) {
+        window.location.assign(target);
+      }
+    }
+  },
 
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setSelectedGenre: (selectedGenre) => set({ selectedGenre }),
