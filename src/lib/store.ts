@@ -7,7 +7,7 @@ interface AuthState {
   isLoggedIn: boolean;
   username: string;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  loginWithGoogle: () => Promise<boolean>;
   logout: () => void;
   checkAuth: () => void;
 }
@@ -17,34 +17,31 @@ export const useAuthStore = create<AuthState>((set) => ({
   username: '',
   isLoading: false,
 
-  login: async (username, password) => {
+  loginWithGoogle: async () => {
     set({ isLoading: true });
 
     try {
       const { signIn } = await import('next-auth/react');
-      const result = await signIn('credentials', {
-        username,
-        password,
-        redirect: false,
+      const result = await signIn('google', {
         callbackUrl: '/',
+        redirect: false,
       });
 
-      if (!result?.ok || result.error) {
+      if (result?.error) {
+        console.warn('[Auth] Google sign-in failed:', result.error);
         set({ isLoading: false });
         return false;
       }
 
-      const normalizedUsername = username.toLowerCase();
-      localStorage.setItem('xs-auth', JSON.stringify({ username: normalizedUsername }));
-      set({
-        isLoggedIn: true,
-        username: normalizedUsername,
-        isLoading: false,
-      });
+      if (result?.url) {
+        window.location.assign(result.url);
+        return true;
+      }
 
+      set({ isLoading: false });
       return true;
     } catch (error) {
-      console.error('[Auth] Credential login failed:', error);
+      console.error('[Auth] Google sign-in failed:', error);
       set({ isLoading: false });
       return false;
     }
@@ -53,28 +50,31 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('xs-auth');
     set({ isLoggedIn: false, username: '' });
-    // Also clear the validated NextAuth credential session
-    try {
-      import('next-auth/react').then(({ signOut }) => {
-        signOut({ redirect: false });
-      });
-    } catch (e) {
-      // NextAuth not available, that's fine
-      console.warn('[Auth] NextAuth signOut error:', e);
-    }
+
+    void import('next-auth/react')
+      .then(({ signOut }) => signOut({ callbackUrl: '/' }))
+      .catch((error) => console.warn('[Auth] NextAuth signOut error:', error));
   },
 
   checkAuth: () => {
     try {
       const stored = localStorage.getItem('xs-auth');
+
       if (stored) {
         const parsed = JSON.parse(stored);
+
         if (parsed.username && typeof parsed.username === 'string') {
-          set({ isLoggedIn: true, username: parsed.username.toLowerCase() });
+          set({
+            isLoggedIn: true,
+            username: parsed.username.toLowerCase(),
+          });
           return;
         }
       }
-    } catch (e) { console.warn('[Auth] checkAuth error:', e); }
+    } catch (error) {
+      console.warn('[Auth] checkAuth error:', error);
+    }
+
     set({ isLoggedIn: false, username: '' });
   },
 }));

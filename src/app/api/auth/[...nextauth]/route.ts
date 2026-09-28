@@ -1,6 +1,6 @@
 import NextAuth, { type NextAuthOptions } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { USERS_DB } from '@/lib/users';
+import GoogleProvider from 'next-auth/providers/google';
+import { getGoogleUserRole } from '@/lib/admin-config';
 
 function getNextAuthSecret(): string {
   const secret = process.env.NEXTAUTH_SECRET;
@@ -20,28 +20,10 @@ function getNextAuthSecret(): string {
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    CredentialsProvider({
-      name: 'credentials',
-      credentials: {
-        username: { label: 'Usuario', type: 'text' },
-        password: { label: 'Contraseña', type: 'password' },
-      },
-      async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) return null;
-
-        const username = credentials.username.toLowerCase();
-        const user = USERS_DB[username];
-
-        if (!user || user.password !== credentials.password) {
-          return null;
-        }
-
-        return {
-          id: username,
-          name: user.name,
-          email: `${username}@xuperstream.app`,
-        };
-      },
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   session: {
@@ -49,9 +31,6 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60,
   },
   callbacks: {
-    async signIn() {
-      return true;
-    },
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id || user.email || '';
@@ -59,13 +38,13 @@ export const authOptions: NextAuthOptions = {
         token.picture = user.image || '';
       }
 
-      if (account?.provider === 'credentials') {
-        const dbUser = USERS_DB[token.id as string];
-        if (dbUser) {
-          token.username = token.id;
-          token.role = dbUser.role;
-          token.provider = 'credentials';
-        }
+      if (account?.provider === 'google' && user.email) {
+        token.provider = 'google';
+        token.email = user.email;
+
+        const { username, role } = getGoogleUserRole(user.email);
+        token.username = username;
+        token.role = role;
       }
 
       return token;
