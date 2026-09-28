@@ -8,6 +8,7 @@ export type ViewType =
   | 'search'
   | 'history'
   | 'favorites'
+  | 'library'
   | 'settings';
 
 interface ViewState {
@@ -39,6 +40,7 @@ export const useViewStore = create<ViewState>((set) => ({
         search: '/search',
         history: '/history',
         favorites: '/favorites',
+        library: '/library',
         settings: '/settings',
       };
       const target = routes[view];

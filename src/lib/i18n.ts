@@ -38,6 +38,7 @@ const translations: Record<AppLocale, Record<string, string>> = {
     'nav.search': 'Buscar',
     'nav.history': 'Historial',
     'nav.favorites': 'Mi Lista',
+    'nav.library': 'Biblioteca',
     'nav.settings': 'Ajustes',
     'nav.searchPlaceholder': 'Buscar...  /',
     'nav.personalAccount': 'Cuenta personal',
@@ -187,6 +188,8 @@ const translations: Record<AppLocale, Record<string, string>> = {
     'favorites.title': 'Mi Lista',
     'favorites.empty': 'Tu lista está vacía',
     'favorites.emptyDesc': 'Agrega películas y series haciendo clic en el corazón',
+    'library.title': 'Tu Biblioteca',
+    'library.subtitle': 'Todo lo que guardas y ves, en un solo lugar',
 
     // ---- SETTINGS ----
     'settings.title': 'Ajustes',
@@ -369,6 +372,7 @@ const translations: Record<AppLocale, Record<string, string>> = {
     'nav.search': 'Search',
     'nav.history': 'History',
     'nav.favorites': 'My List',
+    'nav.library': 'Library',
     'nav.settings': 'Settings',
     'nav.searchPlaceholder': 'Search...  /',
     'nav.personalAccount': 'Personal account',
@@ -518,6 +522,8 @@ const translations: Record<AppLocale, Record<string, string>> = {
     'favorites.title': 'My List',
     'favorites.empty': 'Your list is empty',
     'favorites.emptyDesc': 'Add movies and series by tapping the heart',
+    'library.title': 'Your Library',
+    'library.subtitle': 'Everything you save and watch, in one place',
 
     // ---- SETTINGS ----
     'settings.title': 'Settings',
@@ -700,6 +706,7 @@ const translations: Record<AppLocale, Record<string, string>> = {
     'nav.search': 'Buscar',
     'nav.history': 'Histórico',
     'nav.favorites': 'Minha Lista',
+    'nav.library': 'Biblioteca',
     'nav.settings': 'Configurações',
     'nav.searchPlaceholder': 'Buscar...  /',
     'nav.personalAccount': 'Conta pessoal',
@@ -849,6 +856,8 @@ const translations: Record<AppLocale, Record<string, string>> = {
     'favorites.title': 'Minha Lista',
     'favorites.empty': 'Sua lista está vazia',
     'favorites.emptyDesc': 'Adicione filmes e séries tocando no coração',
+    'library.title': 'Sua Biblioteca',
+    'library.subtitle': 'Tudo o que você salva e assiste, em um só lugar',
 
     // ---- SETTINGS ----
     'settings.title': 'Configurações',

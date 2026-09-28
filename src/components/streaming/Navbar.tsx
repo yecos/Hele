@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useViewStore, useAuthStore, useCastStore } from '@/lib/store';
 import { useChromecast } from '@/hooks/use-chromecast';
 import { useT } from '@/lib/i18n';
-import { Search, Heart, Home, Settings, Menu, X, Film, Tv, Radio, LogOut, User, Cast, Clock } from 'lucide-react';
+import { Search, Heart, Home, Settings, Menu, X, Film, Tv, Radio, LogOut, User, Cast } from 'lucide-react';
 
 export function Navbar() {
   const { setSearchQuery } = useViewStore();
@@ -64,8 +64,7 @@ export function Navbar() {
     { id: 'series' as const, href: '/series', label: t('nav.series'), icon: Tv },
     { id: 'iptv' as const, href: '/live', label: t('nav.iptv'), icon: Radio },
     { id: 'search' as const, href: '/search', label: t('nav.search'), icon: Search },
-    { id: 'history' as const, href: '/history', label: t('nav.history'), icon: Clock },
-    { id: 'favorites' as const, href: '/favorites', label: t('nav.favorites'), icon: Heart },
+    { id: 'library' as const, href: '/library', label: t('nav.library'), icon: Heart },
     { id: 'settings' as const, href: '/settings', label: t('nav.settings'), icon: Settings },
   ];
 

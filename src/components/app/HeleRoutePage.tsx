@@ -50,6 +50,10 @@ const SettingsView = dynamic(
   () => import('@/components/views/SettingsView').then((module) => ({ default: module.SettingsView })),
   { ssr: false, loading: () => <ViewSkeleton /> }
 );
+const LibraryView = dynamic(
+  () => import('@/components/views/LibraryView').then((module) => ({ default: module.LibraryView })),
+  { ssr: false, loading: () => <ViewSkeleton /> }
+);
 
 function ViewSkeleton() {
   return (
@@ -80,6 +84,8 @@ function RouteContent({ view }: { view: ViewType }) {
       return <HistoryView />;
     case 'favorites':
       return <FavoritesView />;
+    case 'library':
+      return <LibraryView />;
     case 'settings':
       return <SettingsView />;
     case 'home':
@@ -150,7 +156,7 @@ function AuthenticatedRoute({ view }: { view: ViewType }) {
             isPlaying ? 'pointer-events-none opacity-30' : 'opacity-100'
           }`}
         >
-          {view === 'favorites' && <FavoritesHearts />}
+          {(view === 'favorites' || view === 'library') && <FavoritesHearts />}
           <ViewTransition view={view}>
             <RouteContent view={view} />
           </ViewTransition>

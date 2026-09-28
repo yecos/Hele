@@ -8,7 +8,7 @@ import { useState } from 'react';
 
 type FilterMode = 'all' | 'movie' | 'tv';
 
-export function HistoryView() {
+export function HistoryView({ embedded = false }: { embedded?: boolean }) {
   const { history, removeFromHistory } = useHistoryStore();
   const { t, locale } = useT();
   const playMovie = usePlayerStore(s => s.playMovie);
@@ -46,7 +46,7 @@ export function HistoryView() {
   };
 
   return (
-    <div className="pt-20 px-4 max-w-[1400px] mx-auto">
+    <div className={embedded ? "px-0" : "pt-20 px-4 max-w-[1400px] mx-auto"}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Clock size={28} className="text-red-500" />
