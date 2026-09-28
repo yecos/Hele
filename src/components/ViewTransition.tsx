@@ -47,6 +47,11 @@ const viewVariants: Record<ViewType, Variants> = {
     animate: { x: 0, opacity: 1 },
     exit: { x: 60, opacity: 0 },
   },
+  library: {
+    initial: { opacity: 0, y: 16 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: 8 },
+  },
   settings: {
     initial: { y: 40, opacity: 0 },
     animate: { y: 0, opacity: 1 },
@@ -63,6 +68,7 @@ const viewTransitions: Record<ViewType, object> = {
   search: { type: 'tween', duration: 0.25, ease: 'easeOut' },
   favorites: { type: 'tween', duration: 0.35, ease: 'easeOut' },
   history: { type: 'tween', duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
+  library: { type: 'tween', duration: 0.3, ease: 'easeOut' },
   settings: { type: 'tween', duration: 0.3, ease: 'easeOut' },
 };
 
